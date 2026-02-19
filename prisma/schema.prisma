@@ -1,0 +1,313 @@
+// ============================================
+// OpenInterviewer — Full Relational Schema
+// Migrated from Redis Key-Value to SQLite via Prisma
+// Designed for production: scoring, analytics, gamification
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE IDENTITY
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  name      String?
+  avatarUrl String?
+  password  String?  // Hashed password for standalone mode
+
+  // OAuth fields (hosted mode)
+  oauthProvider String?
+  oauthId       String?
+
+  // Encrypted API keys (hosted mode)
+  encryptedGeminiApiKey    String?
+  encryptedAnthropicApiKey String?
+
+  // Role: candidate (default) or interviewer
+  role String @default("candidate")
+
+  // Onboarding state
+  onboardingComplete Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resume            Resume?
+  userSkills        UserSkill[]
+  interviewSessions InterviewSession[]
+  readinessIndex    ReadinessIndex?
+  badges            Badge[]
+  improvementPlans  ImprovementPlan[]
+  weakSkillMemories WeakSkillMemory[]
+  studies           Study[]
+  storedInterviews  StoredInterview[]
+
+  @@unique([oauthProvider, oauthId])
+  @@index([email])
+}
+
+// ============================================
+// RESUME & SKILLS
+// ============================================
+
+model Resume {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  fileName     String?
+  rawText      String?  // Full text content of the resume
+  parsedSkills String?  // JSON string of parsed skills array
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  category String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  userSkills UserSkill[]
+}
+
+model UserSkill {
+  id               String   @id @default(uuid())
+  userId           String
+  skillId          String
+  proficiencyScore Float    @default(0)
+  weaknessCount    Int      @default(0)
+  lastUpdated      DateTime @default(now())
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+}
+
+// ============================================
+// RESEARCH STUDIES (Migrated from Redis)
+// ============================================
+
+model Study {
+  id             String  @id @default(uuid())
+  userId         String? // Owner of the study (nullable for standalone mode)
+  configJSON     String  // Full StudyConfig serialized as JSON
+  interviewCount Int     @default(0)
+  isLocked       Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  storedInterviews  StoredInterview[]
+  interviewSessions InterviewSession[]
+
+  @@index([userId])
+}
+
+// ============================================
+// STORED INTERVIEWS (Migrated from Redis)
+// These are the original qualitative research interviews
+// ============================================
+
+model StoredInterview {
+  id          String  @id @default(uuid())
+  studyId     String
+  userId      String? // The researcher who owns this, nullable for standalone
+  studyName   String  @default("Unknown Study")
+
+  // Full interview data stored as JSON (transcript, profile, synthesis, behavior)
+  transcriptJSON         String  // Array of messages
+  participantProfileJSON String? // Extracted participant profile
+  synthesisJSON          String? // Individual synthesis result
+  behaviorDataJSON       String? // Behavior tracking data
+
+  status      String  @default("completed") // completed, in-progress, abandoned
+  createdAt   DateTime @default(now())
+  completedAt DateTime @default(now())
+
+  // Relations
+  study Study  @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([studyId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// INTERVIEW SESSIONS (New: Scoring & Analytics)
+// These are AI-coached practice interview sessions
+// ============================================
+
+model InterviewSession {
+  id           String    @id @default(uuid())
+  userId       String
+  role         String    // Target job role
+  difficulty   String    // easy, medium, hard
+  mode         String    // practice, mock, timed
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  averageScore Float     @default(0)
+
+  // Interviewer-created session fields
+  studyId        String?  // Links to the Study (interview template)
+  candidateName  String?  // Candidate's name (entered at link)
+  candidateEmail String?  // Candidate's email (entered at link)
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  study          Study?          @relation(fields: [studyId], references: [id], onDelete: SetNull)
+  questions      Question[]
+  responses      Response[]
+  scoreBreakdown ScoreBreakdown?
+
+  @@index([userId])
+  @@index([userId, startedAt])
+  @@index([studyId])
+}
+
+model Question {
+  id         String   @id @default(uuid())
+  sessionId  String
+  text       String
+  difficulty String   // easy, medium, hard
+  category   String   // technical, behavioral, system-design, etc.
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  responses Response[]
+
+  @@index([sessionId])
+  @@index([category])
+}
+
+model Response {
+  id                 String @id @default(uuid())
+  sessionId          String
+  questionId         String
+  answerText         String
+
+  // Multi-dimensional scoring
+  technicalScore     Float  @default(0)
+  communicationScore Float  @default(0)
+  confidenceScore    Float  @default(0)
+  logicScore         Float  @default(0)
+  depthScore         Float  @default(0)
+
+  // AI-generated feedback
+  feedback       String?
+  idealAnswer    String?
+  improvementTip String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  session  InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([questionId])
+}
+
+// ============================================
+// SCORING & ANALYTICS
+// ============================================
+
+model ScoreBreakdown {
+  id                   String @id @default(uuid())
+  sessionId            String @unique
+  overallScore         Float  @default(0)
+  technicalAverage     Float  @default(0)
+  communicationAverage Float  @default(0)
+  confidenceAverage    Float  @default(0)
+  logicAverage         Float  @default(0)
+  depthAverage         Float  @default(0)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// ADAPTIVE LEARNING & MEMORY
+// ============================================
+
+model WeakSkillMemory {
+  id             String   @id @default(uuid())
+  userId         String
+  skillName      String
+  weaknessCount  Int      @default(1)
+  lastOccurredAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillName])
+  @@index([userId])
+}
+
+model ImprovementPlan {
+  id          String   @id @default(uuid())
+  userId      String
+  planJSON    String   // Full improvement plan as JSON
+  generatedAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// GAMIFICATION
+// ============================================
+
+model Badge {
+  id        String   @id @default(uuid())
+  userId    String
+  badgeName String
+  awardedAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeName])
+  @@index([userId])
+}
+
+// ============================================
+// READINESS INDEX
+// ============================================
+
+model ReadinessIndex {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  readinessScore Float    @default(0)
+  calculatedAt   DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

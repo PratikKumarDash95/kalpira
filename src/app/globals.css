@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar — slate palette */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+  /* slate-950 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  /* slate-700 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+  /* slate-600 */
+}
+
+/* Preview mode banner */
+.preview-banner {
+  background: linear-gradient(90deg, #1e293b 0%, #0f172a 50%, #1e293b 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+.preview-banner-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Prose styling for markdown */
+.prose {
+  color: #e2e8f0;
+  /* slate-200 */
+}
+
+.prose strong {
+  color: #f8fafc;
+  /* slate-50 */
+}
+
+.prose ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+}
+
+.prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+}
+
+.prose p {
+  margin-bottom: 0.5em;
+}
+
+/* Button focus states */
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  /* blue-500 accent */
+  outline-offset: 2px;
+}
+
+/* Input focus states */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+/* Custom range slider — blue-500 accent */
+.slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 3px solid #0f172a;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.slider-input::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.25);
+  transform: scale(1.1);
+}
+
+.slider-input::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+.slider-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 3px solid #0f172a;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  transition: box-shadow 0.2s ease;
+}
+
+.slider-input::-moz-range-thumb:hover {
+  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.25);
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #f8fafc;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
