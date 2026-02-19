@@ -1,5 +1,5 @@
-// GET /api/auth/oauth/github/callback - Handle GitHub OAuth callback
-// Validates the authorization code, creates/finds researcher, sets session
+// GET /api/auth/oauth/github/callback
+// Handle GitHub OAuth callback safely for Vercel + Prisma
 
 import { NextResponse } from 'next/server';
 import * as arctic from 'arctic';
@@ -10,24 +10,35 @@ import { getResearcherByOAuth, saveResearcher } from '@/lib/platformDb';
 import { ResearcherAccount } from '@/types';
 import { randomUUID } from 'crypto';
 
-function getGitHubClient() {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+export const runtime = "nodejs";
 
-  if (!clientId || !clientSecret) {
-    throw new Error('GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET required');
-  }
-
-  return new arctic.GitHub(clientId, clientSecret, `${baseUrl}/api/auth/oauth/github/callback`);
-}
-
+/**
+ * Safely resolve base URL
+ */
 function getBaseUrl(): string {
   return process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+}
+
+/**
+ * Safely create GitHub OAuth client
+ * Never throw errors (prevents build crash)
+ */
+function getGitHubClient(baseUrl: string) {
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    console.error("GitHub OAuth environment variables missing");
+    return null;
+  }
+
+  return new arctic.GitHub(
+    clientId,
+    clientSecret,
+    `${baseUrl}/api/auth/oauth/github/callback`
+  );
 }
 
 export async function GET(request: Request) {
@@ -49,23 +60,27 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=missing_params', baseUrl));
     }
 
-    // Verify state matches
-    const cookieStore = await cookies();
+    // Verify state cookie
+    const cookieStore = cookies();
     const storedState = cookieStore.get('github_oauth_state')?.value;
 
     if (!storedState || state !== storedState) {
       return NextResponse.redirect(new URL('/login?error=invalid_state', baseUrl));
     }
 
-    // Clean up OAuth cookie
     cookieStore.delete('github_oauth_state');
 
-    // Exchange code for tokens
-    const github = getGitHubClient();
+    // Create GitHub client safely
+    const github = getGitHubClient(baseUrl);
+    if (!github) {
+      return NextResponse.redirect(new URL('/login?error=config', baseUrl));
+    }
+
+    // Exchange code for access token
     const tokens = await github.validateAuthorizationCode(code);
     const accessToken = tokens.accessToken();
 
-    // Fetch user info from GitHub
+    // Fetch user info
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -85,8 +100,9 @@ export async function GET(request: Request) {
       email: string | null;
     };
 
-    // If email is not public, fetch from emails endpoint
+    // Get email if private
     let email = githubUser.email;
+
     if (!email) {
       const emailsResponse = await fetch('https://api.github.com/user/emails', {
         headers: {
@@ -94,8 +110,14 @@ export async function GET(request: Request) {
           Accept: 'application/json',
         },
       });
+
       if (emailsResponse.ok) {
-        const emails = await emailsResponse.json() as Array<{ email: string; primary: boolean; verified: boolean }>;
+        const emails = await emailsResponse.json() as Array<{
+          email: string;
+          primary: boolean;
+          verified: boolean;
+        }>;
+
         const primaryEmail = emails.find(e => e.primary && e.verified);
         email = primaryEmail?.email || emails[0]?.email || null;
       }
@@ -109,8 +131,8 @@ export async function GET(request: Request) {
     let researcher = await getResearcherByOAuth('github', String(githubUser.id));
 
     if (!researcher) {
-      // Create new researcher account
       const now = Date.now();
+
       researcher = {
         id: randomUUID(),
         email,
@@ -130,20 +152,22 @@ export async function GET(request: Request) {
 
       await saveResearcher(researcher);
     } else {
-      // Update last login time (fire-and-forget)
       const { updateResearcher } = await import('@/lib/platformDb');
-      updateResearcher(researcher.id, { lastLoginAt: Date.now() }).catch(() => {});
+      updateResearcher(researcher.id, { lastLoginAt: Date.now() }).catch(() => { });
     }
 
-    // Create session token with researcher ID
+    // Create session
     const sessionToken = await createSessionToken(researcher.id);
 
-    // Set session cookie
-    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
+    cookieStore.set(
+      SESSION_COOKIE_NAME,
+      sessionToken,
+      getSessionCookieOptions()
+    );
 
-    // Redirect based on onboarding status
     const redirectTo = researcher.onboardingComplete ? '/studies' : '/onboarding';
     return NextResponse.redirect(new URL(redirectTo, baseUrl));
+
   } catch (error) {
     console.error('GitHub OAuth callback error:', error);
     return NextResponse.redirect(new URL('/login?error=oauth_failed', baseUrl));
