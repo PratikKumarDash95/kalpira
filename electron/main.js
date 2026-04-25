@@ -15,7 +15,7 @@ function createWindow() {
       contextIsolation: false, // For simple migration
       enableRemoteModule: true,
     },
-    // icon: path.join(__dirname, '../public/favicon.ico'), // TODO: Add icon
+    // icon: path.join(__dirname, '../user/public/favicon.ico'), // TODO: Add icon
   });
 
   const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
@@ -45,8 +45,8 @@ app.on('ready', async () => {
   // Ensure we point to the correct server file
   // In dev: locate relative to this file. In prod: resourcesPath
   const serverPath = app.isPackaged 
-    ? path.join(process.resourcesPath, 'server/server.js')
-    : path.join(__dirname, '../server/server.js');
+    ? path.join(process.resourcesPath, 'backend/server/server.js')
+    : path.join(__dirname, '../backend/server/server.js');
 
   console.log('Starting Express server at:', serverPath);
   

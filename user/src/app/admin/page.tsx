@@ -1,4 +1,4 @@
-import AdminPanel from '@/components/AdminPanel';
+import AdminPanel from '@admin/components/AdminPanel';
 
 export const metadata = {
     title: 'Admin Panel | InterviewCoach',

@@ -7,9 +7,8 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = 3000;
 
-// Locate the Next.js app directory relative to this script
-// When running in electron/start-next.js, the app root is one level up (..)
-const dir = path.join(__dirname, '..');
+// Locate the Next.js user app directory relative to this script.
+const dir = path.join(__dirname, '..', 'user');
 
 const app = next({ dev, hostname, port, dir });
 const handle = app.getRequestHandler();
