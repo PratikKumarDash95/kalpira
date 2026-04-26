@@ -86,8 +86,8 @@
 
 /* Button focus states */
 button:focus-visible {
-  outline: 2px solid #3b82f6;
-  /* blue-500 accent */
+  outline: 2px solid #0ea5a4;
+  /* teal-500 accent */
   outline-offset: 2px;
 }
 
@@ -105,15 +105,15 @@ select:focus {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: #0f766e;
   cursor: pointer;
   border: 3px solid #0f172a;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3);
   transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .slider-input::-webkit-slider-thumb:hover {
-  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 0 5px rgba(15, 118, 110, 0.25);
   transform: scale(1.1);
 }
 
@@ -125,20 +125,20 @@ select:focus {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: #0f766e;
   cursor: pointer;
   border: 3px solid #0f172a;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3);
   transition: box-shadow 0.2s ease;
 }
 
 .slider-input::-moz-range-thumb:hover {
-  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 0 5px rgba(15, 118, 110, 0.25);
 }
 
 /* Selection styling */
 ::selection {
-  background: rgba(59, 130, 246, 0.3);
+  background: rgba(15, 118, 110, 0.32);
   color: #f8fafc;
 }
 
