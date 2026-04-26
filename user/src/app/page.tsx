@@ -59,8 +59,8 @@ export default function Home() {
             backgroundSize: '64px 64px',
           }}
         />
-        <div className="absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-violet-600/30 blur-3xl" />
-        <div className="absolute bottom-[-6rem] right-[-4rem] h-72 w-72 rounded-full bg-sky-500/20 blur-3xl" />
+        <div className="absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-blue-900/20 blur-3xl" />
+        <div className="absolute bottom-[-6rem] right-[-4rem] h-72 w-72 rounded-full bg-cyan-900/20 blur-3xl" />
       </div>
 
       {/* Content */}
@@ -68,7 +68,7 @@ export default function Home() {
         {/* Nav */}
         <header className="flex items-center justify-between gap-6 mb-16">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-900/40">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-lg shadow-slate-900/40">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div className="leading-tight">
@@ -98,7 +98,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => (window.location.href = 'http://localhost:3000/login')}
-              className="inline-flex items-center rounded-full border border-violet-500/70 bg-violet-600/20 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-violet-100 hover:bg-violet-500/30 hover:border-violet-400 transition-colors"
+              className="inline-flex items-center rounded-full border border-slate-500/70 bg-slate-700/30 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-slate-100 hover:bg-slate-600/40 hover:border-slate-400 transition-colors"
             >
               Let&apos;s Interview
             </button>
@@ -106,7 +106,7 @@ export default function Home() {
 
           <button
             onClick={() => (window.location.href = 'http://localhost:3000/login')}
-            className="sm:hidden text-[0.65rem] font-semibold tracking-[0.22em] uppercase text-violet-200 border border-violet-500/60 rounded-full px-3 py-1.5 hover:bg-violet-600/20"
+            className="sm:hidden text-[0.65rem] font-semibold tracking-[0.22em] uppercase text-slate-200 border border-slate-500/60 rounded-full px-3 py-1.5 hover:bg-slate-700/30"
           >
             Let&apos;s Interview
           </button>
@@ -150,11 +150,11 @@ export default function Home() {
             >
               <button
                 onClick={() => (window.location.href = 'http://localhost:3000/login')}
-                className="relative inline-flex items-center gap-3 rounded-full px-8 py-3.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-400 hover:to-indigo-400 shadow-lg shadow-violet-900/40 transition-all group"
+                className="relative inline-flex items-center gap-3 rounded-full px-8 py-3.5 text-sm font-semibold text-white bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-lg shadow-slate-900/40 transition-all group"
               >
                 <span className="text-[0.68rem] tracking-[0.25em] uppercase">Let&apos;s Interview</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                <span className="pointer-events-none absolute -inset-[1px] rounded-full border border-violet-300/40 opacity-50" />
+                <span className="pointer-events-none absolute -inset-[1px] rounded-full border border-slate-300/30 opacity-40" />
               </button>
 
               <button
@@ -173,7 +173,7 @@ export default function Home() {
             transition={{ delay: 0.3, type: 'spring', stiffness: 80, damping: 18 }}
             className="relative"
           >
-            <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-br from-violet-500/40 via-sky-500/20 to-transparent opacity-70 blur-xl" />
+            <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-br from-slate-500/35 via-blue-800/20 to-transparent opacity-70 blur-xl" />
             <div className="relative rounded-3xl border border-slate-700/80 bg-slate-900/60 px-6 py-5 sm:px-7 sm:py-6 backdrop-blur-xl shadow-[0_24px_80px_rgba(15,23,42,0.9)]">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -182,7 +182,7 @@ export default function Home() {
                   <p className="mt-1 text-sm font-medium text-slate-100">Senior Backend · System
                     Design</p>
                 </div>
-                <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-[0.7rem] font-medium text-emerald-300 border border-emerald-500/40">
+                <span className="rounded-full bg-cyan-500/15 px-3 py-1 text-[0.7rem] font-medium text-cyan-200 border border-cyan-500/35">
                   Live AI
                 </span>
               </div>
@@ -191,7 +191,7 @@ export default function Home() {
                 <div className="rounded-2xl border border-slate-700/70 bg-slate-900/60 px-3 py-3 flex flex-col gap-1">
                   <span className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Signal</span>
                   <span className="text-sm font-semibold text-slate-50">92%</span>
-                  <span className="text-[0.65rem] text-emerald-300">Strong problem solving</span>
+                  <span className="text-[0.65rem] text-cyan-200">Strong problem solving</span>
                 </div>
                 <div className="rounded-2xl border border-slate-700/70 bg-slate-900/60 px-3 py-3 flex flex-col gap-1">
                   <span className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Focus</span>
@@ -210,7 +210,7 @@ export default function Home() {
                   Built for teams who care about <span className="text-slate-100">signal</span>, not
                   gut feel.
                 </p>
-                <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-[0.65rem] font-medium text-violet-200">
+                <span className="rounded-full border border-slate-500/40 bg-slate-500/10 px-3 py-1 text-[0.65rem] font-medium text-slate-200">
                   Async friendly
                 </span>
               </div>
@@ -238,9 +238,9 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ delay: 0.05 * index, duration: 0.4 }}
-                className="group relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/60 px-5 py-5 sm:px-6 sm:py-6 backdrop-blur-xl hover:border-violet-500/60 hover:bg-slate-900/70 transition-colors"
+                className="group relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/60 px-5 py-5 sm:px-6 sm:py-6 backdrop-blur-xl hover:border-slate-600/80 hover:bg-slate-900/70 transition-colors"
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-violet-600/10 via-sky-500/5 to-transparent" />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-slate-500/10 via-blue-700/5 to-transparent" />
                 <div className="relative flex items-start gap-3">
                   <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/80 border border-slate-700/70 text-base">
                     <span aria-hidden>{feature.icon}</span>
