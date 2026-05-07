@@ -5,7 +5,22 @@ import * as jose from 'jose';
 const SESSION_COOKIE_NAME = 'research-auth';
 
 // Routes that require authentication
-const protectedRoutes = ['/dashboard', '/studies', '/onboarding', '/settings', '/admin'];
+const protectedRoutes = [
+  '/admin',
+  '/allinterviews',
+  '/dashboard',
+  '/export',
+  '/interviewer/dashboard',
+  '/interviewer/setup',
+  '/interviewer/studies',
+  '/onboarding',
+  '/settings',
+  '/setup',
+  '/studies',
+  '/synthesis',
+];
+
+const authRoutes = ['/login', '/register'];
 
 // Verify session token in edge middleware
 async function verifySession(token: string): Promise<{ valid: boolean; researcherId?: string }> {
@@ -41,20 +56,23 @@ async function verifySession(token: string): Promise<{ valid: boolean; researche
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const authCookie = request.cookies.get(SESSION_COOKIE_NAME);
+  const loginPath = pathname.startsWith('/interviewer') ? '/interviewer/login' : '/login';
 
   // Check if this is a protected route
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  if (!isProtectedRoute) {
+  if (!isProtectedRoute && !authRoutes.includes(pathname)) {
     return NextResponse.next();
   }
 
-  // Get auth cookie
-  const authCookie = request.cookies.get(SESSION_COOKIE_NAME);
-
   if (!authCookie?.value) {
+    if (authRoutes.includes(pathname)) {
+      return NextResponse.next();
+    }
+
     // No cookie - redirect to login
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL(loginPath, request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -63,12 +81,24 @@ export async function middleware(request: NextRequest) {
   const session = await verifySession(authCookie.value);
 
   if (!session.valid) {
+    if (authRoutes.includes(pathname)) {
+      return NextResponse.next();
+    }
+
     // Invalid token - clear cookie and redirect to login
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL(loginPath, request.url);
     loginUrl.searchParams.set('redirect', pathname);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(SESSION_COOKIE_NAME);
     return response;
+  }
+
+  if (authRoutes.includes(pathname)) {
+    const rawRedirect = request.nextUrl.searchParams.get('redirect');
+    const redirectTo = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !authRoutes.includes(rawRedirect)
+      ? rawRedirect
+      : '/studies';
+    return NextResponse.redirect(new URL(redirectTo, request.url));
   }
 
   return NextResponse.next();

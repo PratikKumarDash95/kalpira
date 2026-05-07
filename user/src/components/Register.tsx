@@ -97,6 +97,7 @@ const Register: React.FC = () => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="john@example.com"
+                                    autoComplete="email"
                                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                                     required
                                 />
@@ -115,6 +116,7 @@ const Register: React.FC = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Create a password"
+                                    autoComplete="new-password"
                                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                                     required
                                     minLength={6}

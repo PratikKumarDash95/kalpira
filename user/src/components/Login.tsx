@@ -77,7 +77,7 @@ const Login: React.FC = () => {
 
       // Redirect to studies on success (validate to prevent open redirect)
       const rawRedirect = searchParams.get('redirect') || '/studies';
-      const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+      const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !['/login', '/register'].includes(rawRedirect)
         ? rawRedirect
         : '/studies';
       router.push(redirect);
@@ -172,6 +172,7 @@ const Login: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="john@example.com"
+                      autoComplete="email"
                       className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                     />
                   </div>
@@ -186,6 +187,7 @@ const Login: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
+                    autoComplete="current-password"
                     className="w-full px-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                   />
                 </div>
@@ -220,6 +222,7 @@ const Login: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="john@example.com"
+                      autoComplete="email"
                       className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                       autoFocus
                     />
@@ -239,6 +242,7 @@ const Login: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={loginMethod === 'admin' ? "Enter admin password" : "Enter password"}
+                    autoComplete="current-password"
                     className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                     autoFocus={loginMethod === 'admin'}
                   />

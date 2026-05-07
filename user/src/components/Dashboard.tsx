@@ -69,8 +69,8 @@ const Dashboard: React.FC = () => {
     setLoading(true);
     try {
       const data = studyId
-        ? await getStudyInterviews(studyId)
-        : await getAllInterviews();
+        ? await getStudyInterviews(studyId, { summary: true })
+        : await getAllInterviews({ summary: true });
       setInterviews(data);
     } catch (error) {
       console.error('Error loading interviews:', error);
@@ -402,7 +402,7 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <MessageSquare size={12} />
-                        {interview.transcript.length} msgs
+                        {(interview.messageCount ?? interview.transcript.length)} msgs
                       </div>
                       <div className="hidden sm:block">
                         {formatDate(interview.createdAt)}

@@ -36,9 +36,9 @@ export async function saveCompletedInterview(
 }
 
 // Get all interviews (researcher only)
-export async function getAllInterviews(): Promise<StoredInterview[]> {
+export async function getAllInterviews(options?: { summary?: boolean }): Promise<StoredInterview[]> {
   try {
-    const response = await fetch('/api/interviews');
+    const response = await fetch(options?.summary ? '/api/interviews?summary=1&limit=50' : '/api/interviews');
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -86,9 +86,12 @@ export async function exportAllInterviews(): Promise<Blob | null> {
 }
 
 // Get interviews for a specific study
-export async function getStudyInterviews(studyId: string): Promise<StoredInterview[]> {
+export async function getStudyInterviews(studyId: string, options?: { summary?: boolean }): Promise<StoredInterview[]> {
   try {
-    const response = await fetch(`/api/interviews?studyId=${encodeURIComponent(studyId)}`);
+    const params = new URLSearchParams({ studyId });
+    if (options?.summary) params.set('summary', '1');
+    if (options?.summary) params.set('limit', '50');
+    const response = await fetch(`/api/interviews?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
