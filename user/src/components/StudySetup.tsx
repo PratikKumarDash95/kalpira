@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store';
 import { generateParticipantLink } from '@/services/geminiService';
@@ -31,6 +31,8 @@ const STEPS = [
 const StudySetup: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const isInterviewerFlow = pathname.startsWith('/interviewer');
   const { setStudyConfig, setStep, studyConfig, loadExampleStudy, setViewMode, setParticipantToken, resetParticipant } = useStore();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -206,9 +208,10 @@ const StudySetup: React.FC = () => {
     try {
       const config = buildConfig();
       setStudyConfig(config);
+      const studyConfig = savedStudyId ? { ...config, id: savedStudyId } : config;
       const response = await fetch('/api/generate-link', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studyConfig: config })
+        body: JSON.stringify({ studyConfig })
       });
       if (!response.ok) {
         if (response.status === 401) { setLinkError('auth'); setIsAuthenticated(false); }
@@ -226,19 +229,22 @@ const StudySetup: React.FC = () => {
   };
 
   const handleSaveStudy = async () => {
-    if (isAuthenticated === false) { router.push('/login'); return; }
+    if (isAuthenticated === false) { router.push(isInterviewerFlow ? '/interviewer/login' : '/login'); return; }
     if (isAuthenticated === null) return;
     setIsSaving(true); setSaveSuccess(false); setSaveError(null);
     try {
       const config = buildConfig();
-      const isUpdate = !!savedStudyId;
-      const response = await fetch(isUpdate ? `/api/studies/${savedStudyId}` : '/api/studies', {
-        method: isUpdate ? 'PUT' : 'POST',
+      const isUpdate = !!savedStudyId && !isInterviewerFlow;
+      const apiPath = isInterviewerFlow
+        ? '/api/interviewer/studies'
+        : (isUpdate ? `/api/studies/${savedStudyId}` : '/api/studies');
+      const response = await fetch(apiPath, {
+        method: isInterviewerFlow ? 'POST' : (isUpdate ? 'PUT' : 'POST'),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config })
       });
       if (!response.ok) {
-        if (response.status === 401) { setIsAuthenticated(false); router.push('/login'); return; }
+        if (response.status === 401) { setIsAuthenticated(false); router.push(isInterviewerFlow ? '/interviewer/login' : '/login'); return; }
         if (response.status === 503) { setSaveError('Storage not configured. Please connect Vercel KV.'); return; }
         if (response.status === 409) {
           const data = await response.json();
@@ -265,7 +271,7 @@ const StudySetup: React.FC = () => {
       const data = await response.json();
       setSavedStudyId(data.study.id); setSaveSuccess(true);
       setStudyConfig(data.study.config); setIsDirty(false);
-      router.push(`/studies/${data.study.id}`);
+      router.push(isInterviewerFlow ? '/interviewer/dashboard' : `/studies/${data.study.id}`);
     } catch { setSaveError('Network error. Please check your connection.'); }
     finally { setIsSaving(false); }
   };
@@ -301,7 +307,7 @@ const StudySetup: React.FC = () => {
         {/* ── Top Bar ── */}
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={() => router.push('/studies')}
+            onClick={() => router.push(isInterviewerFlow ? '/interviewer/dashboard' : '/studies')}
             className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors text-sm"
           >
             <ArrowLeft size={16} /> Back
@@ -698,9 +704,9 @@ const StudySetup: React.FC = () => {
                     ) : isAuthenticated === false || linkError === 'auth' ? (
                       <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
                         <p className="text-sm text-slate-400 mb-3">Login required to generate participant links.</p>
-                        <button onClick={() => router.push('/login')}
+                        <button onClick={() => router.push(isInterviewerFlow ? '/interviewer/login' : '/login')}
                           className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm transition-colors">
-                          <LogIn size={16} /> Login as Researcher
+                          <LogIn size={16} /> {isInterviewerFlow ? 'Login as Interviewer' : 'Login as Researcher'}
                         </button>
                       </div>
                     ) : (

@@ -88,6 +88,7 @@ const InterviewerRegister: React.FC = () => {
                         <div className="relative">
                             <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                                autoComplete="email"
                                 placeholder="Work email" className={inputCls} required />
                         </div>
 
@@ -96,6 +97,7 @@ const InterviewerRegister: React.FC = () => {
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type={showPassword ? 'text' : 'password'} value={password}
                                 onChange={e => setPassword(e.target.value)}
+                                autoComplete="new-password"
                                 placeholder="Password (min 6 chars)" className={`${inputCls} pr-10`} required />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
@@ -108,6 +110,7 @@ const InterviewerRegister: React.FC = () => {
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type={showPassword ? 'text' : 'password'} value={confirmPassword}
                                 onChange={e => setConfirmPassword(e.target.value)}
+                                autoComplete="new-password"
                                 placeholder="Confirm password" className={inputCls} required />
                         </div>
 

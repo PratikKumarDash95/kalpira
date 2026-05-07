@@ -45,9 +45,11 @@ async function resolveById(researcherId: string): Promise<ResearcherContext> {
 }
 
 // Standalone context: uses env vars, resolves default user
-async function getStandaloneContext(): Promise<ResearcherContext> {
+async function getStandaloneContext(userId?: string): Promise<ResearcherContext> {
   // In standalone mode, use the single admin user as the context user
-  const user = await prisma.user.findFirst();
+  const user = userId
+    ? await prisma.user.findUnique({ where: { id: userId } })
+    : await prisma.user.findFirst();
 
   return {
     researcherId: null,
@@ -86,7 +88,8 @@ export async function getRequestContext(): Promise<RequestContextResult> {
     if (isStandaloneMode()) {
       return {
         authorized: true,
-        context: await getStandaloneContext(),
+        context: await getStandaloneContext(session.researcherId),
+        researcherId: session.researcherId,
       };
     }
 

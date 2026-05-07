@@ -212,6 +212,7 @@ export interface StoredInterview {
   studyName: string;
   participantProfile: ParticipantProfile;
   transcript: InterviewMessage[];
+  messageCount?: number;
   synthesis: SynthesisResult | null;
   behaviorData: BehaviorData;
   createdAt: number;

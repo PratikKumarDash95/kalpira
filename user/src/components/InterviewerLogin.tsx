@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
 
 const InterviewerLogin: React.FC = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +39,11 @@ const InterviewerLogin: React.FC = () => {
                 return;
             }
 
-            router.push('/interviewer/dashboard');
+            const rawRedirect = searchParams.get('redirect') || '/interviewer/dashboard';
+            const redirect = rawRedirect.startsWith('/interviewer/') && !rawRedirect.startsWith('//')
+                ? rawRedirect
+                : '/interviewer/dashboard';
+            router.push(redirect);
         } catch {
             setError('Network error. Please try again.');
         } finally {
@@ -69,6 +74,7 @@ const InterviewerLogin: React.FC = () => {
                         <div className="relative">
                             <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                                autoComplete="email"
                                 placeholder="Work email" className={inputCls} required />
                         </div>
 
@@ -76,6 +82,7 @@ const InterviewerLogin: React.FC = () => {
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type={showPassword ? 'text' : 'password'} value={password}
                                 onChange={e => setPassword(e.target.value)}
+                                autoComplete="current-password"
                                 placeholder="Password" className={`${inputCls} pr-10`} required />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">

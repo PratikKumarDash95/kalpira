@@ -10,7 +10,7 @@ import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
 
 export async function GET(request: Request) {
   try {
-    const { authorized, context, error } = await getRequestContext();
+    const { authorized, context, researcherId, error } = await getRequestContext();
 
     // Strict Auth Check - Must be authenticated
     if (!authorized || !context) {
@@ -20,6 +20,8 @@ export async function GET(request: Request) {
     // Check for studyId filter
     const { searchParams } = new URL(request.url);
     const studyId = searchParams.get('studyId');
+    const summaryOnly = searchParams.get('summary') === '1';
+    const limit = Math.min(Math.max(Number(searchParams.get('limit') || 50), 1), 100);
 
     // Build strict query based on role
     const where: any = {};
@@ -28,38 +30,40 @@ export async function GET(request: Request) {
       where.studyId = studyId;
     }
 
-    if (context.researcherId) {
+    if (researcherId) {
       // 1. INTERVIEWER VIEW: Only show sessions from studies OWNED by this researcher
       // This strictly hides "practice" sessions or other users' private data
       where.study = {
-        userId: context.researcherId
+        userId: researcherId
       };
-    } else if (context.userId) {
+    } else if (context.userId && context.researcherId) {
       // 2. CANDIDATE VIEW: Only show sessions belonging to this user
       where.userId = context.userId;
-    } else {
-      // Should not happen if authorized is true, but safe fallback
-      return NextResponse.json({ interviews: [] });
     }
 
     const sessions = await prisma.interviewSession.findMany({
       where,
       include: {
-        questions: {
-          orderBy: { createdAt: 'asc' },
-          include: { responses: true }
-        },
+        questions: summaryOnly
+          ? {
+            select: { id: true },
+          }
+          : {
+            orderBy: { createdAt: 'asc' },
+            include: { responses: true }
+          },
         scoreBreakdown: true,
         study: true,
       },
-      orderBy: { startedAt: 'desc' }
+      orderBy: { startedAt: 'desc' },
+      take: limit,
     });
 
     // Map Prisma sessions to StoredInterview format
     const interviews: StoredInterview[] = sessions.map(session => {
       // Reconstruct transcript
       const transcript: InterviewMessage[] = [];
-      session.questions.forEach((q, idx) => {
+      if (!summaryOnly) session.questions.forEach((q: any) => {
         // AI Question
         transcript.push({
           id: `q-${q.id}`,
@@ -108,6 +112,9 @@ export async function GET(request: Request) {
           ]
         },
         transcript,
+        messageCount: summaryOnly
+          ? session.questions.length * 2
+          : transcript.length,
         synthesis,
         behaviorData: {
           timePerTopic: {},

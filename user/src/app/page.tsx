@@ -97,7 +97,7 @@ export default function Home() {
               About
             </button>
             <button
-              onClick={() => (window.location.href = 'http://localhost:3000/login')}
+              onClick={() => router.push('/login')}
               className="inline-flex items-center rounded-full border border-slate-500/70 bg-slate-700/30 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-slate-100 hover:bg-slate-600/40 hover:border-slate-400 transition-colors"
             >
               Let&apos;s Interview
@@ -105,7 +105,7 @@ export default function Home() {
           </nav>
 
           <button
-            onClick={() => (window.location.href = 'http://localhost:3000/login')}
+            onClick={() => router.push('/login')}
             className="sm:hidden text-[0.65rem] font-semibold tracking-[0.22em] uppercase text-slate-200 border border-slate-500/60 rounded-full px-3 py-1.5 hover:bg-slate-700/30"
           >
             Let&apos;s Interview
@@ -149,7 +149,7 @@ export default function Home() {
               className="mt-10 flex flex-wrap items-center gap-4"
             >
               <button
-                onClick={() => (window.location.href = 'http://localhost:3000/login')}
+                onClick={() => router.push('/login')}
                 className="relative inline-flex items-center gap-3 rounded-full px-8 py-3.5 text-sm font-semibold text-white bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-lg shadow-slate-900/40 transition-all group"
               >
                 <span className="text-[0.68rem] tracking-[0.25em] uppercase">Let&apos;s Interview</span>
