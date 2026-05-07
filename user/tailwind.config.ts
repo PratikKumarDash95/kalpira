@@ -1,14 +1,10 @@
 import type { Config } from 'tailwindcss'
-import path from 'path'
-
-const fromHere = (glob: string) => path.join(__dirname, glob)
 
 const config: Config = {
   content: [
-    fromHere('src/pages/**/*.{js,ts,jsx,tsx,mdx}'),
-    fromHere('src/components/**/*.{js,ts,jsx,tsx,mdx}'),
-    fromHere('src/app/**/*.{js,ts,jsx,tsx,mdx}'),
-    path.join(__dirname, '../admin/**/*.{js,ts,jsx,tsx,mdx}'),
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {

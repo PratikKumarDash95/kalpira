@@ -1,9 +1,5 @@
-import AdminPanel from '@admin/components/AdminPanel';
-
-export const metadata = {
-    title: 'Admin Panel | InterviewCoach',
-};
+import { redirect } from 'next/navigation';
 
 export default function AdminPage() {
-    return <AdminPanel />;
+  redirect(process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001');
 }

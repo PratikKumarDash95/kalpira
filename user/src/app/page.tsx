@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
+  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
 
   const features = [
     {
@@ -101,6 +102,12 @@ export default function Home() {
               className="inline-flex items-center rounded-full border border-slate-500/70 bg-slate-700/30 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-slate-100 hover:bg-slate-600/40 hover:border-slate-400 transition-colors"
             >
               Let&apos;s Interview
+            </button>
+            <button
+              onClick={() => { window.location.href = adminUrl; }}
+              className="hover:text-white/90 transition-colors"
+            >
+              Admin
             </button>
           </nav>
 

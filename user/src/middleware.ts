@@ -6,7 +6,6 @@ const SESSION_COOKIE_NAME = 'research-auth';
 
 // Routes that require authentication
 const protectedRoutes = [
-  '/admin',
   '/allinterviews',
   '/dashboard',
   '/export',
