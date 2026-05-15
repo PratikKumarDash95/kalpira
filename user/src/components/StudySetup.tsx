@@ -32,7 +32,8 @@ const StudySetup: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const isInterviewerFlow = pathname.startsWith('/interviewer');
+  const isInterviewerFlow = pathname.startsWith('/interviewer') || process.env.NEXT_PUBLIC_PORTAL === 'interviewer';
+  const interviewerPath = (path: string) => process.env.NEXT_PUBLIC_PORTAL === 'interviewer' ? path : `/interviewer${path}`;
   const { setStudyConfig, setStep, studyConfig, loadExampleStudy, setViewMode, setParticipantToken, resetParticipant } = useStore();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -229,7 +230,7 @@ const StudySetup: React.FC = () => {
   };
 
   const handleSaveStudy = async () => {
-    if (isAuthenticated === false) { router.push(isInterviewerFlow ? '/interviewer/login' : '/login'); return; }
+    if (isAuthenticated === false) { router.push(isInterviewerFlow ? interviewerPath('/login') : '/login'); return; }
     if (isAuthenticated === null) return;
     setIsSaving(true); setSaveSuccess(false); setSaveError(null);
     try {
@@ -244,7 +245,7 @@ const StudySetup: React.FC = () => {
         body: JSON.stringify({ config })
       });
       if (!response.ok) {
-        if (response.status === 401) { setIsAuthenticated(false); router.push(isInterviewerFlow ? '/interviewer/login' : '/login'); return; }
+        if (response.status === 401) { setIsAuthenticated(false); router.push(isInterviewerFlow ? interviewerPath('/login') : '/login'); return; }
         if (response.status === 503) { setSaveError('Storage not configured. Please connect Vercel KV.'); return; }
         if (response.status === 409) {
           const data = await response.json();
@@ -271,7 +272,7 @@ const StudySetup: React.FC = () => {
       const data = await response.json();
       setSavedStudyId(data.study.id); setSaveSuccess(true);
       setStudyConfig(data.study.config); setIsDirty(false);
-      router.push(isInterviewerFlow ? '/interviewer/dashboard' : `/studies/${data.study.id}`);
+      router.push(isInterviewerFlow ? interviewerPath('/dashboard') : `/studies/${data.study.id}`);
     } catch { setSaveError('Network error. Please check your connection.'); }
     finally { setIsSaving(false); }
   };
@@ -307,7 +308,7 @@ const StudySetup: React.FC = () => {
         {/* ── Top Bar ── */}
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={() => router.push(isInterviewerFlow ? '/interviewer/dashboard' : '/studies')}
+            onClick={() => router.push(isInterviewerFlow ? interviewerPath('/dashboard') : '/studies')}
             className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors text-sm"
           >
             <ArrowLeft size={16} /> Back
@@ -704,7 +705,7 @@ const StudySetup: React.FC = () => {
                     ) : isAuthenticated === false || linkError === 'auth' ? (
                       <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
                         <p className="text-sm text-slate-400 mb-3">Login required to generate participant links.</p>
-                        <button onClick={() => router.push(isInterviewerFlow ? '/interviewer/login' : '/login')}
+                        <button onClick={() => router.push(isInterviewerFlow ? interviewerPath('/login') : '/login')}
                           className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm transition-colors">
                           <LogIn size={16} /> {isInterviewerFlow ? 'Login as Interviewer' : 'Login as Researcher'}
                         </button>
