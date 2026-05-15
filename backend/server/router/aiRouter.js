@@ -16,13 +16,14 @@
 // ============================================
 
 const { AI_MODES, AI_PROVIDERS } = require('../constants');
-const { ollamaService, geminiService, openaiService } = require('../services/ai');
+const { ollamaService, geminiService, freemodelService, openaiService } = require('../services/ai');
 
 class AIRouter {
   constructor() {
     /** @type {Record<string, import('../services/ai/BaseAIService')>} */
     this._providerMap = {
       [AI_PROVIDERS.OLLAMA]: ollamaService,
+      [AI_PROVIDERS.FREEMODEL]: freemodelService,
       [AI_PROVIDERS.GEMINI]: geminiService,
       [AI_PROVIDERS.OPENAI]: openaiService,
     };
@@ -30,8 +31,8 @@ class AIRouter {
     /** Mode-to-provider resolution order */
     this._modeStrategy = {
       [AI_MODES.OFFLINE]: [AI_PROVIDERS.OLLAMA],
-      [AI_MODES.ONLINE]: [AI_PROVIDERS.GEMINI, AI_PROVIDERS.OPENAI],
-      [AI_MODES.HYBRID]: [AI_PROVIDERS.GEMINI, AI_PROVIDERS.OPENAI, AI_PROVIDERS.OLLAMA],
+      [AI_MODES.ONLINE]: [AI_PROVIDERS.FREEMODEL, AI_PROVIDERS.OPENAI],
+      [AI_MODES.HYBRID]: [AI_PROVIDERS.FREEMODEL, AI_PROVIDERS.OPENAI, AI_PROVIDERS.OLLAMA],
     };
   }
 
