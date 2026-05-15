@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { usePathname, useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Users, BarChart2, ChevronDown, ChevronUp,
@@ -60,6 +60,9 @@ const ScoreBar: React.FC<{ label: string; value: number; icon: React.ReactNode }
 
 const InterviewerStudyDetail: React.FC = () => {
     const router = useRouter();
+    const pathname = usePathname();
+    const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
+    const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
     const params = useParams();
     const studyId = params.id as string;
 
@@ -74,7 +77,7 @@ const InterviewerStudyDetail: React.FC = () => {
             try {
                 const res = await fetch(`/api/interviewer/studies/${studyId}/candidates`);
                 if (!res.ok) {
-                    if (res.status === 401) { router.push('/interviewer/login'); return; }
+                    if (res.status === 401) { router.push(portalPath('/login')); return; }
                     setError('Failed to load candidates.');
                     return;
                 }
@@ -124,7 +127,7 @@ const InterviewerStudyDetail: React.FC = () => {
             <div className="relative max-w-4xl mx-auto px-4 py-8">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
-                    <button onClick={() => router.push('/interviewer/dashboard')}
+                    <button onClick={() => router.push(portalPath('/dashboard'))}
                         className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors text-sm">
                         <ArrowLeft size={16} /> Dashboard
                     </button>

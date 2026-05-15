@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { StoredStudy } from '@/types';
+import { StoredStudy, StudyConfig } from '@/types';
 import { getAllStudies, deleteStudy } from '@/services/storageService';
 import {
   Loader2,
@@ -62,8 +62,10 @@ const StudyList: React.FC = () => {
   const handleInterviewerPractice = async () => {
     setLoading(true);
     try {
+      const now = Date.now();
       // Create a persistent "practice" study configuration
-      const practiceConfig = {
+      const practiceConfig: StudyConfig = {
+        id: `practice-${now}`,
         name: `Interviewer Practice - ${new Date().toLocaleDateString()}`,
         description: "A simulated interview session to test the platform capabilities from a participant's perspective.",
         researchQuestion: "Platform Capabilities",
@@ -80,25 +82,31 @@ const StudyList: React.FC = () => {
         aiModel: "gemini-2.5-flash",
         linkExpiration: "never",
         linksEnabled: true,
-        consentText: "This is a practice session. No data will be permanently stored."
+        consentText: "This is a practice session. No data will be permanently stored.",
+        createdAt: now
       };
 
-      // 1. Create the study in DB so it shows on dashboard
-      const studyRes = await fetch('/api/interviewer/studies', {
+      // Create the study from the researcher workspace so this action works for
+      // normal researcher/admin sessions as well as standalone installs.
+      const studyRes = await fetch('/api/studies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: practiceConfig })
       });
 
-      if (!studyRes.ok) throw new Error('Failed to create practice study record');
+      if (!studyRes.ok) {
+        const data = await studyRes.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to create practice study record');
+      }
       const studyData = await studyRes.json();
-      const studyId = studyData.study.id;
+      const savedStudy = studyData.study as StoredStudy;
+      const savedConfig = savedStudy.config;
 
       // 2. Generate link for this specific study ID
       const response = await fetch('/api/generate-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studyConfig: { ...practiceConfig, id: studyId } })
+        body: JSON.stringify({ studyConfig: savedConfig })
       });
 
       const data = await response.json();

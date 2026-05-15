@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Briefcase, Plus, Users, BarChart2, Clock, ChevronRight,
@@ -26,6 +26,9 @@ interface InterviewerInfo {
 
 const InterviewerDashboard: React.FC = () => {
     const router = useRouter();
+    const pathname = usePathname();
+    const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
+    const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
     const [interviewer, setInterviewer] = useState<InterviewerInfo | null>(null);
     const [studies, setStudies] = useState<StudySummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +45,7 @@ const InterviewerDashboard: React.FC = () => {
                     fetch('/api/interviewer/studies'),
                 ]);
 
-                if (!meRes.ok) { router.push('/interviewer/login'); return; }
+                if (!meRes.ok) { router.push(portalPath('/login')); return; }
 
                 const meData = await meRes.json();
                 setInterviewer(meData.user);
@@ -62,7 +65,7 @@ const InterviewerDashboard: React.FC = () => {
 
     const handleLogout = async () => {
         await fetch('/api/auth', { method: 'DELETE' });
-        router.push('/interviewer/login');
+        router.push(portalPath('/login'));
     };
 
     const handleGenerateLink = async (study: StudySummary) => {
@@ -166,7 +169,7 @@ const InterviewerDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-white">Your Interviews</h2>
                     <button
-                        onClick={() => router.push('/interviewer/setup')}
+                        onClick={() => router.push(portalPath('/setup'))}
                         className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-all text-sm shadow-lg shadow-violet-900/30">
                         <Plus size={16} /> Create Interview
                     </button>
@@ -180,7 +183,7 @@ const InterviewerDashboard: React.FC = () => {
                             <Briefcase size={40} className="text-slate-700 mx-auto mb-4" />
                             <h3 className="text-slate-400 font-medium mb-2">No interviews yet</h3>
                             <p className="text-slate-600 text-sm mb-6">Create your first interview and share the link with candidates</p>
-                            <button onClick={() => router.push('/interviewer/setup')}
+                            <button onClick={() => router.push(portalPath('/setup'))}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm transition-all">
                                 <Zap size={16} /> Create First Interview
                             </button>
@@ -239,7 +242,7 @@ const InterviewerDashboard: React.FC = () => {
 
                                             {/* View candidates */}
                                             <button
-                                                onClick={() => router.push(`/interviewer/studies/${study.id}`)}
+                                                onClick={() => router.push(portalPath(`/studies/${study.id}`))}
                                                 className="flex items-center gap-1.5 px-3 py-2 bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-300 rounded-xl text-xs transition-colors">
                                                 <ExternalLink size={13} /> Results
                                                 <ChevronRight size={13} />

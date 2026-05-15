@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
 
 const InterviewerRegister: React.FC = () => {
     const router = useRouter();
+    const pathname = usePathname();
+    const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
+    const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -44,7 +47,7 @@ const InterviewerRegister: React.FC = () => {
                 setError(data.error || 'Registration failed.');
                 return;
             }
-            router.push('/interviewer/dashboard');
+            router.push(portalPath('/dashboard'));
         } catch {
             setError('Network error. Please try again.');
         } finally {
@@ -131,7 +134,7 @@ const InterviewerRegister: React.FC = () => {
 
                     <p className="text-center text-sm text-slate-500 mt-6">
                         Already have an account?{' '}
-                        <button onClick={() => router.push('/interviewer/login')} className="text-violet-400 hover:text-violet-300 transition-colors">
+                        <button onClick={() => router.push(portalPath('/login'))} className="text-violet-400 hover:text-violet-300 transition-colors">
                             Sign in
                         </button>
                     </p>

@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
 
 const InterviewerLogin: React.FC = () => {
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
+    const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
+    const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -39,10 +42,11 @@ const InterviewerLogin: React.FC = () => {
                 return;
             }
 
-            const rawRedirect = searchParams.get('redirect') || '/interviewer/dashboard';
-            const redirect = rawRedirect.startsWith('/interviewer/') && !rawRedirect.startsWith('//')
+            const defaultRedirect = portalPath('/dashboard');
+            const rawRedirect = searchParams.get('redirect') || defaultRedirect;
+            const redirect = rawRedirect.startsWith(isStandalonePortal ? '/' : '/interviewer/') && !rawRedirect.startsWith('//')
                 ? rawRedirect
-                : '/interviewer/dashboard';
+                : defaultRedirect;
             router.push(redirect);
         } catch {
             setError('Network error. Please try again.');
@@ -103,7 +107,7 @@ const InterviewerLogin: React.FC = () => {
 
                     <p className="text-center text-sm text-slate-500 mt-6">
                         New interviewer?{' '}
-                        <button onClick={() => router.push('/interviewer/register')} className="text-violet-400 hover:text-violet-300 transition-colors">
+                        <button onClick={() => router.push(portalPath('/register'))} className="text-violet-400 hover:text-violet-300 transition-colors">
                             Create account
                         </button>
                     </p>
