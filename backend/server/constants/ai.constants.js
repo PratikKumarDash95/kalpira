@@ -5,6 +5,7 @@
 const AI_PROVIDERS = Object.freeze({
   OLLAMA: 'ollama',
   GEMINI: 'gemini',
+  FREEMODEL: 'freemodel',
   OPENAI: 'openai',
 });
 
@@ -26,6 +27,12 @@ const OLLAMA_CONFIG = Object.freeze({
 const GEMINI_CONFIG = Object.freeze({
   BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
   DEFAULT_MODEL: process.env.GEMINI_DEFAULT_MODEL || 'gemini-pro',
+  TIMEOUT_MS: 30_000,
+});
+
+const FREEMODEL_CONFIG = Object.freeze({
+  BASE_URL: process.env.FREEMODEL_BASE_URL || 'https://api.freemodel.ai',
+  DEFAULT_MODEL: process.env.FREEMODEL_DEFAULT_MODEL || 'freemodel-standard',
   TIMEOUT_MS: 30_000,
 });
 
@@ -52,6 +59,7 @@ module.exports = {
   OLLAMA_CONFIG,
   GEMINI_CONFIG,
   OPENAI_CONFIG,
+  FREEMODEL_CONFIG,
   DIFFICULTY_LEVELS,
   RESPONSE_STATUS,
 };

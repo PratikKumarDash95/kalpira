@@ -1,18 +1,83 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar — slate palette */
+@layer base {
+  :root {
+    color-scheme: dark;
+    --app-bg: #080b12;
+    --app-panel: #111827;
+    --app-panel-soft: #162033;
+    --app-line: #263247;
+    --app-text: #f6f8fb;
+    --app-muted: #99a5b8;
+    --app-accent: #14b8a6;
+    --app-accent-strong: #0d9488;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--app-bg);
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(20, 184, 166, 0.12), transparent 28rem),
+      linear-gradient(135deg, #080b12 0%, #101725 48%, #0c111d 100%);
+    color: var(--app-text);
+  }
+
+  * {
+    scrollbar-color: #334155 #080b12;
+  }
+}
+
+@layer components {
+  .app-shell {
+    min-height: 100vh;
+    background:
+      linear-gradient(135deg, rgba(20, 184, 166, 0.08), transparent 34%),
+      linear-gradient(180deg, #080b12 0%, #101827 100%);
+    color: #f8fafc;
+  }
+
+  .app-container {
+    width: min(1120px, calc(100% - 2rem));
+    margin-inline: auto;
+  }
+
+  .surface {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.72);
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.32);
+    backdrop-filter: blur(18px);
+  }
+
+  .btn-primary {
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #0f766e, #2563eb);
+    color: white;
+    box-shadow: 0 12px 28px rgba(15, 118, 110, 0.24);
+    transition: transform 160ms ease, filter 160ms ease;
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #020617;
-  /* slate-950 */
+  background: #080b12;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -142,7 +207,3 @@ select:focus {
   color: #f8fafc;
 }
 
-/* Smooth scroll */
-html {
-  scroll-behavior: smooth;
-}
