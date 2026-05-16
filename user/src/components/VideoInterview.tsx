@@ -77,6 +77,10 @@ const VideoInterview: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const startTimeRef = useRef<Date>(new Date());
+    const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isSendingRef = useRef(false);
+    const lastSentTextRef = useRef('');
+    const lastSentAtRef = useRef(0);
 
     // ── Scroll chat to bottom ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -184,8 +188,6 @@ const VideoInterview: React.FC = () => {
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
-        let silenceTimer: ReturnType<typeof setTimeout> | null = null;
-
         recognition.onstart = () => setIsListening(true);
 
         recognition.onresult = (event: any) => {
@@ -200,8 +202,8 @@ const VideoInterview: React.FC = () => {
                 setInput(prev => prev + (prev ? ' ' : '') + final);
                 setInterimText('');
                 // Auto-send after 2s silence
-                if (silenceTimer) clearTimeout(silenceTimer);
-                silenceTimer = setTimeout(() => {
+                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = setTimeout(() => {
                     setInput(prev => {
                         if (prev.trim()) {
                             handleSendRef.current?.(prev.trim());
@@ -214,9 +216,21 @@ const VideoInterview: React.FC = () => {
         };
 
         recognition.onerror = () => setIsListening(false);
-        recognition.onend = () => { setIsListening(false); setInterimText(''); };
+        recognition.onend = () => {
+            setIsListening(false);
+            setInterimText('');
+            if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = null;
+            }
+        };
 
         recognitionRef.current = recognition;
+
+        return () => {
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            recognition.stop?.();
+        };
     }, []);
 
     const handleSendRef = useRef<((text: string) => void) | null>(null);
@@ -251,7 +265,10 @@ const VideoInterview: React.FC = () => {
 
                 const res = await fetch('/api/sessions/start', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(participantToken && { Authorization: `Bearer ${participantToken}` }),
+                    },
                     body: JSON.stringify({
                         role: studyConfig?.name || 'General Interview',
                         difficulty: candidateInfo.difficulty || 'medium',
@@ -296,8 +313,20 @@ const VideoInterview: React.FC = () => {
 
     // ── Send Message ──────────────────────────────────────────────────────────────
     const handleSend = useCallback(async (textOverride?: string) => {
-        const text = textOverride || input;
+        const text = (textOverride || input).trim();
         if (!text.trim() || !studyConfig) return;
+        if (isSendingRef.current) return;
+
+        const now = Date.now();
+        if (lastSentTextRef.current === text && now - lastSentAtRef.current < 3000) return;
+
+        isSendingRef.current = true;
+        lastSentTextRef.current = text;
+        lastSentAtRef.current = now;
+        if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+        }
 
         const userMsg: InterviewMessage = { id: `msg-${Date.now()}`, role: 'user', content: text, timestamp: Date.now() };
         addMessage(userMsg);
@@ -337,7 +366,10 @@ const VideoInterview: React.FC = () => {
 
                 fetch(`/api/sessions/${sessionId}/save-response`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(participantToken && { Authorization: `Bearer ${participantToken}` }),
+                    },
                     body: JSON.stringify({
                         questionText: lastAiQuestion.replace(/[*_`#>\[\]]/g, '').slice(0, 500),
                         category: questionProgress.currentPhase === 'core-questions' ? 'technical' : 'behavioral',
@@ -355,7 +387,10 @@ const VideoInterview: React.FC = () => {
                 completeInterview();
                 // Complete session in DB
                 if (sessionId) {
-                    fetch(`/api/sessions/${sessionId}/complete`, { method: 'POST' }).catch(() => { });
+                    fetch(`/api/sessions/${sessionId}/complete`, {
+                        method: 'POST',
+                        headers: participantToken ? { Authorization: `Bearer ${participantToken}` } : undefined,
+                    }).catch(() => { });
                 }
             }
         } catch {
@@ -363,6 +398,7 @@ const VideoInterview: React.FC = () => {
             addMessage(errMsg);
         } finally {
             setAiThinking(false);
+            isSendingRef.current = false;
         }
     }, [input, studyConfig, interviewHistory, participantProfile, questionProgress, contextEntries, participantToken, sessionId, lastAiQuestion, speak]);
 
@@ -384,6 +420,7 @@ const VideoInterview: React.FC = () => {
             if (sessionId) {
                 fetch(`/api/sessions/${sessionId}/complete`, {
                     method: 'POST',
+                    headers: participantToken ? { Authorization: `Bearer ${participantToken}` } : undefined,
                     keepalive: true,
                 }).catch(e => console.warn('Background complete failed', e));
             }

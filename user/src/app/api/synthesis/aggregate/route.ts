@@ -12,7 +12,7 @@ import { AggregateSynthesisResult, SynthesisResult } from '@/types';
 
 export async function POST(request: Request) {
   try {
-    const { authorized, context, error } = await getRequestContext();
+    const { authorized, context, researcherId, error } = await getRequestContext();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
@@ -37,7 +37,8 @@ export async function POST(request: Request) {
     }
 
     // Fetch study to get config
-    const study = await getStudy(studyId);
+    const ownerId = researcherId || context.userId;
+    const study = await getStudy(studyId, ownerId);
     if (!study) {
       return NextResponse.json(
         { error: 'Study not found' },
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     // Fetch all interviews for this study
-    const interviews = await getStudyInterviews(studyId);
+    const interviews = await getStudyInterviews(studyId, ownerId);
     if (interviews.length < 2) {
       return NextResponse.json(
         { error: 'Need at least 2 interviews to generate aggregate synthesis' },

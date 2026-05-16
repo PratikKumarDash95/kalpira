@@ -1,6 +1,7 @@
 // POST /api/sessions/[id]/complete — Mark session complete and compute ScoreBreakdown
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getParticipantRequestContext } from '@/lib/researcherContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +18,23 @@ export async function POST(
 
         const session = await prisma.interviewSession.findUnique({
             where: { id: sessionId },
-            include: { responses: true },
+            include: { responses: true, study: true },
         });
 
         if (!session) {
             return NextResponse.json({ success: true, skipped: true });
+        }
+
+        if (session.studyId) {
+            const participantAuth = await getParticipantRequestContext(request);
+            if (
+                !participantAuth.valid ||
+                !participantAuth.context ||
+                participantAuth.studyId !== session.studyId ||
+                participantAuth.context.userId !== session.study?.userId
+            ) {
+                return NextResponse.json({ error: 'Valid participant link required for this session' }, { status: 401 });
+            }
         }
 
         const responses = session.responses;

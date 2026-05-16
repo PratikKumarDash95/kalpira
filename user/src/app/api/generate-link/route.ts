@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import * as jose from 'jose';
 import { StudyConfig, ParticipantToken, LinkExpirationOption } from '@/types';
 import { getRequestContext } from '@/lib/researcherContext';
+import prisma from '@/lib/prisma';
 import { isHostedMode } from '@/lib/mode';
 
 // Convert link expiration option to jose expiration string
@@ -65,6 +66,26 @@ export async function POST(request: Request) {
       );
     }
 
+    const ownerId = researcherId || context.userId;
+    if (!ownerId) {
+      return NextResponse.json(
+        { error: 'A user identity is required to generate participant links' },
+        { status: 403 }
+      );
+    }
+
+    const ownedStudy = await prisma.study.findFirst({
+      where: { id: studyConfig.id, userId: ownerId },
+      select: { id: true },
+    });
+
+    if (!ownedStudy) {
+      return NextResponse.json(
+        { error: 'Study not found or not owned by this account' },
+        { status: 403 }
+      );
+    }
+
     // Get expiration time from study config
     const expirationTime = getExpirationTime(studyConfig.linkExpiration);
 
@@ -76,7 +97,7 @@ export async function POST(request: Request) {
       // Store expiration info for display purposes
       ...(expirationTime && { expiresAt: Date.now() + (expirationTime === '7d' ? 7 : expirationTime === '30d' ? 30 : 90) * 24 * 60 * 60 * 1000 }),
       // In hosted mode, embed researcherId so participant requests can resolve the correct researcher
-      ...(isHostedMode() && researcherId && { researcherId }),
+      researcherId: ownerId,
     };
 
     // Sign the token (with or without expiration)

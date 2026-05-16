@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { getParticipantRequestContext } from '@/lib/researcherContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,21 +37,31 @@ export async function POST(request: Request) {
             candidateEmail?: string;
         };
 
+        const participantAuth = await getParticipantRequestContext(request);
+        if (studyId) {
+            if (!participantAuth.valid || !participantAuth.context || participantAuth.studyId !== studyId) {
+                return NextResponse.json({ error: 'Valid participant link required for this study' }, { status: 401 });
+            }
+            userId = participantAuth.context.userId;
+        }
+
         // Resolve effective user ID for persistence
         if (!userId) {
             if (studyId) {
-                const study = await prisma.study.findUnique({ where: { id: studyId } });
+                const study = await prisma.study.findFirst({
+                    where: {
+                        id: studyId,
+                        ...(participantAuth.context?.userId ? { userId: participantAuth.context.userId } : {}),
+                    },
+                });
                 if (study?.userId) {
                     userId = study.userId;
                 }
             }
 
-            // Fallback: Use the first admin/user found (for standalone mode)
-            if (!userId) {
+            if (!userId && !studyId) {
                 const defaultUser = await prisma.user.findFirst();
-                if (defaultUser) {
-                    userId = defaultUser.id;
-                }
+                if (defaultUser) userId = defaultUser.id;
             }
         }
 

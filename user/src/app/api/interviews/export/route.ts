@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getRequestContext } from '@/lib/researcherContext';
+import { getAuthUser } from '@/lib/accessControl';
 import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
 
 // Helper to sanitize text for CSV
@@ -70,8 +71,13 @@ function mapSessionToExportData(session: any): StoredInterview {
 export async function GET() {
   try {
     const { authorized, context, error } = await getRequestContext();
+    const authUser = await getAuthUser();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (authUser?.role === 'admin') {
+      return NextResponse.json({ error: 'Admins cannot export private interview reports' }, { status: 403 });
     }
 
     // Build query based on role (mirroring /api/interviews list logic effectively)

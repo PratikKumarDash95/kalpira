@@ -63,9 +63,14 @@ function toDomainStudy(row: {
 // Interview CRUD
 // ============================================
 
-export async function getInterview(id: string): Promise<StoredInterview | null> {
+export async function getInterview(id: string, userId?: string | null): Promise<StoredInterview | null> {
   try {
-    const row = await prisma.storedInterview.findUnique({ where: { id } });
+    const row = await prisma.storedInterview.findFirst({
+      where: {
+        id,
+        ...(userId ? { OR: [{ userId }, { study: { userId } }] } : {}),
+      },
+    });
     if (!row) return null;
     return toDomainInterview(row);
   } catch (error) {
@@ -80,6 +85,7 @@ export async function saveInterview(interview: StoredInterview): Promise<boolean
       where: { id: interview.id },
       update: {
         studyId: interview.studyId,
+        userId: (interview as any).userId || null,
         studyName: interview.studyName,
         transcriptJSON: JSON.stringify(interview.transcript),
         participantProfileJSON: JSON.stringify(interview.participantProfile),
@@ -91,6 +97,7 @@ export async function saveInterview(interview: StoredInterview): Promise<boolean
       create: {
         id: interview.id,
         studyId: interview.studyId,
+        userId: (interview as any).userId || null,
         studyName: interview.studyName,
         transcriptJSON: JSON.stringify(interview.transcript),
         participantProfileJSON: JSON.stringify(interview.participantProfile),
@@ -108,9 +115,10 @@ export async function saveInterview(interview: StoredInterview): Promise<boolean
   }
 }
 
-export async function getAllInterviews(): Promise<StoredInterview[]> {
+export async function getAllInterviews(userId?: string | null): Promise<StoredInterview[]> {
   try {
     const rows = await prisma.storedInterview.findMany({
+      where: userId ? { OR: [{ userId }, { study: { userId } }] } : {},
       orderBy: { createdAt: 'desc' },
     });
     return rows.map(toDomainInterview);
@@ -120,10 +128,13 @@ export async function getAllInterviews(): Promise<StoredInterview[]> {
   }
 }
 
-export async function getStudyInterviews(studyId: string): Promise<StoredInterview[]> {
+export async function getStudyInterviews(studyId: string, userId?: string | null): Promise<StoredInterview[]> {
   try {
     const rows = await prisma.storedInterview.findMany({
-      where: { studyId },
+      where: {
+        studyId,
+        ...(userId ? { OR: [{ userId }, { study: { userId } }] } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
     return rows.map(toDomainInterview);
@@ -133,10 +144,16 @@ export async function getStudyInterviews(studyId: string): Promise<StoredIntervi
   }
 }
 
-export async function deleteInterview(id: string, studyId: string): Promise<boolean> {
+export async function deleteInterview(id: string, studyId: string, userId?: string | null): Promise<boolean> {
   try {
-    await prisma.storedInterview.delete({ where: { id } });
-    return true;
+    const result = await prisma.storedInterview.deleteMany({
+      where: {
+        id,
+        studyId,
+        ...(userId ? { OR: [{ userId }, { study: { userId } }] } : {}),
+      },
+    });
+    return result.count > 0;
   } catch (error) {
     console.error('Error deleting interview:', error);
     return false;
@@ -162,18 +179,20 @@ export async function isKVAvailable(): Promise<boolean> {
 // Study CRUD
 // ============================================
 
-export async function saveStudy(study: StoredStudy): Promise<boolean> {
+export async function saveStudy(study: StoredStudy, userId?: string | null): Promise<boolean> {
   try {
     await prisma.study.upsert({
       where: { id: study.id },
       update: {
         configJSON: JSON.stringify(study.config),
+        ...(userId ? { userId } : {}),
         interviewCount: study.interviewCount,
         isLocked: study.isLocked,
         updatedAt: new Date(study.updatedAt),
       },
       create: {
         id: study.id,
+        ...(userId ? { userId } : {}),
         configJSON: JSON.stringify(study.config),
         interviewCount: study.interviewCount,
         isLocked: study.isLocked,
@@ -188,9 +207,14 @@ export async function saveStudy(study: StoredStudy): Promise<boolean> {
   }
 }
 
-export async function getStudy(id: string): Promise<StoredStudy | null> {
+export async function getStudy(id: string, userId?: string | null): Promise<StoredStudy | null> {
   try {
-    const row = await prisma.study.findUnique({ where: { id } });
+    const row = await prisma.study.findFirst({
+      where: {
+        id,
+        ...(userId ? { userId } : {}),
+      },
+    });
     if (!row) return null;
     return toDomainStudy(row);
   } catch (error) {
@@ -199,9 +223,10 @@ export async function getStudy(id: string): Promise<StoredStudy | null> {
   }
 }
 
-export async function getAllStudies(): Promise<StoredStudy[]> {
+export async function getAllStudies(userId?: string | null): Promise<StoredStudy[]> {
   try {
     const rows = await prisma.study.findMany({
+      where: userId ? { userId } : {},
       orderBy: { createdAt: 'desc' },
     });
     return rows.map(toDomainStudy);
@@ -211,8 +236,20 @@ export async function getAllStudies(): Promise<StoredStudy[]> {
   }
 }
 
-export async function deleteStudy(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteStudy(id: string, userId?: string | null): Promise<{ success: boolean; error?: string }> {
   try {
+    const study = await prisma.study.findFirst({
+      where: {
+        id,
+        ...(userId ? { userId } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (!study) {
+      return { success: false, error: 'Study not found' };
+    }
+
     // Check for interviews first
     const interviewCount = await prisma.storedInterview.count({
       where: { studyId: id },

@@ -128,15 +128,6 @@ export async function getParticipantRequestContext(
   const auth = await verifyParticipantToken(request);
 
   if (!auth.valid) {
-    // In standalone mode, allow unauthenticated access as fallback
-    // This is safe because standalone mode is single-user (the researcher themselves)
-    // and API keys come from environment variables, not per-user credentials
-    if (isStandaloneMode()) {
-      return {
-        valid: true,
-        context: await getStandaloneContext(),
-      };
-    }
     return { valid: false, context: null, error: auth.error };
   }
 
@@ -158,7 +149,7 @@ export async function getParticipantRequestContext(
 
     return {
       valid: true,
-      context: await getStandaloneContext(),
+      context: await getStandaloneContext(auth.researcherId),
       studyId: auth.studyId,
     };
   }
