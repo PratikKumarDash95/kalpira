@@ -6,15 +6,21 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getRequestContext } from '@/lib/researcherContext';
+import { getAuthUser } from '@/lib/accessControl';
 import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
 
 export async function GET(request: Request) {
   try {
     const { authorized, context, researcherId, error } = await getRequestContext();
+    const authUser = await getAuthUser();
 
     // Strict Auth Check - Must be authenticated
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (authUser?.role === 'admin') {
+      return NextResponse.json({ error: 'Admins cannot access private interview reports' }, { status: 403 });
     }
 
     // Check for studyId filter
@@ -30,15 +36,13 @@ export async function GET(request: Request) {
       where.studyId = studyId;
     }
 
-    if (researcherId) {
+    const ownerId = researcherId || context.userId;
+    if (ownerId) {
       // 1. INTERVIEWER VIEW: Only show sessions from studies OWNED by this researcher
       // This strictly hides "practice" sessions or other users' private data
       where.study = {
-        userId: researcherId
+        userId: ownerId
       };
-    } else if (context.userId && context.researcherId) {
-      // 2. CANDIDATE VIEW: Only show sessions belonging to this user
-      where.userId = context.userId;
     }
 
     const sessions = await prisma.interviewSession.findMany({

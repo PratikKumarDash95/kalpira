@@ -41,7 +41,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
         }
 
         const sessions = await db.interviewSession.findMany({
-            where: { studyId: params.id },
+            where: {
+                studyId: params.id,
+                study: { userId: interviewerId },
+            },
             orderBy: { startedAt: 'desc' },
             include: {
                 scoreBreakdown: true,

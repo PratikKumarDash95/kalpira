@@ -15,7 +15,7 @@ import { randomUUID } from 'crypto';
 // GET /api/studies - List all saved studies
 export async function GET() {
   try {
-    const { authorized, context, error } = await getRequestContext();
+    const { authorized, context, researcherId, error } = await getRequestContext();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
@@ -28,7 +28,7 @@ export async function GET() {
       });
     }
 
-    const studies = await getAllStudies();
+    const studies = await getAllStudies(researcherId || context.userId);
     return NextResponse.json({ studies });
   } catch (error) {
     console.error('Studies API error:', error);
@@ -93,7 +93,8 @@ export async function POST(request: Request) {
       isLocked: false
     };
 
-    const success = await saveStudy(storedStudy);
+    const ownerId = researcherId || context.userId;
+    const success = await saveStudy(storedStudy, ownerId);
     if (!success) {
       return NextResponse.json(
         { error: 'Failed to save study' },
@@ -102,9 +103,9 @@ export async function POST(request: Request) {
     }
 
     // In hosted mode, register study ownership for cross-tenant lookup
-    if (isHostedMode() && researcherId) {
+    if (ownerId) {
       try {
-        await registerStudyOwnership(studyId, researcherId);
+        await registerStudyOwnership(studyId, ownerId);
       } catch (err) {
         console.warn('Failed to register study ownership:', err);
       }

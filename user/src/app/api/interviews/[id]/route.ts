@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getRequestContext } from '@/lib/researcherContext';
+import { assertSessionOwner, getAuthUser } from '@/lib/accessControl';
 import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
 
 // Helper to Map InterviewSession to StoredInterview
@@ -77,8 +78,13 @@ export async function GET(
 ) {
   try {
     const { authorized, context, error } = await getRequestContext();
+    const authUser = await getAuthUser();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!authUser || authUser.role === 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -110,6 +116,10 @@ export async function GET(
       );
     }
 
+    if (!(await assertSessionOwner(id, authUser))) {
+      return NextResponse.json({ error: 'Interview not found' }, { status: 404 });
+    }
+
     const interview = mapSessionToStoredInterview(session);
 
     return NextResponse.json({ interview });
@@ -128,11 +138,16 @@ export async function DELETE(
 ) {
   try {
     const { authorized, context, error } = await getRequestContext();
+    const authUser = await getAuthUser();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
+
+    if (!authUser || authUser.role === 'admin' || !(await assertSessionOwner(id, authUser))) {
+      return NextResponse.json({ error: 'Interview not found' }, { status: 404 });
+    }
 
     if (!id) {
       return NextResponse.json(

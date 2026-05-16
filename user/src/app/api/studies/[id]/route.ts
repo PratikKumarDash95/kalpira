@@ -18,7 +18,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized, context, error } = await getRequestContext();
+    const { authorized, context, researcherId, error } = await getRequestContext();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
@@ -33,7 +33,8 @@ export async function GET(
       );
     }
 
-    const study = await getStudy(id);
+    const ownerId = researcherId || context.userId;
+    const study = await getStudy(id, ownerId);
     if (!study) {
       return NextResponse.json(
         { error: 'Study not found' },
@@ -57,7 +58,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized, context, error } = await getRequestContext();
+    const { authorized, context, researcherId, error } = await getRequestContext();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
@@ -72,7 +73,8 @@ export async function PUT(
       );
     }
 
-    const study = await getStudy(id);
+    const ownerId = researcherId || context.userId;
+    const study = await getStudy(id, ownerId);
     if (!study) {
       return NextResponse.json(
         { error: 'Study not found' },
@@ -130,7 +132,7 @@ export async function PUT(
       updatedAt: Date.now()
     };
 
-    const success = await saveStudy(updatedStudy);
+    const success = await saveStudy(updatedStudy, ownerId);
     if (!success) {
       return NextResponse.json(
         { error: 'Failed to update study' },
@@ -172,7 +174,8 @@ export async function DELETE(
       );
     }
 
-    const study = await getStudy(id);
+    const ownerId = researcherId || context.userId;
+    const study = await getStudy(id, ownerId);
     if (!study) {
       return NextResponse.json(
         { error: 'Study not found' },
@@ -180,7 +183,7 @@ export async function DELETE(
       );
     }
 
-    const result = await deleteStudy(id);
+    const result = await deleteStudy(id, ownerId);
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || 'Failed to delete study' },

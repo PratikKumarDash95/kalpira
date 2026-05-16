@@ -29,7 +29,7 @@ export async function GET() {
                 averageScore: true,
                 role: true,
                 user: {
-                    select: { name: true, email: true },
+                    select: { role: true },
                 },
             },
         });

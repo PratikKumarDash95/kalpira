@@ -15,7 +15,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized, context, error } = await getRequestContext();
+    const { authorized, context, researcherId, error } = await getRequestContext();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
@@ -31,7 +31,8 @@ export async function POST(
     }
 
     // Fetch parent study
-    const parentStudy = await getStudy(studyId);
+    const ownerId = researcherId || context.userId;
+    const parentStudy = await getStudy(studyId, ownerId);
     if (!parentStudy) {
       return NextResponse.json(
         { error: 'Study not found' },

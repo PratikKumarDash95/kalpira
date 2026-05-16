@@ -1,6 +1,7 @@
 // POST /api/sessions/[id]/save-response — Save a Q&A pair with scores to DB
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getParticipantRequestContext } from '@/lib/researcherContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,9 +51,24 @@ export async function POST(
         }
 
         // Verify session exists
-        const session = await prisma.interviewSession.findUnique({ where: { id: sessionId } });
+        const session = await prisma.interviewSession.findUnique({
+            where: { id: sessionId },
+            include: { study: true },
+        });
         if (!session) {
             return NextResponse.json({ success: true, skipped: true }); // Graceful skip
+        }
+
+        if (session.studyId) {
+            const participantAuth = await getParticipantRequestContext(request);
+            if (
+                !participantAuth.valid ||
+                !participantAuth.context ||
+                participantAuth.studyId !== session.studyId ||
+                participantAuth.context.userId !== session.study?.userId
+            ) {
+                return NextResponse.json({ error: 'Valid participant link required for this session' }, { status: 401 });
+            }
         }
 
         // Create question record

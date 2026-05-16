@@ -3,7 +3,7 @@
 // Server-side validation ensures data integrity
 
 import { NextResponse } from 'next/server';
-import { saveInterview, isKVAvailable, incrementStudyInterviewCount, lockStudy } from '@/lib/kv';
+import { getStudy, saveInterview, isKVAvailable, incrementStudyInterviewCount, lockStudy } from '@/lib/kv';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { StoredInterview } from '@/types';
 
@@ -34,6 +34,22 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Missing required fields: id, studyId, transcript' },
         { status: 400 }
+      );
+    }
+
+    const ownerId = context.userId || context.researcherId;
+    if (!ownerId) {
+      return NextResponse.json(
+        { error: 'Unable to resolve interview owner' },
+        { status: 403 }
+      );
+    }
+
+    const ownedStudy = await getStudy(clientData.studyId, ownerId);
+    if (!ownedStudy) {
+      return NextResponse.json(
+        { error: 'Study not found or not owned by this interviewer' },
+        { status: 403 }
       );
     }
 
@@ -69,9 +85,10 @@ export async function POST(request: Request) {
       rawContext: '',
       timestamp: now
     };
-    const interview: StoredInterview = {
+    const interview = {
       id: clientData.id,
       studyId: clientData.studyId,
+      userId: ownerId,
       studyName: clientData.studyName || 'Unknown Study',
       participantProfile: clientData.participantProfile || defaultProfile,
       transcript: clientData.transcript,
@@ -89,7 +106,7 @@ export async function POST(request: Request) {
         : now,
       completedAt: now,  // Always server-generated
       status: 'completed'  // Always set by server
-    };
+    } as StoredInterview & { userId: string };
 
     // Check if storage is available
     const kvAvailable = await isKVAvailable();

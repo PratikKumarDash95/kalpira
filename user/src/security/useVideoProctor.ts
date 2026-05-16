@@ -1,14 +1,9 @@
 'use client';
 
-// ============================================
-// useVideoProctor.ts — Video Interview Proctoring Hook
-// Real-time face detection using MediaPipe
-// Monitors camera frame, multiple faces, absence
-// ============================================
+// Video interview proctoring hook.
+// Monitors camera health, face presence, multiple faces, and critical violations.
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Camera } from '@mediapipe/camera_utils';
-import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 import { FaceDetection, Results } from '@mediapipe/face_detection';
 
 export type VideoViolationType =
@@ -18,7 +13,8 @@ export type VideoViolationType =
     | 'camera_stream_stopped'
     | 'microphone_stream_stopped'
     | 'prolonged_absence'
-    | 'camera_disabled';
+    | 'camera_disabled'
+    | 'mobile_phone_detected';
 
 export interface VideoViolationEvent {
     type: VideoViolationType;
@@ -53,7 +49,7 @@ interface UseVideoProctorOptions {
 }
 
 export function useVideoProctor(options: UseVideoProctorOptions & { mediaStream: MediaStream | null }): VideoProctorState {
-    const { sessionId, enabled, strictMode, onViolation, onTerminated, videoRef, mediaStream } = options;
+    const { sessionId, enabled, onViolation, onTerminated, videoRef, mediaStream } = options;
 
     const [state, setState] = useState<VideoProctorState>({
         isActive: false,
@@ -70,157 +66,157 @@ export function useVideoProctor(options: UseVideoProctorOptions & { mediaStream:
         isTerminated: false,
     });
 
+    const stateRef = useRef(state);
     const faceDetectionRef = useRef<FaceDetection | null>(null);
-    const absenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const absenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const objectDetectionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const objectModelRef = useRef<any>(null);
+    const objectDetectionLoadingRef = useRef(false);
     const lastViolationTimeRef = useRef<number>(0);
     const requestRef = useRef<number>();
     const isProcessingRef = useRef(false);
 
-    // ---- Violation handler ----
-    const handleViolation = useCallback(
-        async (type: VideoViolationType, details?: string) => {
-            if (!enabled || !sessionId) return;
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
 
-            const now = Date.now();
+    const terminateSession = useCallback((reason: string) => {
+        const terminatedAt = new Date().toISOString();
+        setState(prev => ({
+            ...prev,
+            isTerminated: true,
+            terminatedAt,
+            terminatedReason: reason,
+            showWarning: true,
+            warningMessage: reason,
+        }));
+        onTerminated?.(reason);
+    }, [onTerminated]);
 
-            // Prevent violation spam (min 2 seconds between same type)
-            if (now - lastViolationTimeRef.current < 2000 && type === state.violations[state.violations.length - 1]?.type) {
-                return;
-            }
-            lastViolationTimeRef.current = now;
+    const handleViolation = useCallback(async (type: VideoViolationType, details?: string) => {
+        if (!enabled || !sessionId || stateRef.current.isTerminated) return;
 
-            const violation: VideoViolationEvent = {
-                type,
-                timestamp: now,
-                details,
-            };
+        const now = Date.now();
+        const lastViolation = stateRef.current.violations[stateRef.current.violations.length - 1];
+        if (now - lastViolationTimeRef.current < 2000 && type === lastViolation?.type) return;
+        lastViolationTimeRef.current = now;
 
-            const penalties: Record<VideoViolationType, number> = {
-                face_not_visible: 15,
-                multiple_faces_detected: 20,
-                face_out_of_frame: 12,
-                camera_stream_stopped: 25,
-                microphone_stream_stopped: 10,
-                prolonged_absence: 30,
-                camera_disabled: 25,
-            };
+        const violation: VideoViolationEvent = { type, timestamp: now, details };
+        const penalties: Record<VideoViolationType, number> = {
+            face_not_visible: 15,
+            multiple_faces_detected: 20,
+            face_out_of_frame: 12,
+            camera_stream_stopped: 25,
+            microphone_stream_stopped: 10,
+            prolonged_absence: 30,
+            camera_disabled: 25,
+            mobile_phone_detected: 100,
+        };
+        const warningMessages: Record<VideoViolationType, string> = {
+            face_not_visible: 'No face detected. Please position yourself in camera view.',
+            multiple_faces_detected: 'Multiple faces detected. Interview terminated.',
+            face_out_of_frame: 'Face out of frame. Please center yourself.',
+            camera_stream_stopped: 'Camera stopped. Interview terminated.',
+            microphone_stream_stopped: 'Microphone issue detected.',
+            prolonged_absence: 'Interview terminated due to prolonged absence.',
+            camera_disabled: 'Camera disabled. Interview terminated.',
+            mobile_phone_detected: 'Mobile phone detected. Interview terminated and marked as cheating.',
+        };
+        const criticalReason =
+            type === 'mobile_phone_detected'
+                ? 'Interview terminated: mobile phone detected. Candidate marked with cheating tag.'
+                : type === 'multiple_faces_detected'
+                    ? 'Interview terminated: multiple faces detected.'
+                    : type === 'prolonged_absence'
+                        ? 'Interview terminated: prolonged absence from camera.'
+                        : type === 'camera_stream_stopped' || type === 'camera_disabled'
+                            ? 'Interview terminated: camera was disabled or stopped.'
+                            : null;
 
-            const warningMessages: Record<VideoViolationType, string> = {
-                face_not_visible: '🚫 No face detected! Please position yourself in camera view.',
-                multiple_faces_detected: '🚫 Multiple faces detected! Only one person allowed.',
-                face_out_of_frame: '⚠️ Face out of frame! Please center yourself.',
-                camera_stream_stopped: '🔴 Camera stopped! Please restart camera.',
-                microphone_stream_stopped: '⚠️ Microphone issue detected!',
-                prolonged_absence: '🔴 Interview terminated due to prolonged absence.',
-                camera_disabled: '🔴 Camera disabled! Please enable camera.',
-            };
+        setState(prev => ({
+            ...prev,
+            violationCount: prev.violationCount + 1,
+            violations: [...prev.violations, violation],
+            complianceScore: Math.max(0, prev.complianceScore - penalties[type]),
+            showWarning: true,
+            warningMessage: warningMessages[type],
+        }));
 
-            setState(prev => ({
-                ...prev,
-                violationCount: prev.violationCount + 1,
-                violations: [...prev.violations, violation],
-                showWarning: true,
-                warningMessage: warningMessages[type],
-            }));
+        if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+        warningTimerRef.current = setTimeout(() => {
+            setState(prev => prev.isTerminated ? prev : { ...prev, showWarning: false });
+        }, 4000);
 
-            // Auto-hide warning after 4 seconds
-            setTimeout(() => {
-                setState(prev => ({ ...prev, showWarning: false }));
-            }, 4000);
+        try {
+            await fetch('/api/proctor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId,
+                    type,
+                    details,
+                    severity: criticalReason ? 'critical' : 'warning',
+                    status: criticalReason ? 'TERMINATED' : 'ACTIVE',
+                    tag: criticalReason ? 'cheating' : undefined,
+                    terminatedReason: criticalReason,
+                }),
+            });
+        } catch (error) {
+            console.warn('[VideoProctor] Failed to report violation:', error);
+        }
 
-            // Report to server
-            try {
-                await fetch('/api/proctor', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId, type, details }),
-                });
-            } catch (error) {
-                console.warn('[VideoProctor] Failed to report violation:', error);
-            }
+        onViolation?.(violation);
+        if (criticalReason) terminateSession(criticalReason);
+    }, [enabled, sessionId, onViolation, terminateSession]);
 
-            onViolation?.(violation);
-        },
-        [enabled, sessionId, onViolation, state.violations]
-    );
+    const onResults = useCallback((results: Results) => {
+        if (!enabled || !videoRef.current || stateRef.current.isTerminated) return;
 
-    // ---- Face detection setup ----
-    const onResults = useCallback(
-        (results: Results) => {
-            if (!enabled || !videoRef.current) return;
-
-            const canvasElement = document.getElementById('video-canvas') as HTMLCanvasElement;
-            if (!canvasElement) return;
-
-            const canvasCtx = canvasElement.getContext('2d');
-            if (!canvasCtx) return;
-
-            canvasCtx.save();
+        const canvasElement = document.getElementById('video-canvas') as HTMLCanvasElement;
+        const canvasCtx = canvasElement?.getContext('2d');
+        if (canvasElement && canvasCtx) {
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-            // Draw detections
-            if (results.detections && results.detections.length > 0) {
-                for (const detection of results.detections) {
-                    const bbox = detection.boundingBox;
-                    if (bbox) {
-                        canvasCtx.strokeStyle = '#00FF00';
-                        canvasCtx.lineWidth = 3;
-                        canvasCtx.strokeRect(
-                            bbox.xCenter * canvasElement.width - (bbox.width * canvasElement.width) / 2,
-                            bbox.yCenter * canvasElement.height - (bbox.height * canvasElement.height) / 2,
-                            bbox.width * canvasElement.width,
-                            bbox.height * canvasElement.height
-                        );
-                    }
-                }
+            for (const detection of results.detections || []) {
+                const bbox = detection.boundingBox;
+                if (!bbox) continue;
+                canvasCtx.strokeStyle = '#00FF00';
+                canvasCtx.lineWidth = 3;
+                canvasCtx.strokeRect(
+                    bbox.xCenter * canvasElement.width - (bbox.width * canvasElement.width) / 2,
+                    bbox.yCenter * canvasElement.height - (bbox.height * canvasElement.height) / 2,
+                    bbox.width * canvasElement.width,
+                    bbox.height * canvasElement.height
+                );
             }
-            canvasCtx.restore();
+        }
 
-            // Process results
-            const faceCount = results.detections?.length || 0;
-            const isFaceInFrame = faceCount > 0;
+        const faceCount = results.detections?.length || 0;
+        const isFaceInFrame = faceCount > 0;
+        setState(prev => ({ ...prev, faceCount, isFaceInFrame }));
 
-            setState(prev => ({
-                ...prev,
-                faceCount,
-                isFaceInFrame,
-            }));
-
-            // Handle violations
-            if (!isFaceInFrame) {
-                if (!state.absenceStartTime) {
-                    const startTime = Date.now();
-                    setState(prev => ({ ...prev, absenceStartTime: startTime }));
-
-                    absenceTimerRef.current = setTimeout(() => {
-                        handleViolation('prolonged_absence', `Absent for 6+ seconds`);
-                        if (onTerminated) {
-                            onTerminated('Interview terminated due to prolonged absence from camera');
-                        }
-                    }, 6000);
-                }
-            } else {
-                if (absenceTimerRef.current) {
-                    clearTimeout(absenceTimerRef.current);
-                    absenceTimerRef.current = null;
-                    setState(prev => ({ ...prev, absenceStartTime: null }));
-                }
+        if (!isFaceInFrame) {
+            if (!stateRef.current.absenceStartTime) {
+                const startTime = Date.now();
+                setState(prev => ({ ...prev, absenceStartTime: startTime }));
+                absenceTimerRef.current = setTimeout(() => {
+                    handleViolation('prolonged_absence', 'Absent for 6+ seconds');
+                }, 6000);
             }
+        } else if (absenceTimerRef.current) {
+            clearTimeout(absenceTimerRef.current);
+            absenceTimerRef.current = null;
+            setState(prev => ({ ...prev, absenceStartTime: null }));
+        }
 
-            if (faceCount > 1) {
-                handleViolation('multiple_faces_detected', `${faceCount} faces detected`);
-                if (onTerminated) {
-                    onTerminated('Interview terminated due to multiple faces detected.');
-                }
-            }
-        },
-        [enabled, videoRef, state.absenceStartTime, handleViolation, onTerminated]
-    );
+        if (faceCount > 1) {
+            handleViolation('multiple_faces_detected', `${faceCount} faces detected`);
+        }
+    }, [enabled, videoRef, handleViolation]);
 
-    // ---- Processing Loop ----
     const processVideo = useCallback(async () => {
-        if (!enabled || !videoRef.current || !faceDetectionRef.current || isProcessingRef.current) {
-            requestRef.current = requestAnimationFrame(processVideo);
+        if (!enabled || !videoRef.current || !faceDetectionRef.current || isProcessingRef.current || stateRef.current.isTerminated) {
+            if (!stateRef.current.isTerminated) requestRef.current = requestAnimationFrame(processVideo);
             return;
         }
 
@@ -238,41 +234,93 @@ export function useVideoProctor(options: UseVideoProctorOptions & { mediaStream:
         requestRef.current = requestAnimationFrame(processVideo);
     }, [enabled, videoRef]);
 
-    // ---- Initialize MediaPipe & Stream ----
+    useEffect(() => {
+        if (!enabled || !videoRef.current || typeof window === 'undefined') return;
+
+        let cancelled = false;
+        const loadScript = (src: string) => new Promise<void>((resolve, reject) => {
+            const existing = document.querySelector(`script[src="${src}"]`);
+            if (existing) {
+                resolve();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error(`Failed to load ${src}`));
+            document.head.appendChild(script);
+        });
+
+        const startObjectDetection = async () => {
+            if (objectDetectionLoadingRef.current || objectModelRef.current) return;
+            objectDetectionLoadingRef.current = true;
+            try {
+                await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js');
+                await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js');
+                if (cancelled) return;
+                const cocoSsd = (window as any).cocoSsd;
+                if (!cocoSsd?.load) return;
+                objectModelRef.current = await cocoSsd.load();
+                if (cancelled) return;
+                objectDetectionTimerRef.current = setInterval(async () => {
+                    if (!videoRef.current || stateRef.current.isTerminated || videoRef.current.readyState < 2) return;
+                    try {
+                        const predictions = await objectModelRef.current.detect(videoRef.current);
+                        const phone = predictions.find((prediction: { class: string; score: number }) =>
+                            prediction.class === 'cell phone' && prediction.score >= 0.5
+                        );
+                        if (phone) {
+                            handleViolation('mobile_phone_detected', `Detected with ${(phone.score * 100).toFixed(0)}% confidence`);
+                        }
+                    } catch (error) {
+                        console.warn('[VideoProctor] Object detection frame error:', error);
+                    }
+                }, 1500);
+            } catch (error) {
+                console.warn('[VideoProctor] Object detection unavailable:', error);
+            } finally {
+                objectDetectionLoadingRef.current = false;
+            }
+        };
+
+        startObjectDetection();
+
+        return () => {
+            cancelled = true;
+            if (objectDetectionTimerRef.current) {
+                clearInterval(objectDetectionTimerRef.current);
+                objectDetectionTimerRef.current = null;
+            }
+        };
+    }, [enabled, videoRef, handleViolation]);
+
     useEffect(() => {
         if (!enabled || !videoRef.current || typeof window === 'undefined') return;
 
         let active = true;
-
         const initialize = async () => {
             try {
-                // Attach shared stream if provided
                 if (mediaStream && videoRef.current) {
                     videoRef.current.srcObject = mediaStream;
-                    videoRef.current.play().catch(() => {/* ignore play errors */ });
-                    setState(prev => ({ ...prev, isCameraEnabled: true, isActive: true }));
+                    videoRef.current.play().catch(() => { });
+                    setState(prev => ({
+                        ...prev,
+                        isCameraEnabled: mediaStream.getVideoTracks().some(track => track.enabled && track.readyState === 'live'),
+                        isMicrophoneEnabled: mediaStream.getAudioTracks().some(track => track.enabled && track.readyState === 'live'),
+                        isActive: true,
+                    }));
                 }
 
-                // Initialize Face Detection
                 faceDetectionRef.current = new FaceDetection({
                     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
                 });
-
-                faceDetectionRef.current.setOptions({
-                    model: 'short',
-                    minDetectionConfidence: 0.5,
-                });
-
+                faceDetectionRef.current.setOptions({ model: 'short', minDetectionConfidence: 0.5 });
                 faceDetectionRef.current.onResults(onResults);
-
-                // Start loop
                 requestRef.current = requestAnimationFrame(processVideo);
-
             } catch (error) {
                 console.error('[VideoProctor] Failed to initialize:', error);
-                if (active) {
-                    handleViolation('camera_disabled', error instanceof Error ? error.message : 'Init failed');
-                }
+                if (active) handleViolation('camera_disabled', error instanceof Error ? error.message : 'Init failed');
             }
         };
 
@@ -281,20 +329,16 @@ export function useVideoProctor(options: UseVideoProctorOptions & { mediaStream:
         return () => {
             active = false;
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
+            if (absenceTimerRef.current) clearTimeout(absenceTimerRef.current);
+            if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+            if (objectDetectionTimerRef.current) clearInterval(objectDetectionTimerRef.current);
             if (faceDetectionRef.current) {
                 try {
                     faceDetectionRef.current.close();
-                } catch { /* ignore close errors */ }
+                } catch { }
                 faceDetectionRef.current = null;
             }
-            if (absenceTimerRef.current) {
-                clearTimeout(absenceTimerRef.current);
-            }
-            // Do NOT stop tracks here if using shared mediaStream
-            // Just clear the srcObject locally to detach
-            if (videoRef.current) {
-                videoRef.current.srcObject = null;
-            }
+            if (videoRef.current) videoRef.current.srcObject = null;
         };
     }, [enabled, videoRef, mediaStream, onResults, processVideo, handleViolation]);
 
