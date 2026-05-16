@@ -1,0 +1,44 @@
+{
+  "name": "kalpira-frontend",
+  "version": "1.0.0",
+  "description": "Next.js Frontend for Interview Coach",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/face_detection": "^0.4.1646425229",
+    "axios": "^1.13.5",
+    "framer-motion": "^11.0.0",
+    "jose": "^5.9.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.460.0",
+    "next": "^14.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.0",
+    "recharts": "^3.7.0",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10",
+    "eslint": "^8",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
