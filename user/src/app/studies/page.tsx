@@ -1,5 +1,5 @@
 import StudyList from '@/components/StudyList';
 
 export default function StudiesPage() {
-  return <StudyList />;
+  return <div className="kalpira-light min-h-screen"><StudyList /></div>;
 }

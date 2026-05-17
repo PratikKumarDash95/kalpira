@@ -1,19 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html {
-  background: #080b12;
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    background: #f8f5ff;
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      linear-gradient(135deg, rgba(255, 236, 247, 0.88) 0%, rgba(244, 240, 255, 0.92) 24%, rgba(232, 245, 255, 0.94) 58%, rgba(250, 245, 255, 0.9) 100%);
+    background-size: 220% 220%;
+    animation: kalpira-gradient-shift 24s ease-in-out infinite alternate;
+    color: #0f172a;
+  }
 }
 
-body {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.12), transparent 28rem),
-    linear-gradient(135deg, #080b12 0%, #101725 48%, #0c111d 100%);
-  color: #f8fafc;
+@layer components {
+  .kalpira-light {
+    background:
+      linear-gradient(135deg, rgba(255, 236, 247, 0.82) 0%, rgba(244, 240, 255, 0.9) 30%, rgba(232, 245, 255, 0.94) 68%, rgba(252, 248, 255, 0.9) 100%) !important;
+    background-size: 220% 220% !important;
+    animation: kalpira-gradient-shift 26s ease-in-out infinite alternate;
+    color: #0f172a;
+  }
+
+  .kalpira-light .bg-slate-950,
+  .kalpira-light .bg-slate-900,
+  .kalpira-light .bg-slate-900\/95,
+  .kalpira-light .bg-slate-900\/80,
+  .kalpira-light .bg-slate-900\/60,
+  .kalpira-light .bg-slate-900\/40,
+  .kalpira-light .bg-slate-800,
+  .kalpira-light .bg-slate-800\/80,
+  .kalpira-light .bg-slate-800\/60,
+  .kalpira-light .bg-slate-800\/50,
+  .kalpira-light .bg-slate-800\/40,
+  .kalpira-light .bg-slate-800\/30 {
+    background: rgba(255, 250, 255, 0.78) !important;
+    backdrop-filter: blur(18px);
+  }
+
+  .kalpira-light .border-slate-800,
+  .kalpira-light .border-slate-700,
+  .kalpira-light .border-slate-600 {
+    border-color: rgba(223, 211, 244, 0.9) !important;
+  }
+
+  .kalpira-light .text-white,
+  .kalpira-light .text-slate-100,
+  .kalpira-light .text-slate-200,
+  .kalpira-light .text-slate-300 {
+    color: #0f172a !important;
+  }
+
+  .kalpira-light .text-slate-400,
+  .kalpira-light .text-slate-500,
+  .kalpira-light .text-slate-600 {
+    color: #64748b !important;
+  }
+
+  .kalpira-light .placeholder-slate-500::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  .kalpira-light .text-violet-200,
+  .kalpira-light .text-violet-300,
+  .kalpira-light .text-violet-400 {
+    color: #7460df !important;
+  }
+
+  .kalpira-light .bg-violet-600,
+  .kalpira-light .bg-indigo-600,
+  .kalpira-light .bg-red-500,
+  .kalpira-light .bg-emerald-500 {
+    color: #ffffff !important;
+  }
+
+  .kalpira-light .shadow-violet-900\/30,
+  .kalpira-light .shadow-violet-900\/40 {
+    --tw-shadow-color: rgba(143, 124, 255, 0.22) !important;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -22,14 +96,24 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #080b12;
+  background: #f8f5ff;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #c6b9e8;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #ad9bdb;
+}
+
+@keyframes kalpira-gradient-shift {
+  0% {
+    background-position: 0% 20%;
+  }
+
+  100% {
+    background-position: 100% 80%;
+  }
 }

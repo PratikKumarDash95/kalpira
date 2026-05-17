@@ -125,3 +125,26 @@
 [0]  ✓ Compiled in 6.6s (1410 modules)
 [0] [?25h
 [0] npm run dev:user exited with code 0
+[2]  ✓ Compiled in 2.9s (608 modules)
+[2]  ✓ Compiled in 661ms (608 modules)
+[2]  ✓ Compiled in 526ms (608 modules)
+[2]  ✓ Compiled in 3.2s (608 modules)
+[2]  ✓ Compiled in 623ms (608 modules)
+[2]  ✓ Compiled in 709ms (608 modules)
+[2]  ✓ Compiled in 643ms (608 modules)
+[2]  ✓ Compiled in 700ms (608 modules)
+[2]  ✓ Compiled in 596ms (608 modules)
+[2]  ✓ Compiled in 702ms (608 modules)
+[2]  ✓ Compiled in 596ms (608 modules)
+[2]  ✓ Compiled in 603ms (608 modules)
+[2]  ✓ Compiled in 7.2s (608 modules)
+[2]  ✓ Compiled in 1285ms (608 modules)
+[2]  ✓ Compiled in 4s (608 modules)
+[2]  ✓ Compiled in 1305ms (608 modules)
+[3] [2026-05-17T20:48:53.572Z] GET /
+[3] [2026-05-17T20:48:53.986Z] GET /favicon.ico
+[3] [2026-05-17T20:49:35.890Z] GET /
+[2]  ⨯ ./src/app/globals.css
+[2] Module not found: Can't resolve 'C:\Users\prati\Desktop\kalpira\interviewer\src\app\globals.css'
+[2] 
+[2] https://nextjs.org/docs/messages/module-not-found
