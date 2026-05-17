@@ -45,27 +45,8 @@ export async function POST(request: Request) {
             userId = participantAuth.context.userId;
         }
 
-        // Resolve effective user ID for persistence
-        if (!userId) {
-            if (studyId) {
-                const study = await supabaseDb.study.findFirst({
-                    where: {
-                        id: studyId,
-                        ...(participantAuth.context?.userId ? { userId: participantAuth.context.userId } : {}),
-                    },
-                });
-                if (study?.userId) {
-                    userId = study.userId;
-                }
-            }
-
-            if (!userId && !studyId) {
-                const defaultUser = await supabaseDb.user.findFirst();
-                if (defaultUser) userId = defaultUser.id;
-            }
-        }
-
-        // Only default to transient guest session if absolutely no user context exists
+        // Only persist sessions with a real authenticated user or a valid participant link.
+        // Unassigned practice sessions stay transient so they do not appear as assigned interviews.
         if (!userId) {
             return NextResponse.json({ sessionId: `guest-${Date.now()}`, guest: true });
         }

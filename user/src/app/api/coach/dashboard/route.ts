@@ -6,19 +6,13 @@
 
 import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
-
-// In production, you'd extract userId from the auth session.
-// For now, we attempt to get the first user or return demo data.
+import { getAuthUser } from '@/lib/accessControl';
 
 export async function GET() {
     try {
-        // Attempt to get the first user (standalone mode)
-        const user = await supabaseDb.user.findFirst({
-            select: { id: true },
-        });
-
-        if (!user) {
-            return NextResponse.json(getDemoData());
+        const user = await getAuthUser();
+        if (!user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const userId = user.id;
@@ -99,9 +93,7 @@ export async function GET() {
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         console.error('[CoachDashboardAPI] Failed:', message);
-
-        // Return demo data as graceful fallback
-        return NextResponse.json(getDemoData());
+        return NextResponse.json({ error: 'Failed to fetch coach dashboard' }, { status: 500 });
     }
 }
 
@@ -113,16 +105,4 @@ function getDefaultBadgeDescription(name: string): string {
         case 'Consistent Performer': return 'Completed 10 or more interview sessions';
         default: return 'Achievement unlocked';
     }
-}
-
-function getDemoData() {
-    return {
-        readinessScore: 0,
-        weakSkills: [],
-        roadmap: null,
-        badges: [],
-        progressData: [],
-        difficulty: 'easy',
-        totalSessions: 0,
-    };
 }

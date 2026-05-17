@@ -1,13 +1,21 @@
 // POST /api/interviewer/register — Register a new interviewer account
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import supabaseDb from '@/lib/supabaseDb';
+import supabaseDb, { hasServiceRoleKey } from '@/lib/supabaseDb';
 import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME, hashPassword } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
     try {
+        if (!hasServiceRoleKey) {
+            console.error('Interviewer registration error: SUPABASE_SERVICE_ROLE_KEY is required for server-side user creation.');
+            return NextResponse.json(
+                { error: 'Registration is not configured. Add SUPABASE_SERVICE_ROLE_KEY to user/.env.local.' },
+                { status: 500 }
+            );
+        }
+
         const body = await request.json();
         const { email, password, name } = body;
 
@@ -25,9 +33,10 @@ export async function POST(request: Request) {
         }
 
         const passwordHash = await hashPassword(password);
+        const now = new Date();
 
         const user = await supabaseDb.user.create({
-            data: { email, password: passwordHash, name, role: 'interviewer' },
+            data: { email, password: passwordHash, name, role: 'interviewer', createdAt: now, updatedAt: now },
         });
 
         const sessionToken = await createSessionToken(user.id);

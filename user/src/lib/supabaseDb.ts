@@ -5,6 +5,7 @@ const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SERVICE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('[supabaseDb] Supabase URL/key is not configured.');
@@ -291,3 +292,4 @@ const db: SupabaseDb = {
 };
 
 export default db;
+export { hasServiceRoleKey };

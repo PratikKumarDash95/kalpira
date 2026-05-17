@@ -2,7 +2,7 @@
 // llmClient.ts — Abstracted LLM Caller
 // Part of the Unified Scoring Engine
 // Clean interface for calling any LLM provider
-// Currently mock — replaceable with real provider integration
+// Uses real provider integrations only.
 // ============================================
 
 /**
@@ -11,7 +11,7 @@
  */
 export interface LLMClientConfig {
     /** The AI provider to use */
-    provider: 'gemini' | 'anthropic' | 'mock';
+    provider: 'gemini' | 'anthropic';
     /** API key for the provider */
     apiKey?: string;
     /** Model identifier override */
@@ -45,36 +45,10 @@ export interface LLMCallResult {
 // ============================================
 
 const DEFAULT_CONFIG: LLMClientConfig = {
-    provider: 'mock',
+    provider: 'gemini',
     maxTokens: 2048,
     temperature: 0.2,
 };
-
-// ============================================
-// Mock LLM response generator
-// Returns valid evaluation JSON for development/testing
-// ============================================
-
-function generateMockResponse(): string {
-    const baseScore = 55 + Math.floor(Math.random() * 30);
-    const variance = () => Math.max(0, Math.min(100, baseScore + Math.floor(Math.random() * 20) - 10));
-
-    const mockEvaluation = {
-        technical_score: variance(),
-        communication_score: variance(),
-        confidence_score: variance(),
-        logic_score: variance(),
-        depth_score: variance(),
-        difficulty_recommendation: 'maintain' as const,
-        weak_topics: ['Error handling', 'Edge cases'],
-        strengths: ['Core concept understanding', 'Clear structure'],
-        feedback: 'The candidate demonstrated a solid understanding of the core concepts. However, the answer lacked depth in edge case handling and could benefit from more concrete examples. The communication was clear but could be more structured.',
-        ideal_answer: 'A comprehensive answer would cover the core concept, discuss 2-3 edge cases, provide trade-off analysis between alternative approaches, and reference real-world applications with performance considerations.',
-        improvement_tip: 'Practice discussing edge cases and failure scenarios for every technical concept you explain. Use the format: concept, example, edge case, trade-off.',
-    };
-
-    return JSON.stringify(mockEvaluation);
-}
 
 // ============================================
 // Main LLM caller
@@ -104,9 +78,12 @@ export async function callLLM(
             case 'anthropic':
                 return await callAnthropic(prompt, finalConfig);
 
-            case 'mock':
             default:
-                return callMock();
+                return {
+                    success: false,
+                    content: '',
+                    error: `Unsupported LLM provider: ${finalConfig.provider}`,
+                };
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown LLM error';
@@ -122,21 +99,6 @@ export async function callLLM(
 // ============================================
 // Provider implementations
 // ============================================
-
-/**
- * Mock provider — returns valid JSON for development.
- */
-function callMock(): LLMCallResult {
-    return {
-        success: true,
-        content: generateMockResponse(),
-        usage: {
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-        },
-    };
-}
 
 /**
  * Gemini provider — uses @google/genai SDK.

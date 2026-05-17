@@ -273,7 +273,7 @@ const VideoInterview: React.FC = () => {
                         role: studyConfig?.name || 'General Interview',
                         difficulty: candidateInfo.difficulty || 'medium',
                         mode: 'video',
-                        ...(candidateInfo.studyId && { studyId: candidateInfo.studyId }),
+                        ...((candidateInfo.studyId || studyConfig?.id) && { studyId: candidateInfo.studyId || studyConfig?.id }),
                         ...(candidateInfo.name && { candidateName: candidateInfo.name }),
                         ...(candidateInfo.email && { candidateEmail: candidateInfo.email }),
                     }),
