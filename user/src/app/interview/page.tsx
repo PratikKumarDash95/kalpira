@@ -19,7 +19,7 @@ export default function InterviewPage() {
 
   if (!hydrated) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center">
+      <div className="kalpira-light min-h-screen flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-stone-400" />
       </div>
     );
@@ -28,7 +28,7 @@ export default function InterviewPage() {
   // No study configured — redirect to setup
   if (!studyConfig) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center p-8">
+      <div className="kalpira-light min-h-screen flex items-center justify-center p-8">
         <div className="max-w-md text-center space-y-6">
           <div className="w-16 h-16 rounded-full bg-amber-900/30 border border-amber-700/50 flex items-center justify-center mx-auto">
             <AlertTriangle size={28} className="text-amber-400" />

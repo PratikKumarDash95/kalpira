@@ -35,19 +35,19 @@ export default function Home() {
       <div className="app-container min-h-screen py-5 sm:py-6 flex flex-col">
         <header className="surface rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
           <button onClick={() => router.push('/')} className="flex items-center gap-3 text-left">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/15 border border-teal-400/30">
-              <Sparkles className="h-5 w-5 text-teal-300" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-400/30">
+              <Sparkles className="h-5 w-5 text-indigo-500" />
             </span>
             <span>
-              <span className="block text-sm font-bold text-white">Kalpira</span>
-              <span className="block text-xs text-slate-400">AI interview operating system</span>
+              <span className="block text-sm font-bold text-slate-950">Kalpira</span>
+              <span className="block text-xs text-slate-500">AI interview operating system</span>
             </span>
           </button>
 
           <nav className="hidden md:flex items-center gap-2 text-sm">
-            <button onClick={() => router.push('/studies')} className="px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">Studies</button>
-            <button onClick={() => router.push('/interviewer/login')} className="px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">Interviewer</button>
-            <button onClick={() => { window.location.href = adminUrl; }} className="px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">Admin</button>
+            <button onClick={() => router.push('/studies')} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Studies</button>
+            <button onClick={() => router.push('/interviewer/login')} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Interviewer</button>
+            <button onClick={() => { window.location.href = adminUrl; }} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Admin</button>
           </nav>
 
           <button onClick={() => router.push('/login')} className="btn-primary px-4 py-2 text-sm font-semibold inline-flex items-center gap-2">
@@ -57,33 +57,33 @@ export default function Home() {
 
         <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-8 items-center py-8 sm:py-12 flex-1">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/25 bg-teal-400/10 px-3 py-1 text-xs font-medium text-teal-200 mb-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-300 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 mb-5">
               <ShieldCheck size={14} /> Built for research, practice, and hiring teams
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-slate-950">
               One consistent workspace for better interviews.
             </h1>
-            <p className="mt-5 text-base sm:text-lg leading-8 text-slate-300 max-w-xl">
+            <p className="mt-5 text-base sm:text-lg leading-8 text-slate-600 max-w-xl">
               Kalpira brings study setup, adaptive conversations, interviewer workflows, and readiness analytics into a single polished frontend.
             </p>
             <div className="mt-7 flex flex-col sm:flex-row gap-3">
               <button onClick={() => router.push('/login')} className="btn-primary px-5 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2">
                 Start interviewing <ArrowRight size={17} />
               </button>
-              <button onClick={() => router.push('/studies')} className="px-5 py-3 rounded-xl border border-slate-700 bg-slate-900/70 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors">
+              <button onClick={() => router.push('/studies')} className="px-5 py-3 rounded-xl border border-white/80 bg-white/70 text-sm font-semibold text-slate-700 hover:bg-white transition-colors">
                 View studies
               </button>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="surface rounded-2xl p-4 sm:p-5">
-            <div className="rounded-xl border border-slate-700/80 bg-slate-950/60 p-4">
-              <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+            <div className="rounded-xl border border-white/80 bg-white/60 p-4">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
                 <div>
                   <p className="text-xs uppercase text-slate-500">Live session</p>
-                  <h2 className="mt-1 text-lg font-semibold text-white">Product Designer Interview</h2>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-950">Product Designer Interview</h2>
                 </div>
-                <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300 border border-emerald-400/20">Active</span>
+                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 border border-emerald-400/20">Active</span>
               </div>
               <div className="grid grid-cols-3 gap-3 py-4">
                 {[
@@ -91,19 +91,19 @@ export default function Home() {
                   ['12', 'Signals'],
                   ['34m', 'Duration'],
                 ].map(([value, label]) => (
-                  <div key={label} className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-                    <p className="text-2xl font-bold text-white">{value}</p>
+                  <div key={label} className="rounded-xl border border-white/80 bg-white/75 p-3">
+                    <p className="text-2xl font-bold text-slate-950">{value}</p>
                     <p className="mt-1 text-xs text-slate-500">{label}</p>
                   </div>
                 ))}
               </div>
               <div className="space-y-2">
                 {stats.map(([title, text]) => (
-                  <div key={title} className="flex items-start gap-3 rounded-xl bg-slate-900/60 p-3">
-                    <CheckCircle2 size={17} className="mt-0.5 text-teal-300 flex-shrink-0" />
+                  <div key={title} className="flex items-start gap-3 rounded-xl bg-white/65 p-3">
+                    <CheckCircle2 size={17} className="mt-0.5 text-indigo-500 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-semibold text-slate-100">{title}</p>
-                      <p className="text-xs text-slate-400">{text}</p>
+                      <p className="text-sm font-semibold text-slate-950">{title}</p>
+                      <p className="text-xs text-slate-500">{text}</p>
                     </div>
                   </div>
                 ))}
@@ -123,9 +123,9 @@ export default function Home() {
                 transition={{ delay: index * 0.04 }}
                 className="surface rounded-2xl p-5"
               >
-                <feature.icon className="h-5 w-5 text-teal-300 mb-4" />
-                <h3 className="text-sm font-semibold text-white">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">{feature.text}</p>
+                <feature.icon className="h-5 w-5 text-indigo-500 mb-4" />
+                <h3 className="text-sm font-semibold text-slate-950">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{feature.text}</p>
               </motion.div>
             ))}
           </div>
