@@ -154,14 +154,38 @@ const Settings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-stone-400" />
+      <div className="kalpira-light min-h-screen p-8">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="skeleton h-10 w-10 rounded-lg" />
+            <div className="space-y-2">
+              <div className="skeleton h-7 w-32" />
+              <div className="skeleton h-4 w-56" />
+            </div>
+          </div>
+          <div className="skeleton-card mb-6 rounded-xl border border-stone-700 p-6">
+            <div className="skeleton mb-5 h-6 w-36" />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="skeleton h-12" />
+              <div className="skeleton h-12" />
+              <div className="skeleton h-12" />
+            </div>
+          </div>
+          <div className="skeleton-card rounded-xl border border-stone-700 p-6">
+            <div className="skeleton mb-5 h-6 w-44" />
+            <div className="space-y-4">
+              <div className="skeleton h-12" />
+              <div className="skeleton h-12" />
+              <div className="skeleton h-12" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-stone-900 p-8">
+    <div className="kalpira-light min-h-screen p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -138,6 +138,7 @@ export async function GET(request: Request) {
         email,
         name: githubUser.name || githubUser.login,
         avatarUrl: githubUser.avatar_url || null,
+        coverUrl: null,
         oauthProvider: 'github',
         oauthId: String(githubUser.id),
         createdAt: now,

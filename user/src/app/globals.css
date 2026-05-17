@@ -7,10 +7,10 @@
 @layer base {
   :root {
     color-scheme: light;
-    --app-bg: #f8f5ff;
-    --app-panel: rgba(255, 255, 255, 0.72);
-    --app-panel-soft: rgba(255, 255, 255, 0.5);
-    --app-line: rgba(223, 211, 244, 0.9);
+    --app-bg: #f1e8ff;
+    --app-panel: rgba(255, 255, 255, 0.78);
+    --app-panel-soft: rgba(255, 255, 255, 0.58);
+    --app-line: rgba(205, 188, 239, 0.98);
     --app-text: #0f172a;
     --app-muted: #64748b;
     --app-accent: #8f7cff;
@@ -25,7 +25,9 @@
   body {
     min-height: 100vh;
     background:
-      linear-gradient(135deg, rgba(255, 236, 247, 0.88) 0%, rgba(244, 240, 255, 0.92) 24%, rgba(232, 245, 255, 0.94) 58%, rgba(250, 245, 255, 0.9) 100%);
+      radial-gradient(circle at 12% 8%, rgba(232, 105, 177, 0.17), transparent 28%),
+      radial-gradient(circle at 88% 14%, rgba(79, 184, 255, 0.19), transparent 30%),
+      linear-gradient(135deg, rgba(255, 226, 241, 0.94) 0%, rgba(239, 234, 255, 0.97) 24%, rgba(215, 239, 255, 0.97) 58%, rgba(245, 231, 255, 0.95) 100%);
     background-size: 220% 220%;
     animation: kalpira-gradient-shift 22s ease-in-out infinite alternate;
     color: var(--app-text);
@@ -40,7 +42,9 @@
   .app-shell {
     min-height: 100vh;
     background:
-      linear-gradient(135deg, rgba(255, 236, 247, 0.78) 0%, rgba(245, 240, 255, 0.86) 30%, rgba(231, 245, 255, 0.9) 66%, rgba(252, 248, 255, 0.88) 100%);
+      radial-gradient(circle at 8% 8%, rgba(232, 105, 177, 0.14), transparent 30%),
+      radial-gradient(circle at 92% 12%, rgba(71, 179, 255, 0.18), transparent 32%),
+      linear-gradient(135deg, rgba(255, 228, 242, 0.92) 0%, rgba(237, 234, 255, 0.96) 30%, rgba(214, 239, 255, 0.96) 66%, rgba(244, 231, 255, 0.94) 100%);
     background-size: 220% 220%;
     animation: kalpira-gradient-shift 26s ease-in-out infinite alternate;
     color: #0f172a;
@@ -52,16 +56,19 @@
   }
 
   .surface {
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.66);
-    box-shadow: 0 24px 64px rgba(168, 163, 201, 0.18);
+    border: 1px solid rgba(196, 184, 236, 0.82);
+    background:
+      linear-gradient(135deg, rgba(255, 246, 251, 0.84), rgba(243, 238, 255, 0.76) 48%, rgba(230, 245, 255, 0.76));
+    box-shadow:
+      0 24px 64px rgba(135, 112, 205, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(18px);
   }
 
   .glass-panel {
-    border: 1px solid rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     background:
-      linear-gradient(135deg, rgba(255, 248, 252, 0.8), rgba(248, 244, 255, 0.68), rgba(238, 248, 255, 0.72));
+      linear-gradient(135deg, rgba(255, 247, 251, 0.86), rgba(242, 237, 255, 0.76), rgba(228, 245, 255, 0.78));
     box-shadow:
       0 26px 70px rgba(170, 160, 205, 0.2),
       inset 0 1px 0 rgba(255, 255, 255, 0.88);
@@ -69,8 +76,8 @@
   }
 
   .btn-soft {
-    border: 1px solid rgba(255, 255, 255, 0.84);
-    background: rgba(255, 250, 255, 0.84);
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    background: rgba(255, 252, 255, 0.8);
     box-shadow: 0 10px 24px rgba(170, 160, 205, 0.12);
   }
 
@@ -85,6 +92,23 @@
   .btn-primary:hover {
     filter: brightness(1.08);
     transform: translateY(-1px);
+  }
+
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.875rem;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.5), rgba(241, 234, 255, 0.72), rgba(228, 245, 255, 0.64));
+    background-size: 220% 100%;
+    animation: kalpira-skeleton 1.45s ease-in-out infinite;
+  }
+
+  .skeleton-card {
+    border: 1px solid rgba(196, 184, 236, 0.76);
+    background:
+      linear-gradient(135deg, rgba(255, 246, 251, 0.7), rgba(242, 236, 255, 0.64), rgba(228, 245, 255, 0.62));
+    box-shadow: 0 20px 56px rgba(135, 112, 205, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
   }
 }
 
@@ -223,7 +247,9 @@ select:focus {
 /* Light workspace compatibility for shared portal components that still use dark Tailwind classes. */
 .kalpira-light {
   background:
-    linear-gradient(135deg, rgba(255, 236, 247, 0.82) 0%, rgba(244, 240, 255, 0.9) 30%, rgba(232, 245, 255, 0.94) 68%, rgba(252, 248, 255, 0.9) 100%) !important;
+    radial-gradient(circle at 10% 8%, rgba(232, 105, 177, 0.15), transparent 30%),
+    radial-gradient(circle at 92% 12%, rgba(72, 181, 255, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(255, 228, 242, 0.93) 0%, rgba(239, 235, 255, 0.97) 30%, rgba(219, 241, 255, 0.97) 68%, rgba(245, 232, 255, 0.95) 100%) !important;
   background-size: 220% 220% !important;
   animation: kalpira-gradient-shift 26s ease-in-out infinite alternate;
   color: #0f172a;
@@ -253,7 +279,11 @@ select:focus {
 .kalpira-light .bg-stone-800\/50,
 .kalpira-light .bg-stone-800\/40,
 .kalpira-light .bg-stone-800\/30 {
-  background: rgba(255, 250, 255, 0.78) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 245, 251, 0.84), rgba(243, 238, 255, 0.74) 52%, rgba(228, 245, 255, 0.68)) !important;
+  box-shadow:
+    0 18px 50px rgba(121, 101, 190, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
   backdrop-filter: blur(18px);
 }
 
@@ -263,7 +293,33 @@ select:focus {
 .kalpira-light .border-stone-800,
 .kalpira-light .border-stone-700,
 .kalpira-light .border-stone-600 {
-  border-color: rgba(219, 226, 242, 0.9) !important;
+  border-color: rgba(204, 192, 235, 0.96) !important;
+}
+
+.kalpira-light .border-white\/80,
+.kalpira-light .border-white\/70,
+.kalpira-light .border-white {
+  border-color: rgba(193, 178, 236, 0.76) !important;
+}
+
+.kalpira-light .bg-white,
+.kalpira-light .bg-white\/80,
+.kalpira-light .bg-white\/75,
+.kalpira-light .bg-white\/70,
+.kalpira-light .bg-white\/65,
+.kalpira-light .bg-white\/60 {
+  background:
+    linear-gradient(135deg, rgba(255, 250, 253, 0.86), rgba(245, 241, 255, 0.8) 58%, rgba(234, 247, 255, 0.74)) !important;
+  border-color: rgba(200, 186, 238, 0.72) !important;
+}
+
+.kalpira-light input,
+.kalpira-light select,
+.kalpira-light textarea {
+  background:
+    linear-gradient(135deg, rgba(255, 251, 254, 0.9), rgba(246, 242, 255, 0.85)) !important;
+  border-color: rgba(193, 181, 230, 0.82) !important;
+  color: #0f172a !important;
 }
 
 .kalpira-light .text-white,
@@ -293,8 +349,9 @@ select:focus {
 .kalpira-light .hover\:bg-stone-500:hover,
 .kalpira-light .hover\:bg-stone-600:hover,
 .kalpira-light .hover\:bg-stone-700:hover {
-  background: rgba(255, 248, 252, 0.86) !important;
-  border-color: rgba(223, 211, 244, 0.95) !important;
+  background:
+    linear-gradient(135deg, rgba(243, 236, 255, 0.9), rgba(231, 244, 255, 0.84)) !important;
+  border-color: rgba(203, 187, 235, 0.9) !important;
   color: #0f172a !important;
 }
 
@@ -359,6 +416,16 @@ select:focus {
 
   100% {
     background-position: 100% 80%;
+  }
+}
+
+@keyframes kalpira-skeleton {
+  0% {
+    background-position: 120% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
   }
 }
 

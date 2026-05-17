@@ -60,6 +60,7 @@ export async function saveResearcher(researcher: ResearcherAccount): Promise<boo
         email: researcher.email,
         name: researcher.name,
         avatarUrl: researcher.avatarUrl,
+        coverUrl: researcher.coverUrl,
         oauthProvider: researcher.oauthProvider,
         oauthId: researcher.oauthId,
         encryptedGeminiApiKey: researcher.encryptedGeminiApiKey,
@@ -71,6 +72,7 @@ export async function saveResearcher(researcher: ResearcherAccount): Promise<boo
         email: researcher.email,
         name: researcher.name,
         avatarUrl: researcher.avatarUrl,
+        coverUrl: researcher.coverUrl,
         oauthProvider: researcher.oauthProvider,
         oauthId: researcher.oauthId,
         encryptedGeminiApiKey: researcher.encryptedGeminiApiKey,
@@ -109,6 +111,9 @@ export async function updateResearcher(
     }
     if (updates.avatarUrl !== undefined) {
       supabaseDbUpdates.avatarUrl = updates.avatarUrl;
+    }
+    if (updates.coverUrl !== undefined) {
+      supabaseDbUpdates.coverUrl = updates.coverUrl;
     }
 
     await supabaseDb.user.update({ where: { id }, data: supabaseDbUpdates });
@@ -175,6 +180,7 @@ function userToResearcherAccount(user: {
   email: string | null;
   name: string | null;
   avatarUrl: string | null;
+  coverUrl: string | null;
   oauthProvider: string | null;
   oauthId: string | null;
   encryptedGeminiApiKey: string | null;
@@ -188,6 +194,7 @@ function userToResearcherAccount(user: {
     email: user.email || '',
     name: user.name || '',
     avatarUrl: user.avatarUrl,
+    coverUrl: user.coverUrl,
     oauthProvider: (user.oauthProvider as 'google' | 'github') || 'google',
     oauthId: user.oauthId || '',
     createdAt: user.createdAt.getTime(),
@@ -208,6 +215,7 @@ export function toResearcherProfile(account: ResearcherAccount): ResearcherProfi
     email: account.email,
     name: account.name,
     avatarUrl: account.avatarUrl,
+    coverUrl: account.coverUrl,
     onboardingComplete: account.onboardingComplete,
     hasRedisConfigured: true,  // Kept for compatibility; storage is Supabase Postgres.
     hasGeminiKey: !!account.encryptedGeminiApiKey,

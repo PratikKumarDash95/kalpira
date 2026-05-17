@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -11,11 +12,28 @@ import {
   Layers3,
   ShieldCheck,
   Sparkles,
+  UserCircle,
 } from 'lucide-react';
+
+interface HeaderProfile {
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+}
 
 export default function Home() {
   const router = useRouter();
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
+  const [profile, setProfile] = useState<HeaderProfile | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.profile) setProfile(data.profile);
+      })
+      .catch(() => {});
+  }, []);
 
   const stats = [
     ['Adaptive flow', 'Follow-ups react to candidate depth'],
@@ -50,9 +68,24 @@ export default function Home() {
             <button onClick={() => { window.location.href = adminUrl; }} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Admin</button>
           </nav>
 
-          <button onClick={() => router.push('/login')} className="btn-primary px-4 py-2 text-sm font-semibold inline-flex items-center gap-2">
-            Sign in <ArrowRight size={16} />
-          </button>
+          {profile ? (
+            <button
+              onClick={() => router.push('/profile')}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-white transition-colors"
+            >
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.avatarUrl} alt={profile.name || 'Profile'} className="h-7 w-7 rounded-full object-cover" />
+              ) : (
+                <UserCircle size={22} className="text-indigo-500" />
+              )}
+              <span className="hidden sm:inline max-w-[120px] truncate">{profile.name || profile.email}</span>
+            </button>
+          ) : (
+            <button onClick={() => router.push('/login')} className="btn-primary px-4 py-2 text-sm font-semibold inline-flex items-center gap-2">
+              Sign in <ArrowRight size={16} />
+            </button>
+          )}
         </header>
 
         <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-8 items-center py-8 sm:py-12 flex-1">
@@ -67,7 +100,7 @@ export default function Home() {
               Kalpira brings study setup, adaptive conversations, interviewer workflows, and readiness analytics into a single polished frontend.
             </p>
             <div className="mt-7 flex flex-col sm:flex-row gap-3">
-              <button onClick={() => router.push('/login')} className="btn-primary px-5 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2">
+              <button onClick={() => router.push(profile ? '/studies' : '/login')} className="btn-primary px-5 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2">
                 Start interviewing <ArrowRight size={17} />
               </button>
               <button onClick={() => router.push('/studies')} className="px-5 py-3 rounded-xl border border-white/80 bg-white/70 text-sm font-semibold text-slate-700 hover:bg-white transition-colors">

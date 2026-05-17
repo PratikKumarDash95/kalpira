@@ -7,7 +7,6 @@ import { StoredInterview } from '@/types';
 import { getInterview } from '@/services/storageService';
 import ReactMarkdown from 'react-markdown';
 import {
-  Loader2,
   ArrowLeft,
   Download,
   Clock,
@@ -112,8 +111,26 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center">
-        <Loader2 size={48} className="animate-spin text-stone-400" />
+      <div className="kalpira-light min-h-screen p-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="skeleton mb-5 h-10 w-40 rounded-xl" />
+          <div className="skeleton-card mb-6 rounded-2xl border border-stone-700 p-6">
+            <div className="skeleton mb-3 h-8 w-2/3" />
+            <div className="skeleton mb-5 h-4 w-1/2" />
+            <div className="flex gap-3">
+              <div className="skeleton h-9 w-28 rounded-xl" />
+              <div className="skeleton h-9 w-28 rounded-xl" />
+            </div>
+          </div>
+          <div className="skeleton-card rounded-2xl border border-stone-700 p-6">
+            <div className="space-y-4">
+              <div className="skeleton h-16 w-4/5 rounded-xl" />
+              <div className="skeleton ml-auto h-16 w-3/4 rounded-xl" />
+              <div className="skeleton h-20 w-full rounded-xl" />
+              <div className="skeleton ml-auto h-14 w-2/3 rounded-xl" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -136,7 +153,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
   }
 
   return (
-    <div className="min-h-screen bg-stone-900 p-8">
+    <div className="kalpira-light min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div

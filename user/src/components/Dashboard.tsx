@@ -13,13 +13,10 @@ import {
   Clock,
   MessageSquare,
   Lightbulb,
-  ArrowLeft,
   FolderOpen,
-  LogOut,
+  UserCircle,
   Filter,
   BookOpen,
-  Brain,
-  Activity,
   Menu,
   X,
   Shield,
@@ -102,15 +99,6 @@ const Dashboard: React.FC = () => {
     router.push(`/dashboard/interview/${id}`);
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth', { method: 'DELETE' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
   const handleDeleteInterview = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this interview? This action cannot be undone.')) {
@@ -145,10 +133,38 @@ const Dashboard: React.FC = () => {
     });
   };
 
+  const renderDashboardSkeleton = () => (
+    <div className="space-y-4">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="skeleton-card rounded-xl border border-stone-700 p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="skeleton h-5 w-48 max-w-[55%]" />
+                <div className="skeleton h-6 w-20 rounded-full" />
+              </div>
+              <div className="skeleton mb-3 h-4 w-2/3" />
+              <div className="skeleton mb-4 h-12 w-full rounded-lg" />
+              <div className="flex flex-wrap gap-4">
+                <div className="skeleton h-4 w-20" />
+                <div className="skeleton h-4 w-16" />
+                <div className="skeleton hidden h-4 w-28 sm:block" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="skeleton h-9 w-9 rounded-lg" />
+              <div className="skeleton h-9 w-9 rounded-lg" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
 
 
   return (
-    <div className="min-h-screen bg-stone-900 p-4 sm:p-8">
+    <div className="kalpira-light min-h-screen p-4 sm:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <motion.div
@@ -206,11 +222,11 @@ const Dashboard: React.FC = () => {
                 </button>
               )}
               <button
-                onClick={handleLogout}
+                onClick={() => router.push('/profile')}
                 className="px-3 py-2 text-sm border border-stone-600 text-stone-400 hover:bg-stone-700 rounded-xl transition-colors flex items-center gap-2"
               >
-                <LogOut size={16} />
-                Logout
+                <UserCircle size={16} />
+                Profile
               </button>
             </div>
 
@@ -246,8 +262,8 @@ const Dashboard: React.FC = () => {
                     {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Export
                   </button>
                 )}
-                <button onClick={handleLogout} className="px-3 py-2 text-sm border border-stone-600 text-stone-400 rounded-xl flex items-center gap-2 justify-center">
-                  <LogOut size={14} /> Logout
+                <button onClick={() => router.push('/profile')} className="px-3 py-2 text-sm border border-stone-600 text-stone-400 rounded-xl flex items-center gap-2 justify-center">
+                  <UserCircle size={14} /> Profile
                 </button>
               </motion.div>
             )}
@@ -297,9 +313,7 @@ const Dashboard: React.FC = () => {
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={48} className="animate-spin text-stone-400" />
-          </div>
+          renderDashboardSkeleton()
         ) : interviews.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

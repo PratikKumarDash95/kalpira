@@ -221,8 +221,39 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center">
-        <Loader2 size={48} className="animate-spin text-stone-400" />
+      <div className="kalpira-light min-h-screen p-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="skeleton mb-6 h-10 w-36 rounded-xl" />
+          <div className="skeleton-card mb-6 rounded-2xl border border-stone-700 p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-3">
+                <div className="skeleton h-8 w-2/3" />
+                <div className="skeleton h-4 w-full" />
+                <div className="skeleton h-4 w-3/4" />
+              </div>
+              <div className="skeleton h-10 w-32 rounded-xl" />
+            </div>
+          </div>
+          <div className="mb-6 flex gap-3">
+            <div className="skeleton h-10 w-28 rounded-xl" />
+            <div className="skeleton h-10 w-28 rounded-xl" />
+            <div className="skeleton h-10 w-28 rounded-xl" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="skeleton-card rounded-xl p-5">
+              <div className="skeleton mb-4 h-5 w-24" />
+              <div className="skeleton h-8 w-16" />
+            </div>
+            <div className="skeleton-card rounded-xl p-5">
+              <div className="skeleton mb-4 h-5 w-24" />
+              <div className="skeleton h-8 w-16" />
+            </div>
+            <div className="skeleton-card rounded-xl p-5">
+              <div className="skeleton mb-4 h-5 w-24" />
+              <div className="skeleton h-8 w-16" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -252,7 +283,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-stone-900 p-8">
+    <div className="kalpira-light min-h-screen p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <motion.div
