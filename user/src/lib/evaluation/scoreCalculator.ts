@@ -4,7 +4,7 @@
 // Purely functional — no DB writes, no side effects
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 // ============================================
 // Score dimension weights
@@ -100,7 +100,7 @@ function computeWeightedOverall(
 export async function calculateSessionAverages(
     sessionId: string
 ): Promise<SessionScoreAverages> {
-    const responses = await prisma.response.findMany({
+    const responses = await supabaseDb.response.findMany({
         where: { sessionId },
         select: {
             technicalScore: true,

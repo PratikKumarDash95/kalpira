@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         // Resolve effective user ID for persistence
         if (!userId) {
             if (studyId) {
-                const study = await prisma.study.findFirst({
+                const study = await supabaseDb.study.findFirst({
                     where: {
                         id: studyId,
                         ...(participantAuth.context?.userId ? { userId: participantAuth.context.userId } : {}),
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
             }
 
             if (!userId && !studyId) {
-                const defaultUser = await prisma.user.findFirst();
+                const defaultUser = await supabaseDb.user.findFirst();
                 if (defaultUser) userId = defaultUser.id;
             }
         }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ sessionId: `guest-${Date.now()}`, guest: true });
         }
 
-        const session = await prisma.interviewSession.create({
+        const session = await supabaseDb.interviewSession.create({
             data: {
                 userId,
                 role,

@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import prisma from './prisma';
+import supabaseDb from './supabaseDb';
 import { SESSION_COOKIE_NAME, verifySessionToken } from './auth';
 
 export type Role = 'admin' | 'interviewer' | 'candidate';
@@ -22,7 +22,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     return { id: null, role: 'admin', isLegacyAdmin: true };
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await supabaseDb.user.findUnique({
     where: { id: session.researcherId },
     select: { id: true, role: true },
   });
@@ -49,7 +49,7 @@ export async function assertStudyOwner(studyId: string, user: AuthUser): Promise
   if (user.role === 'admin') return true;
   if (!user.id) return false;
 
-  const study = await prisma.study.findFirst({
+  const study = await supabaseDb.study.findFirst({
     where: { id: studyId, userId: user.id },
     select: { id: true },
   });
@@ -61,7 +61,7 @@ export async function assertSessionOwner(sessionId: string, user: AuthUser): Pro
   if (user.role === 'admin') return true;
   if (!user.id) return false;
 
-  const session = await prisma.interviewSession.findFirst({
+  const session = await supabaseDb.interviewSession.findFirst({
     where: {
       id: sessionId,
       OR: [

@@ -1,6 +1,6 @@
 // GET /api/sessions/[id]/results — Return full session data for results page
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export async function GET(
             return NextResponse.json({ error: 'Guest session — no DB data' }, { status: 404 });
         }
 
-        const session = await prisma.interviewSession.findUnique({
+        const session = await supabaseDb.interviewSession.findUnique({
             where: { id: sessionId },
             include: {
                 scoreBreakdown: true,
@@ -33,7 +33,7 @@ export async function GET(
         }
 
         // Build structured results
-        const qaItems = session.questions.map((q) => {
+        const qaItems = session.questions.map((q: any) => {
             const r = q.responses[0]; // One response per question
             return {
                 question: q.text,

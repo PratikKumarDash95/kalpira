@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import prisma from './prisma';
+import supabaseDb from './supabaseDb';
 import { SESSION_COOKIE_NAME, verifySessionToken } from './auth';
 
 export async function isAdminSession(): Promise<boolean> {
@@ -12,7 +12,7 @@ export async function isAdminSession(): Promise<boolean> {
 
   if (!session.researcherId) return true;
 
-  const user = await prisma.user.findUnique({
+  const user = await supabaseDb.user.findUnique({
     where: { id: session.researcherId },
     select: { role: true },
   });

@@ -4,7 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { getRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
 import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
@@ -89,7 +89,7 @@ export async function GET() {
     }
 
     // Fetch from InterviewSession (SQL)
-    const sessions = await prisma.interviewSession.findMany({
+    const sessions = await supabaseDb.interviewSession.findMany({
       where,
       include: {
         questions: {

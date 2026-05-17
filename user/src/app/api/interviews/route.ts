@@ -1,10 +1,10 @@
-// GET /api/interviews - List all interviews (fetched from Prisma SQL)
+// GET /api/interviews - List all interviews (fetched from Supabase SQL)
 // Protected: Requires authenticated session
 
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { getRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
 import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       };
     }
 
-    const sessions = await prisma.interviewSession.findMany({
+    const sessions = await supabaseDb.interviewSession.findMany({
       where,
       include: {
         questions: summaryOnly
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
       take: limit,
     });
 
-    // Map Prisma sessions to StoredInterview format
+    // Map Supabase sessions to StoredInterview format
     const interviews: StoredInterview[] = sessions.map(session => {
       // Reconstruct transcript
       const transcript: InterviewMessage[] = [];

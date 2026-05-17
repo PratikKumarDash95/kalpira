@@ -1,5 +1,5 @@
 // GET /api/auth/oauth/github/callback
-// Handle GitHub OAuth callback safely for Vercel + Prisma
+// Handle GitHub OAuth callback safely for Vercel + Supabase
 
 import { NextResponse } from 'next/server';
 import * as arctic from 'arctic';

@@ -1,7 +1,7 @@
 // GET /api/interviewer/me — Returns current interviewer profile from DB
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const user = await (prisma.user.findUnique as any)({
+        const user = await (supabaseDb.user.findUnique as any)({
             where: { id: session.researcherId },
             select: { id: true, name: true, email: true, role: true, createdAt: true },
         }) as { id: string; name: string | null; email: string | null; role: string; createdAt: Date } | null;

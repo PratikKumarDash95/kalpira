@@ -5,7 +5,7 @@
 // All DB writes are transactional
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { getNextDifficulty, type DifficultyLevel, type DifficultyRecommendation } from './difficultyEngine';
 import { selectNextQuestion, type SelectedQuestion } from './questionSelector';
 
@@ -39,7 +39,7 @@ export interface AdaptiveStepResult {
  * 3. Select the next question from the question bank
  *
  * Guarantees:
- * - DB writes are wrapped in prisma.$transaction
+ * - DB writes are wrapped in supabaseDb.$transaction
  * - Never partially updates session
  * - Returns safe fallback on DB error (same difficulty, null question)
  * - Never calls LLM
@@ -63,7 +63,7 @@ export async function processAdaptiveStep(
 
     // Step 2: Update session difficulty in a transaction
     try {
-        await prisma.$transaction(async (tx) => {
+        await supabaseDb.$transaction(async (tx) => {
             await tx.interviewSession.update({
                 where: { id: sessionId },
                 data: { difficulty: nextDifficulty },

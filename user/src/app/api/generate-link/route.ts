@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import * as jose from 'jose';
 import { StudyConfig, ParticipantToken, LinkExpirationOption } from '@/types';
 import { getRequestContext } from '@/lib/researcherContext';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { isHostedMode } from '@/lib/mode';
 
 // Convert link expiration option to jose expiration string
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const ownedStudy = await prisma.study.findFirst({
+    const ownedStudy = await supabaseDb.study.findFirst({
       where: { id: studyConfig.id, userId: ownerId },
       select: { id: true },
     });

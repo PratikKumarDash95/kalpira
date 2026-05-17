@@ -1,7 +1,7 @@
 // POST /api/interviewer/register — Register a new interviewer account
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME, hashPassword } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -19,14 +19,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
         }
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await supabaseDb.user.findUnique({ where: { email } });
         if (existingUser) {
             return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
         }
 
         const passwordHash = await hashPassword(password);
 
-        const user = await prisma.user.create({
+        const user = await supabaseDb.user.create({
             data: { email, password: passwordHash, name, role: 'interviewer' },
         });
 

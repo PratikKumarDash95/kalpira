@@ -5,7 +5,7 @@
 // ============================================
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 // In production, you'd extract userId from the auth session.
 // For now, we attempt to get the first user or return demo data.
@@ -13,7 +13,7 @@ import prisma from '@/lib/prisma';
 export async function GET() {
     try {
         // Attempt to get the first user (standalone mode)
-        const user = await prisma.user.findFirst({
+        const user = await supabaseDb.user.findFirst({
             select: { id: true },
         });
 
@@ -31,27 +31,27 @@ export async function GET() {
             badges,
             sessions,
         ] = await Promise.all([
-            prisma.readinessIndex.findUnique({
+            supabaseDb.readinessIndex.findUnique({
                 where: { userId },
                 select: { readinessScore: true },
             }),
-            prisma.weakSkillMemory.findMany({
+            supabaseDb.weakSkillMemory.findMany({
                 where: { userId },
                 orderBy: { weaknessCount: 'desc' },
                 take: 10,
                 select: { skillName: true },
             }),
-            prisma.improvementPlan.findFirst({
+            supabaseDb.improvementPlan.findFirst({
                 where: { userId },
                 orderBy: { generatedAt: 'desc' },
                 select: { planJSON: true },
             }),
-            prisma.badge.findMany({
+            supabaseDb.badge.findMany({
                 where: { userId },
                 orderBy: { awardedAt: 'desc' },
                 select: { badgeName: true, awardedAt: true },
             }),
-            prisma.interviewSession.findMany({
+            supabaseDb.interviewSession.findMany({
                 where: { userId },
                 orderBy: { startedAt: 'asc' },
                 select: {

@@ -4,7 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { getRequestContext } from '@/lib/researcherContext';
 import { assertSessionOwner, getAuthUser } from '@/lib/accessControl';
 import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
@@ -97,7 +97,7 @@ export async function GET(
     }
 
     // Fetch from InterviewSession (SQL)
-    const session = await prisma.interviewSession.findUnique({
+    const session = await supabaseDb.interviewSession.findUnique({
       where: { id },
       include: {
         questions: {
@@ -157,12 +157,12 @@ export async function DELETE(
     }
 
     // Delete from InterviewSession (SQL)
-    // Using deleteMany for safety against non-existent ID throwing error in some Prisma versions/configs?
+    // Using deleteMany for safety against non-existent ID throwing error in some Supabase versions/configs?
     // findUnique -> delete is standard.
     // If not found, delete throws "Record to delete does not exist."
 
     try {
-      await prisma.interviewSession.delete({
+      await supabaseDb.interviewSession.delete({
         where: { id }
       });
     } catch (e: any) {

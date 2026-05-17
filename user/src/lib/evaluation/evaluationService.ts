@@ -4,7 +4,7 @@
 // This is the SINGLE ENTRY POINT for all answer evaluation
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { generateEvaluationPrompt, type InterviewMode, type DifficultyLevel, type CompanyPreset } from './evaluationPrompt';
 import { safeParseEvaluation, type EvaluationResult } from './evaluationSchema';
 import { callLLM, type LLMClientConfig } from './llmClient';
@@ -136,7 +136,7 @@ function validateInput(input: EvaluationInput): string | null {
  * 2. Generate evaluation prompt
  * 3. Call LLM
  * 4. Parse and validate LLM output
- * 5. Store results atomically via Prisma transaction:
+ * 5. Store results atomically via Supabase transaction:
  *    a. Create Response record
  *    b. Re-fetch all session responses
  *    c. Calculate session averages
@@ -165,11 +165,11 @@ export async function evaluateResponse(
     // ── Step 2: Verify session and question exist ──
     try {
         const [session, question] = await Promise.all([
-            prisma.interviewSession.findUnique({
+            supabaseDb.interviewSession.findUnique({
                 where: { id: input.sessionId },
                 select: { id: true, userId: true },
             }),
-            prisma.question.findUnique({
+            supabaseDb.question.findUnique({
                 where: { id: input.questionId },
                 select: { id: true, sessionId: true },
             }),
@@ -244,7 +244,7 @@ export async function evaluateResponse(
 
     // ── Step 6: Atomic database transaction ──
     try {
-        const transactionResult = await prisma.$transaction(async (tx) => {
+        const transactionResult = await supabaseDb.$transaction(async (tx) => {
             // 6a. Create the Response record
             const response = await tx.response.create({
                 data: {

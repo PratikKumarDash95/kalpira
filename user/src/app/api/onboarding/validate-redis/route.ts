@@ -1,5 +1,5 @@
 // POST /api/onboarding/validate-redis - Validate storage connection
-// Kept for hosted mode compatibility — now validates SQLite instead of Redis
+// Kept for hosted mode compatibility; now validates Supabase/Supabase Postgres.
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    // With SQLite, storage is always available locally
+    // Storage is available when Supabase can reach Supabase Postgres.
     const available = await isKVAvailable();
     if (available) {
       return NextResponse.json({ valid: true });

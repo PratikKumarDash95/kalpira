@@ -4,7 +4,7 @@
 // Fetches data, generates roadmap, stores atomically
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { generateRoadmap, type Roadmap, type DifficultyLevel } from './roadmapGenerator';
 
 /** Valid difficulty values for runtime guard */
@@ -24,7 +24,7 @@ const WEAK_SKILLS_LIMIT = 10;
  * 5. Store in ImprovementPlan (transactional)
  *
  * Guarantees:
- * - All DB writes in prisma.$transaction
+ * - All DB writes in supabaseDb.$transaction
  * - Returns a valid Roadmap even if user has no data (default plan)
  * - Never throws to caller — returns safe fallback on error
  * - No LLM calls
@@ -34,7 +34,7 @@ const WEAK_SKILLS_LIMIT = 10;
  */
 export async function generateAndStoreRoadmap(userId: string): Promise<Roadmap> {
     try {
-        const roadmap = await prisma.$transaction(async (tx) => {
+        const roadmap = await supabaseDb.$transaction(async (tx) => {
             // 1. Fetch weak skills
             const weakSkillRecords = await tx.weakSkillMemory.findMany({
                 where: { userId },
@@ -127,7 +127,7 @@ export async function generateAndStoreRoadmap(userId: string): Promise<Roadmap> 
  */
 export async function getLatestRoadmap(userId: string): Promise<Roadmap | null> {
     try {
-        const plan = await prisma.improvementPlan.findFirst({
+        const plan = await supabaseDb.improvementPlan.findFirst({
             where: { userId },
             orderBy: { generatedAt: 'desc' },
             select: { planJSON: true },

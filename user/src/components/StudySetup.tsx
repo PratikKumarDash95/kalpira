@@ -246,7 +246,7 @@ const StudySetup: React.FC = () => {
       });
       if (!response.ok) {
         if (response.status === 401) { setIsAuthenticated(false); router.push(isInterviewerFlow ? interviewerPath('/login') : '/login'); return; }
-        if (response.status === 503) { setSaveError('Storage not configured. Please connect Vercel KV.'); return; }
+        if (response.status === 503) { setSaveError('Storage not configured. Check DATABASE_URL for Supabase Postgres.'); return; }
         if (response.status === 409) {
           const data = await response.json();
           if (data.requiresConfirmation) {

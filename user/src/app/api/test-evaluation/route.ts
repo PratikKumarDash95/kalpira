@@ -5,7 +5,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { evaluateResponse } from '@/lib/evaluation/evaluationService';
 
 export async function GET() {
@@ -17,7 +17,7 @@ export async function GET() {
 
     try {
         // Step 1: Create test user + session + question
-        const user = await prisma.user.create({
+        const user = await supabaseDb.user.create({
             data: {
                 email: `eval-test-${Date.now()}@example.com`,
                 name: 'Evaluation Test User',
@@ -26,7 +26,7 @@ export async function GET() {
         });
         results['user'] = `✅ User created: ${user.id}`;
 
-        const session = await prisma.interviewSession.create({
+        const session = await supabaseDb.interviewSession.create({
             data: {
                 userId: user.id,
                 role: 'Senior Backend Engineer',
@@ -36,7 +36,7 @@ export async function GET() {
         });
         results['session'] = `✅ Session created: ${session.id}`;
 
-        const question = await prisma.question.create({
+        const question = await supabaseDb.question.create({
             data: {
                 sessionId: session.id,
                 text: 'Explain the differences between SQL and NoSQL databases.',
@@ -80,26 +80,26 @@ export async function GET() {
         results['sessionAverages'] = evalResult.sessionAverages;
 
         // Step 3: Verify DB state
-        const scoreBreakdown = await prisma.scoreBreakdown.findUnique({
+        const scoreBreakdown = await supabaseDb.scoreBreakdown.findUnique({
             where: { sessionId: session.id },
         });
         results['scoreBreakdown'] = scoreBreakdown
             ? `✅ ScoreBreakdown persisted: overall=${scoreBreakdown.overallScore}`
             : '❌ ScoreBreakdown NOT found';
 
-        const updatedSession = await prisma.interviewSession.findUnique({
+        const updatedSession = await supabaseDb.interviewSession.findUnique({
             where: { id: session.id },
             select: { averageScore: true },
         });
         results['sessionUpdate'] = `✅ Session.averageScore updated: ${updatedSession?.averageScore}`;
 
-        const responseCount = await prisma.response.count({
+        const responseCount = await supabaseDb.response.count({
             where: { sessionId: session.id },
         });
         results['responseCount'] = `✅ Response records: ${responseCount}`;
 
         // Step 4: Run a second evaluation to test upsert logic
-        const question2 = await prisma.question.create({
+        const question2 = await supabaseDb.question.create({
             data: {
                 sessionId: session.id,
                 text: 'Design a URL shortener service.',
@@ -125,7 +125,7 @@ export async function GET() {
             overallScore: evalResult2.sessionAverages.overallScore,
         };
 
-        const finalBreakdown = await prisma.scoreBreakdown.findUnique({
+        const finalBreakdown = await supabaseDb.scoreBreakdown.findUnique({
             where: { sessionId: session.id },
         });
         results['upsertVerification'] = finalBreakdown
@@ -133,7 +133,7 @@ export async function GET() {
             : '❌ ScoreBreakdown upsert failed';
 
         // Cleanup
-        await prisma.user.delete({ where: { id: user.id } });
+        await supabaseDb.user.delete({ where: { id: user.id } });
         results['cleanup'] = '✅ Test data cleaned up';
 
         return NextResponse.json({

@@ -1,6 +1,6 @@
 // POST /api/sessions/[id]/complete — Mark session complete and compute ScoreBreakdown
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export async function POST(
             return NextResponse.json({ success: true, skipped: true });
         }
 
-        const session = await prisma.interviewSession.findUnique({
+        const session = await supabaseDb.interviewSession.findUnique({
             where: { id: sessionId },
             include: { responses: true, study: true },
         });
@@ -42,7 +42,7 @@ export async function POST(
 
         // Compute averages
         const avg = (field: keyof typeof responses[0]) =>
-            responses.reduce((sum, r) => sum + (r[field] as number), 0) / count;
+            responses.reduce((sum: number, r: any) => sum + (r[field] as number), 0) / count;
 
         const technicalAverage = avg('technicalScore');
         const communicationAverage = avg('communicationScore');
@@ -52,7 +52,7 @@ export async function POST(
         const overallScore = (technicalAverage + communicationAverage + confidenceAverage + logicAverage + depthAverage) / 5;
 
         // Upsert ScoreBreakdown
-        await prisma.scoreBreakdown.upsert({
+        await supabaseDb.scoreBreakdown.upsert({
             where: { sessionId },
             create: {
                 sessionId,
@@ -74,7 +74,7 @@ export async function POST(
         });
 
         // Update session with completedAt and averageScore
-        await prisma.interviewSession.update({
+        await supabaseDb.interviewSession.update({
             where: { id: sessionId },
             data: {
                 completedAt: new Date(),

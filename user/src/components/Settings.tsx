@@ -197,7 +197,7 @@ const Settings: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <StatusIcon configured={profile.hasRedisConfigured} />
-                <span className="text-stone-300 text-sm">Redis Storage</span>
+                <span className="text-stone-300 text-sm">Supabase Postgres</span>
               </div>
             </div>
           </div>
@@ -314,38 +314,17 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* Redis Storage */}
+        {/* Database Storage */}
         <div className="bg-stone-800/50 rounded-xl border border-stone-700 p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Database size={18} className="text-stone-400" />
-            <h2 className="text-lg font-semibold text-white">Upstash Redis Storage</h2>
+            <h2 className="text-lg font-semibold text-white">Supabase Postgres Storage</h2>
           </div>
           <p className="text-stone-400 text-sm mb-4">
-            Update your Redis credentials. Leave blank to keep the current connection.
-            <span className="text-amber-400"> Warning: changing your Redis URL will disconnect from your current data.</span>
+            Supabase uses the server DATABASE_URL to write app data to Supabase Postgres.
           </p>
 
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-stone-300 mb-1 block">REST API URL</label>
-              <input
-                type="text"
-                value={redisUrl}
-                onChange={(e) => { setRedisUrl(e.target.value); setRedisValidation({ loading: false, valid: null, error: null }); }}
-                placeholder={profile?.hasRedisConfigured ? '(currently set)' : 'https://your-db.upstash.io'}
-                className="w-full px-3 py-2 rounded-lg bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-stone-500"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-stone-300 mb-1 block">REST API Token</label>
-              <input
-                type="password"
-                value={redisToken}
-                onChange={(e) => { setRedisToken(e.target.value); setRedisValidation({ loading: false, valid: null, error: null }); }}
-                placeholder={profile?.hasRedisConfigured ? '(currently set)' : 'AXxx...'}
-                className="w-full px-3 py-2 rounded-lg bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-stone-500"
-              />
-            </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ValidationBadge state={redisValidation} />
@@ -354,7 +333,7 @@ const Settings: React.FC = () => {
               </div>
               <button
                 onClick={validateRedis}
-                disabled={!redisUrl || !redisToken || redisValidation.loading}
+                disabled={redisValidation.loading}
                 className="px-4 py-2 bg-stone-700 hover:bg-stone-600 disabled:opacity-50 text-stone-300 text-sm rounded-lg transition-colors"
               >
                 {redisValidation.loading ? 'Testing...' : 'Test Connection'}
@@ -368,20 +347,19 @@ const Settings: React.FC = () => {
                 className="text-xs text-stone-500 hover:text-stone-400 inline-flex items-center gap-1"
               >
                 {redisGuideOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                Setup guide
+                Required server variables
               </button>
 
               {redisGuideOpen && (
                 <div className="mt-2 p-3 bg-stone-800/30 border border-stone-600 rounded-lg text-xs space-y-2">
                   <ol className="list-decimal list-inside space-y-1 text-stone-300">
-                    <li>Go to <a href="https://console.upstash.com" target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-stone-300 underline">console.upstash.com</a> and sign in</li>
-                    <li>Click "+ Create Database" → choose Regional and Free plan</li>
-                    <li>After creation, go to database details → REST API section</li>
-                    <li>Copy REST URL (https://*.upstash.io) and REST Token</li>
+                    <li>Set DATABASE_URL to your Supabase Postgres connection string</li>
+                    <li>Keep sslmode=require in the connection string</li>
+                    <li>Run Supabase migrations before collecting production data</li>
                   </ol>
                   <div className="flex items-start gap-1.5 text-amber-400 mt-2">
                     <span>⚠</span>
-                    <span>Use REST URL (https://), not regular URL (redis://)</span>
+                    <span>The Supabase publishable key is not enough for Supabase writes.</span>
                   </div>
                 </div>
               )}
@@ -390,11 +368,11 @@ const Settings: React.FC = () => {
         </div>
 
         {/* Save Button */}
-        {/* Partial Redis warning */}
+        {/* Partial legacy storage warning */}
         {((redisUrl && !redisToken) || (!redisUrl && redisToken)) && (
           <div className="flex items-center gap-2 p-3 mb-6 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm">
             <AlertCircle size={16} className="flex-shrink-0" />
-            Both Redis URL and token are required to update storage credentials.
+            Storage credentials are now configured with DATABASE_URL on the server.
           </div>
         )}
 

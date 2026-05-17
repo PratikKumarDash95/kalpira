@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 import { getRequestContext } from '@/lib/researcherContext';
 import { saveStudy, saveInterview, isKVAvailable, getAllStudies } from '@/lib/kv';
 import { DEMO_STUDIES, DEMO_INTERVIEWS } from '@/lib/demoData';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 export async function POST() {
   try {
@@ -84,12 +84,12 @@ export async function DELETE() {
     }
 
     // Delete demo interviews first (referential integrity)
-    const interviewResult = await prisma.storedInterview.deleteMany({
+    const interviewResult = await supabaseDb.storedInterview.deleteMany({
       where: { studyId: { startsWith: 'demo-' } },
     });
 
     // Delete demo studies
-    const studyResult = await prisma.study.deleteMany({
+    const studyResult = await supabaseDb.study.deleteMany({
       where: { id: { startsWith: 'demo-' } },
     });
 

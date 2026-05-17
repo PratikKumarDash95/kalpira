@@ -14,7 +14,7 @@ import {
   SESSION_COOKIE_NAME
 } from '@/lib/auth';
 import { isHostedMode } from '@/lib/mode';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 export async function POST(request: Request) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     if (email) {
       const { verifyPassword } = await import('@/lib/auth');
 
-      const user = await prisma.user.findUnique({
+      const user = await supabaseDb.user.findUnique({
         where: { email },
       });
 
