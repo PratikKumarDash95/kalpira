@@ -52,7 +52,7 @@ export interface EvaluationOutput {
     evaluation: EvaluationResult;
     /** Updated session score averages */
     sessionAverages: SessionScoreAverages;
-    /** Whether the LLM output was valid (false = fallback was used) */
+    /** Whether the LLM output was valid */
     llmOutputValid: boolean;
     /** Validation errors if any */
     validationErrors: string[];
@@ -61,7 +61,7 @@ export interface EvaluationOutput {
 }
 
 // ============================================
-// Safe fallback output — returned when the entire pipeline fails
+// Failure output — no synthetic scoring is persisted when evaluation fails
 // ============================================
 
 function createFailureOutput(error: string): EvaluationOutput {
@@ -69,15 +69,15 @@ function createFailureOutput(error: string): EvaluationOutput {
         success: false,
         responseId: '',
         evaluation: {
-            technical_score: 50,
-            communication_score: 50,
-            confidence_score: 50,
-            logic_score: 50,
-            depth_score: 50,
+            technical_score: 0,
+            communication_score: 0,
+            confidence_score: 0,
+            logic_score: 0,
+            depth_score: 0,
             difficulty_recommendation: 'maintain',
             weak_topics: [],
             strengths: [],
-            feedback: 'Evaluation failed. Default applied.',
+            feedback: '',
             ideal_answer: '',
             improvement_tip: '',
         },
@@ -146,7 +146,6 @@ function validateInput(input: EvaluationInput): string | null {
  * Guarantees:
  * - Transactional integrity (all-or-nothing DB writes)
  * - Never throws to caller (returns structured error)
- * - Fallback evaluation on LLM failure
  * - All scores clamped to [0, 100]
  *
  * @param input - The evaluation input parameters
@@ -209,37 +208,17 @@ export async function evaluateResponse(
     let validationErrors: string[] = [];
 
     if (!llmResult.success) {
-        console.warn(
-            '[EvaluationService] LLM call failed, using fallback:',
-            llmResult.error
-        );
-        validationErrors = [llmResult.error || 'LLM call failed'];
-        evaluation = {
-            technical_score: 50,
-            communication_score: 50,
-            confidence_score: 50,
-            logic_score: 50,
-            depth_score: 50,
-            difficulty_recommendation: 'maintain',
-            weak_topics: [],
-            strengths: [],
-            feedback: 'Evaluation could not be completed. Default scores applied.',
-            ideal_answer: '',
-            improvement_tip: '',
-        };
-    } else {
-        // ── Step 5: Parse and validate LLM output ──
-        const parseResult = safeParseEvaluation(llmResult.content);
-        evaluation = parseResult.data;
-        llmOutputValid = parseResult.success;
-        validationErrors = parseResult.errors;
+        return createFailureOutput(llmResult.error || 'LLM call failed');
+    }
 
-        if (!parseResult.success) {
-            console.warn(
-                '[EvaluationService] LLM output validation failed, using partial/fallback:',
-                parseResult.errors
-            );
-        }
+    // ── Step 5: Parse and validate LLM output ──
+    const parseResult = safeParseEvaluation(llmResult.content);
+    evaluation = parseResult.data;
+    llmOutputValid = parseResult.success;
+    validationErrors = parseResult.errors;
+
+    if (!parseResult.success) {
+        return createFailureOutput(`LLM output validation failed: ${parseResult.errors.join('; ')}`);
     }
 
     // ── Step 6: Atomic database transaction ──

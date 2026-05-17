@@ -1,0 +1,402 @@
+
+> kalpira-frontend@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+  - Experiments (use with caution):
+    · externalDir
+
+ ✓ Starting...
+ ✓ Ready in 9.4s
+ ○ Compiling /api/auth/register ...
+ ✓ Compiled /api/auth/register in 3.8s (199 modules)
+ POST /api/auth/register 500 in 5836ms
+ POST /api/auth/register 500 in 392ms
+ ✓ Compiled in 423ms (199 modules)
+ POST /api/auth/register 200 in 774ms
+ POST /api/auth/register 200 in 775ms
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 1926ms (152 modules)
+ ○ Compiling /studies ...
+ ✓ Compiled /studies in 31.7s (1407 modules)
+ POST /api/auth/register 200 in 30143ms
+ GET /studies 200 in 3424ms
+ ✓ Compiled in 3.8s (625 modules)
+ ○ Compiling /api/auth ...
+ ✓ Compiled /api/auth in 778ms (788 modules)
+ ✓ Compiled (790 modules)
+ GET /api/auth 200 in 1662ms
+ GET /api/auth 200 in 49ms
+ GET /api/studies 200 in 2206ms
+ GET /api/studies 200 in 385ms
+ POST /api/studies 200 in 754ms
+ ○ Compiling /api/generate-link ...
+ ✓ Compiled /api/generate-link in 1002ms (792 modules)
+ POST /api/generate-link 200 in 1385ms
+ ○ Compiling /p/[token] ...
+ ✓ Compiled /p/[token] in 8s (1871 modules)
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiYTFjZWU3OGUtNmNmMi00YmFhLTlkMWQtNjBjYjkyMTdiNTM0Iiwic3R1ZHlDb25maWciOnsiaWQiOiJhMWNlZTc4ZS02Y2YyLTRiYWEtOWQxZC02MGNiOTIxN2I1MzQiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNDcxMzk3NDN9LCJjcmVhdGVkQXQiOjE3NzkwNDcxNDE2MjIsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA0NzE0MX0.-DeEfvzV2OPJMawDEf5FIGDA2B8jiw0pUGlN1SjOQvs 200 in 113ms
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiYTFjZWU3OGUtNmNmMi00YmFhLTlkMWQtNjBjYjkyMTdiNTM0Iiwic3R1ZHlDb25maWciOnsiaWQiOiJhMWNlZTc4ZS02Y2YyLTRiYWEtOWQxZC02MGNiOTIxN2I1MzQiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNDcxMzk3NDN9LCJjcmVhdGVkQXQiOjE3NzkwNDcxNDE2MjIsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA0NzE0MX0.-DeEfvzV2OPJMawDEf5FIGDA2B8jiw0pUGlN1SjOQvs 200 in 69ms
+ ○ Compiling /api/greeting ...
+ ✓ Compiled /api/greeting in 5.3s (2097 modules)
+ POST /api/sessions/start 200 in 6684ms
+ POST /api/greeting 500 in 7140ms
+ POST /api/greeting 500 in 7722ms
+ POST /api/sessions/start 200 in 7771ms
+ ○ Compiling /api/proctor ...
+ ✓ Compiled /api/proctor in 952ms (1256 modules)
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 2159ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 28ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 32ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 27ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 33ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 31ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 27ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 29ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 26ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 26ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 22ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 25ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 34ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 30ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 32ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 32ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 37ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 27ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 37ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 30ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 27ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 31ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 48ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 25ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 25ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 26ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 24ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 30ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 30ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 32ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 28ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 25ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 31ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 26ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 21ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 25ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 33ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 20ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 35ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 24ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 39ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 31ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 26ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 34ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 48ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 52ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 48ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 33ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 21ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 34ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 21ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 22ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 26ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 20ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 20ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 25ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 25ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 18ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 23ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 19ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 24ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 29ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 23ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 24ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 28ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 26ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 18ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 23ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 24ms
+ GET /api/proctor?sessionId=9949f6a4-dcee-49dd-bf47-4ae12ce6cb5a 200 in 42ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 35ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 35ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 39ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 39ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 31ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 47ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 33ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 50ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 37ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 25ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 25ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 26ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 37ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 38ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 36ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 42ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 45ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 82ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 70ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 41ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 48ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 37ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 34ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 34ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 40ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 41ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 35ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 48ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 35ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 40ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 33ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 45ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 65ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 44ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 48ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 38ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 41ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 72ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 68ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 52ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 52ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 32ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 41ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 36ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 39ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 80ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 34ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 45ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 34ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 33ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 59ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 32ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 49ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 39ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 42ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 14ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 14ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 14ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 14ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 13ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 27ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 27ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 26ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 30ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 25ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 26ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 25ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 25ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 31ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 28ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 32ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 27ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 14ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 27ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 25ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 25ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 28ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 31ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 15ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 27ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 29ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 34ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 29ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 26ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 14ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 38ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 30ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 28ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 29ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 28ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 29ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 32ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 31ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 31ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 29ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 30ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 24ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 31ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 36ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 32ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 34ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 16ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 27ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 26ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 20ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 14ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 36ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 26ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 39ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 27ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 17ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 22ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 23ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 18ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 32ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 19ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 21ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 32ms
+[Proctor API] Violation reported for session 77860839-042a-429d-a85b-ca3a42d64ba7: focus_lost - 
+ POST /api/proctor 200 in 74ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 74ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 97ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 152ms
+[Proctor API] Violation reported for session 77860839-042a-429d-a85b-ca3a42d64ba7: fullscreen_exit - 
+ POST /api/proctor 200 in 160ms
+ ○ Compiling /results/[sessionId] ...
+ ✓ Compiled /results/[sessionId] in 1720ms (1250 modules)
+ ✓ Compiled in 3.3s (857 modules)
+ GET /results/77860839-042a-429d-a85b-ca3a42d64ba7 200 in 3344ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 6983ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 636ms
+ GET /api/proctor?sessionId=77860839-042a-429d-a85b-ca3a42d64ba7 200 in 2054ms
+ GET /p/eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiYTFjZWU3OGUtNmNmMi00YmFhLTlkMWQtNjBjYjkyMTdiNTM0Iiwic3R1ZHlDb25maWciOnsiaWQiOiJhMWNlZTc4ZS02Y2YyLTRiYWEtOWQxZC02MGNiOTIxN2I1MzQiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNDcxMzk3NDN9LCJjcmVhdGVkQXQiOjE3NzkwNDcxNDE2MjIsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA0NzE0MX0.-DeEfvzV2OPJMawDEf5FIGDA2B8jiw0pUGlN1SjOQvs 200 in 3056ms
+ POST /api/sessions/77860839-042a-429d-a85b-ca3a42d64ba7/complete 200 in 13122ms
+ ○ Compiling /api/generate-link ...
+ ✓ Compiled /api/generate-link in 816ms (1269 modules)
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiYTFjZWU3OGUtNmNmMi00YmFhLTlkMWQtNjBjYjkyMTdiNTM0Iiwic3R1ZHlDb25maWciOnsiaWQiOiJhMWNlZTc4ZS02Y2YyLTRiYWEtOWQxZC02MGNiOTIxN2I1MzQiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNDcxMzk3NDN9LCJjcmVhdGVkQXQiOjE3NzkwNDcxNDE2MjIsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA0NzE0MX0.-DeEfvzV2OPJMawDEf5FIGDA2B8jiw0pUGlN1SjOQvs 200 in 972ms
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiYTFjZWU3OGUtNmNmMi00YmFhLTlkMWQtNjBjYjkyMTdiNTM0Iiwic3R1ZHlDb25maWciOnsiaWQiOiJhMWNlZTc4ZS02Y2YyLTRiYWEtOWQxZC02MGNiOTIxN2I1MzQiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNDcxMzk3NDN9LCJjcmVhdGVkQXQiOjE3NzkwNDcxNDE2MjIsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA0NzE0MX0.-DeEfvzV2OPJMawDEf5FIGDA2B8jiw0pUGlN1SjOQvs 200 in 22ms
+ ✓ Compiled /api/auth in 345ms (1048 modules)
+ ✓ Compiled (1050 modules)
+ GET /api/auth 200 in 764ms
+ GET /api/auth 200 in 27ms
+ GET /api/studies 200 in 1288ms
+ GET /api/studies 200 in 377ms
+ ○ Compiling /studies/[id] ...
+ ✓ Compiled /studies/[id] in 1273ms (1922 modules)
+ ✓ Compiled /api/studies/[id] in 484ms (1062 modules)
+ ✓ Compiled (1064 modules)
+ GET /api/interviews?studyId=a1cee78e-6cf2-4baa-9d1d-60cb9217b534 200 in 1566ms
+ GET /api/interviews?studyId=a1cee78e-6cf2-4baa-9d1d-60cb9217b534 200 in 358ms
+ GET /api/studies/a1cee78e-6cf2-4baa-9d1d-60cb9217b534 200 in 2366ms
+ GET /api/studies/a1cee78e-6cf2-4baa-9d1d-60cb9217b534 200 in 400ms
+ GET /api/auth 200 in 87ms
+ GET /api/auth 200 in 65ms
+ GET /api/studies 200 in 550ms
+ GET /api/studies 200 in 390ms
+ ✓ Compiled in 3.5s (1739 modules)
+ ✓ Compiled in 668ms (877 modules)
+ ✓ Compiled in 640ms (877 modules)

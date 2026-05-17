@@ -264,38 +264,6 @@ const Dashboard: React.FC = () => {
           </motion.div>
         )}
 
-        {/* Next Session Card */}
-        <div className="mb-8 relative rounded-3xl border border-slate-700/80 bg-slate-900/60 px-6 py-5 sm:px-7 sm:py-6 backdrop-blur-xl shadow-[0_24px_80px_rgba(15,23,42,0.9)]">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[0.65rem] uppercase tracking-[0.26em] text-slate-400">Next Session</p>
-              <p className="mt-1 text-sm font-medium text-slate-100">Senior Backend · System Design</p>
-            </div>
-            <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-[0.7rem] font-medium text-emerald-300 border border-emerald-500/40">Live AI</span>
-          </div>
-          <div className="grid grid-cols-3 gap-3 text-[0.68rem] text-slate-300">
-            <div className="rounded-2xl border border-slate-700/70 bg-slate-900/60 px-3 py-3 flex flex-col gap-1">
-              <span className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Signal</span>
-              <span className="text-sm font-semibold text-slate-50">92%</span>
-              <span className="text-[0.65rem] text-emerald-300">Strong problem solving</span>
-            </div>
-            <div className="rounded-2xl border border-slate-700/70 bg-slate-900/60 px-3 py-3 flex flex-col gap-1">
-              <span className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Focus</span>
-              <span className="text-sm font-semibold text-slate-50">Backend</span>
-              <span className="text-[0.65rem] text-slate-400">APIs · scaling · queues</span>
-            </div>
-            <div className="rounded-2xl border border-slate-700/70 bg-slate-900/60 px-3 py-3 flex flex-col gap-1">
-              <span className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Time</span>
-              <span className="text-sm font-semibold text-slate-50">45m</span>
-              <span className="text-[0.65rem] text-slate-400">Auto-scheduled</span>
-            </div>
-          </div>
-          <div className="mt-4 flex items-center justify-between border-t border-slate-800/80 pt-4 text-[0.68rem] text-slate-400">
-            <p>Built for teams who care about <span className="text-slate-100">signal</span>, not gut feel.</p>
-            <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-[0.65rem] font-medium text-violet-200">Async friendly</span>
-          </div>
-        </div>
-
         {/* Study Filter */}
         {studies.length > 0 && (
           <motion.div
