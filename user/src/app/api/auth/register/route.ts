@@ -48,6 +48,8 @@ export async function POST(request: Request) {
                 email,
                 password: passwordHash, // We store the hashed password (salt:hash) here
                 name,
+                avatarUrl: null,
+                coverUrl: null,
                 createdAt: now,
                 updatedAt: now,
                 // In hosted mode, we might want to flag standalone accounts differently, 

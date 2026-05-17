@@ -6,7 +6,6 @@ import { StoredInterview } from '@/types';
 import { getAllInterviews, deleteInterview } from '@/services/storageService';
 import { motion } from 'framer-motion';
 import {
-    Loader2,
     FileText,
     Search,
     Trash2,
@@ -95,8 +94,27 @@ export default function AllInterviewsPage() {
 
                 {/* Content */}
                 {loading ? (
-                    <div className="flex justify-center py-20">
-                        <Loader2 className="animate-spin text-stone-500" size={32} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <div key={index} className="skeleton-card rounded-2xl border border-stone-800 p-6">
+                                <div className="mb-4 flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <div className="skeleton mb-4 h-7 w-24 rounded-full" />
+                                        <div className="skeleton mb-2 h-6 w-4/5" />
+                                        <div className="skeleton h-4 w-24" />
+                                    </div>
+                                    <div className="skeleton h-9 w-9 rounded-lg" />
+                                </div>
+                                <div className="mb-6 grid grid-cols-2 gap-4">
+                                    <div className="skeleton h-4 w-24" />
+                                    <div className="skeleton h-4 w-20" />
+                                </div>
+                                <div className="flex items-center justify-between border-t border-stone-800 pt-4">
+                                    <div className="skeleton h-4 w-20" />
+                                    <div className="skeleton h-10 w-28 rounded-xl" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : filteredInterviews.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

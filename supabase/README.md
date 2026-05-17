@@ -20,3 +20,19 @@ SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
 The server database adapter expects the tables defined in `schema.sql`.
+
+## Optional media buckets
+
+This repo includes `migrations/20260518000000_media_storage.sql` for Supabase Storage:
+
+- `profile-images`: public bucket for user avatars/profile images, 5 MB max.
+- `interview-media`: private bucket for interview images/videos, 500 MB max.
+- `MediaAsset`: Postgres metadata table linking uploaded files to users, studies, or sessions.
+
+Run migrations with:
+
+```bash
+supabase db push
+```
+
+For uploaded files, store the file in Supabase Storage and save only the URL/object path in Postgres.

@@ -17,6 +17,7 @@ create table if not exists public."User" (
   "email" text unique,
   "name" text,
   "avatarUrl" text,
+  "coverUrl" text,
   "password" text,
   "oauthProvider" text,
   "oauthId" text,
@@ -162,6 +163,21 @@ create table if not exists public."ReadinessIndex" (
   "calculatedAt" timestamptz not null default now()
 );
 
+create table if not exists public."MediaAsset" (
+  "id" text primary key default gen_random_uuid()::text,
+  "userId" text references public."User"("id") on delete set null,
+  "studyId" text references public."Study"("id") on delete set null,
+  "sessionId" text references public."InterviewSession"("id") on delete set null,
+  "bucket" text not null,
+  "objectPath" text not null,
+  "publicUrl" text,
+  "mediaType" text not null,
+  "mimeType" text,
+  "fileSize" bigint,
+  "createdAt" timestamptz not null default now(),
+  unique ("bucket", "objectPath")
+);
+
 create index if not exists "User_email_idx" on public."User"("email");
 create index if not exists "UserSkill_userId_idx" on public."UserSkill"("userId");
 create index if not exists "UserSkill_skillId_idx" on public."UserSkill"("skillId");
@@ -179,6 +195,9 @@ create index if not exists "Response_questionId_idx" on public."Response"("quest
 create index if not exists "WeakSkillMemory_userId_idx" on public."WeakSkillMemory"("userId");
 create index if not exists "ImprovementPlan_userId_idx" on public."ImprovementPlan"("userId");
 create index if not exists "Badge_userId_idx" on public."Badge"("userId");
+create index if not exists "MediaAsset_userId_idx" on public."MediaAsset"("userId");
+create index if not exists "MediaAsset_studyId_idx" on public."MediaAsset"("studyId");
+create index if not exists "MediaAsset_sessionId_idx" on public."MediaAsset"("sessionId");
 
 drop trigger if exists "User_set_updated_at" on public."User";
 create trigger "User_set_updated_at"

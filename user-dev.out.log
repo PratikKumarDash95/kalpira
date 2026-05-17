@@ -656,3 +656,54 @@
  GET /api/studies 200 in 512ms
  ✓ Compiled in 2.1s (1971 modules)
  ✓ Compiled in 1512ms (1971 modules)
+ GET /api/auth 200 in 266ms
+ GET /api/auth 200 in 99ms
+ GET /api/studies 200 in 1261ms
+ GET /api/studies 200 in 498ms
+ GET /api/auth 200 in 302ms
+ GET /api/auth 200 in 86ms
+ GET /api/studies 200 in 1300ms
+ GET /api/studies 200 in 497ms
+ GET /studies 200 in 113ms
+ GET /api/auth 200 in 167ms
+ GET /api/auth 200 in 91ms
+ GET /api/studies 200 in 531ms
+ GET /api/studies 200 in 426ms
+ GET /api/auth 200 in 142ms
+ GET /api/auth 200 in 127ms
+ GET /api/studies 200 in 647ms
+ GET /api/studies 200 in 466ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1529ms (1071 modules)
+ GET /api/auth 200 in 312ms
+ ○ Compiling /api/interviews ...
+ ✓ Compiled /api/interviews in 1036ms (1074 modules)
+ GET /api/auth 200 in 2320ms
+ GET /api/studies 200 in 3080ms
+ GET /api/interviews?summary=1&limit=50 200 in 3279ms
+ GET /api/studies 200 in 740ms
+ GET /api/interviews?summary=1&limit=50 200 in 595ms
+ GET /api/auth 200 in 161ms
+ GET /api/auth 200 in 97ms
+ GET /api/interviews?summary=1&limit=50 200 in 659ms
+ GET /api/studies 200 in 710ms
+ GET /api/interviews?summary=1&limit=50 200 in 540ms
+ GET /api/studies 200 in 550ms
+ ○ Compiling /allinterviews ...
+ ✓ Compiled /allinterviews in 1022ms (1072 modules)
+ GET /api/interviews 200 in 667ms
+ GET /api/interviews 200 in 402ms
+ GET /api/auth 200 in 242ms
+ GET /api/auth 200 in 149ms
+ GET /api/interviews?summary=1&limit=50 200 in 755ms
+ GET /api/studies 200 in 813ms
+ GET /api/interviews?summary=1&limit=50 200 in 575ms
+ GET /api/studies 200 in 553ms
+ GET /api/interviews 200 in 421ms
+ GET /api/interviews 200 in 367ms
+ GET /api/auth 200 in 226ms
+ GET /api/auth 200 in 111ms
+ GET /api/studies 200 in 613ms
+ GET /api/interviews?summary=1&limit=50 200 in 647ms
+ GET /api/studies 200 in 568ms
+ GET /api/interviews?summary=1&limit=50 200 in 582ms

@@ -94,6 +94,7 @@ export async function GET(request: Request) {
         email: googleUser.email,
         name: googleUser.name,
         avatarUrl: googleUser.picture || null,
+        coverUrl: null,
         oauthProvider: 'google',
         oauthId: googleUser.id,
         createdAt: now,

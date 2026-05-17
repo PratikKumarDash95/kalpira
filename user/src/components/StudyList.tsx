@@ -17,13 +17,10 @@ import {
   Eye,
   Link as LinkIcon,
   MoreVertical,
-  LogOut,
+  UserCircle,
   AlertTriangle,
-  Database,
-  Sparkles,
   Menu,
   X,
-  Shield,
   Briefcase
 } from 'lucide-react';
 
@@ -148,15 +145,6 @@ const StudyList: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth', { method: 'DELETE' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
   // Check if demo data exists (Removed)
   // const hasDemoData = studies.some(s => s.id.startsWith('demo-'));
 
@@ -168,8 +156,33 @@ const StudyList: React.FC = () => {
     });
   };
 
+  const renderStudySkeleton = () => (
+    <div className="grid gap-4 md:grid-cols-2">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className="skeleton-card rounded-xl border border-stone-700 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-3">
+              <div className="skeleton h-5 w-3/4" />
+              <div className="skeleton h-4 w-full" />
+              <div className="skeleton h-4 w-2/3" />
+            </div>
+            <div className="skeleton h-9 w-9 rounded-lg" />
+          </div>
+          <div className="mt-6 flex gap-3">
+            <div className="skeleton h-4 w-24" />
+            <div className="skeleton h-4 w-28" />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <div className="skeleton h-7 w-20 rounded-full" />
+            <div className="skeleton h-7 w-24 rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-stone-900 p-4 sm:p-8">
+    <div className="kalpira-light min-h-screen p-4 sm:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <motion.div
@@ -217,11 +230,11 @@ const StudyList: React.FC = () => {
               </button>
 
               <button
-                onClick={handleLogout}
+                onClick={() => router.push('/profile')}
                 className="px-3 py-2 text-sm border border-stone-600 text-stone-400 hover:bg-stone-700 rounded-xl transition-colors flex items-center gap-2"
               >
-                <LogOut size={16} />
-                Logout
+                <UserCircle size={16} />
+                Profile
               </button>
             </div>
 
@@ -253,8 +266,8 @@ const StudyList: React.FC = () => {
                   <Users size={14} /> All Interviews
                 </button>
 
-                <button onClick={handleLogout} className="px-3 py-2 text-sm border border-stone-600 text-stone-400 rounded-xl flex items-center gap-2 justify-center">
-                  <LogOut size={14} /> Logout
+                <button onClick={() => router.push('/profile')} className="px-3 py-2 text-sm border border-stone-600 text-stone-400 rounded-xl flex items-center gap-2 justify-center">
+                  <UserCircle size={14} /> Profile
                 </button>
               </motion.div>
             )}
@@ -281,9 +294,7 @@ const StudyList: React.FC = () => {
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={48} className="animate-spin text-stone-400" />
-          </div>
+          renderStudySkeleton()
         ) : studies.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

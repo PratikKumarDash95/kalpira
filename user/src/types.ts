@@ -241,6 +241,7 @@ export interface ResearcherAccount {
   email: string;
   name: string;
   avatarUrl: string | null;
+  coverUrl: string | null;
   oauthProvider: 'google' | 'github';
   oauthId: string;
   createdAt: number;
@@ -262,6 +263,7 @@ export interface ResearcherProfile {
   email: string;
   name: string;
   avatarUrl: string | null;
+  coverUrl: string | null;
   onboardingComplete: boolean;
   hasRedisConfigured: boolean; // Deprecated name; means database storage is available.
   hasGeminiKey: boolean;
