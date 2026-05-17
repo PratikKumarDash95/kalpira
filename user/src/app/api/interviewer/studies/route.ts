@@ -1,15 +1,15 @@
 // GET  /api/interviewer/studies — List studies owned by logged-in interviewer
 // POST /api/interviewer/studies — Create a new study (interview template)
-// NOTE: Uses (prisma as any) casts because the Prisma client needs regeneration
+// NOTE: Uses (supabaseDb as any) casts because the Supabase client needs regeneration
 // after the schema migration. Restart the dev server to fix type errors.
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-const db = prisma as any;
+const db = supabaseDb as any;
 
 async function getInterviewerId(): Promise<string | null> {
     try {

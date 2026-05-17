@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { isAdminSession } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export async function GET() {
   }
 
   try {
-    const users = await prisma.user.findMany({
+    const users = await supabaseDb.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -46,7 +46,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    await prisma.user.delete({ where: { id: userId } });
+    await supabaseDb.user.delete({ where: { id: userId } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Admin delete user error:', error);

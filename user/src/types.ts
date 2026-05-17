@@ -203,7 +203,7 @@ export interface AIInterviewResponse {
 }
 
 // ============================================
-// Stored Interview (Vercel KV)
+// Stored Interview (Supabase Postgres via Supabase)
 // ============================================
 
 export interface StoredInterview {
@@ -248,8 +248,8 @@ export interface ResearcherAccount {
   onboardingComplete: boolean;
 
   // Encrypted credentials — never sent to client
-  encryptedRedisUrl: string | null;
-  encryptedRedisToken: string | null;
+  encryptedRedisUrl: string | null;   // Deprecated; kept for compatibility.
+  encryptedRedisToken: string | null; // Deprecated; kept for compatibility.
   encryptedGeminiApiKey: string | null;
   encryptedAnthropicApiKey: string | null;
 
@@ -263,13 +263,13 @@ export interface ResearcherProfile {
   name: string;
   avatarUrl: string | null;
   onboardingComplete: boolean;
-  hasRedisConfigured: boolean;
+  hasRedisConfigured: boolean; // Deprecated name; means database storage is available.
   hasGeminiKey: boolean;
   hasAnthropicKey: boolean;
 }
 
 // ============================================
-// Stored Study (Vercel KV)
+// Stored Study (Supabase Postgres via Supabase)
 // ============================================
 
 export interface StoredStudy {

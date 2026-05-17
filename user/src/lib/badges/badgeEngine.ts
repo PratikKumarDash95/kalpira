@@ -4,7 +4,7 @@
 // Evaluates eligibility and awards badges transactionally
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 // ============================================
 // Badge Definitions
@@ -85,7 +85,7 @@ export interface AwardedBadge {
  *
  * Guarantees:
  * - No duplicate badge inserts (uses @@unique([userId, badgeName]) + findUnique guard)
- * - All writes in prisma.$transaction
+ * - All writes in supabaseDb.$transaction
  * - Never throws to caller — returns empty array on failure
  * - No LLM calls
  * - Never modifies scoring or adaptive logic
@@ -95,7 +95,7 @@ export interface AwardedBadge {
  */
 export async function evaluateAndAwardBadges(userId: string): Promise<AwardedBadge[]> {
     try {
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await supabaseDb.$transaction(async (tx) => {
             // 1. Fetch readiness score
             const readiness = await tx.readinessIndex.findUnique({
                 where: { userId },
@@ -214,7 +214,7 @@ export async function evaluateAndAwardBadges(userId: string): Promise<AwardedBad
  */
 export async function getUserBadges(userId: string): Promise<AwardedBadge[]> {
     try {
-        const badges = await prisma.badge.findMany({
+        const badges = await supabaseDb.badge.findMany({
             where: { userId },
             orderBy: { awardedAt: 'desc' },
             select: { badgeName: true, awardedAt: true },

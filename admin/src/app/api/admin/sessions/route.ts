@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { isAdminSession } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export async function GET() {
   }
 
   try {
-    const sessions = await prisma.interviewSession.findMany({
+    const sessions = await supabaseDb.interviewSession.findMany({
       orderBy: { startedAt: 'desc' },
       take: 50,
       select: {

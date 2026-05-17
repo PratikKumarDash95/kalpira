@@ -4,7 +4,7 @@
 // Transactional upsert of weak skill records
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 /** Shape of a weak skill memory record returned to callers */
 export interface WeakSkillRecord {
@@ -33,7 +33,7 @@ function normalizeTopic(topic: string): string {
  * - If no record exists: create with weaknessCount = 1, lastOccurredAt = now
  *
  * Guarantees:
- * - All writes in a single prisma.$transaction (atomic)
+ * - All writes in a single supabaseDb.$transaction (atomic)
  * - Topics are normalized (trimmed, lowercased) before storage
  * - Duplicate entries are impossible due to @@unique([userId, skillName])
  * - Empty or whitespace-only topics are silently skipped
@@ -62,7 +62,7 @@ export async function updateWeakSkills(
     }
 
     try {
-        await prisma.$transaction(async (tx) => {
+        await supabaseDb.$transaction(async (tx) => {
             for (const skillName of uniqueTopics) {
                 // Check if record exists
                 const existing = await tx.weakSkillMemory.findUnique({
@@ -112,7 +112,7 @@ export async function updateWeakSkills(
  */
 async function fetchSortedWeakSkills(userId: string): Promise<WeakSkillRecord[]> {
     try {
-        const records = await prisma.weakSkillMemory.findMany({
+        const records = await supabaseDb.weakSkillMemory.findMany({
             where: { userId },
             orderBy: { weaknessCount: 'desc' },
             select: {

@@ -1,8 +1,8 @@
 // Platform Database Access Layer (Hosted Mode Only)
 // Stores researcher accounts, encrypted credentials, and study ownership
-// Migrated from Redis to SQLite/Prisma
+// Uses Supabase over Supabase Postgres.
 
-import prisma from './prisma';
+import supabaseDb from './supabaseDb';
 import { ResearcherAccount, ResearcherProfile } from '@/types';
 
 // ============================================
@@ -11,7 +11,7 @@ import { ResearcherAccount, ResearcherProfile } from '@/types';
 
 export async function getResearcherById(id: string): Promise<ResearcherAccount | null> {
   try {
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await supabaseDb.user.findUnique({ where: { id } });
     if (!user) return null;
     return userToResearcherAccount(user);
   } catch (error) {
@@ -25,7 +25,7 @@ export async function getResearcherByOAuth(
   oauthId: string
 ): Promise<ResearcherAccount | null> {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await supabaseDb.user.findUnique({
       where: {
         oauthProvider_oauthId: {
           oauthProvider: provider,
@@ -43,7 +43,7 @@ export async function getResearcherByOAuth(
 
 export async function getResearcherByEmail(email: string): Promise<ResearcherAccount | null> {
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await supabaseDb.user.findUnique({ where: { email } });
     if (!user) return null;
     return userToResearcherAccount(user);
   } catch (error) {
@@ -54,7 +54,7 @@ export async function getResearcherByEmail(email: string): Promise<ResearcherAcc
 
 export async function saveResearcher(researcher: ResearcherAccount): Promise<boolean> {
   try {
-    await prisma.user.upsert({
+    await supabaseDb.user.upsert({
       where: { id: researcher.id },
       update: {
         email: researcher.email,
@@ -90,28 +90,28 @@ export async function updateResearcher(
   updates: Partial<ResearcherAccount>
 ): Promise<boolean> {
   try {
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await supabaseDb.user.findUnique({ where: { id } });
     if (!user) return false;
 
-    // Map ResearcherAccount fields to Prisma User fields
-    const prismaUpdates: Record<string, unknown> = {};
+    // Map ResearcherAccount fields to Supabase User fields
+    const supabaseDbUpdates: Record<string, unknown> = {};
     if (updates.encryptedGeminiApiKey !== undefined) {
-      prismaUpdates.encryptedGeminiApiKey = updates.encryptedGeminiApiKey;
+      supabaseDbUpdates.encryptedGeminiApiKey = updates.encryptedGeminiApiKey;
     }
     if (updates.encryptedAnthropicApiKey !== undefined) {
-      prismaUpdates.encryptedAnthropicApiKey = updates.encryptedAnthropicApiKey;
+      supabaseDbUpdates.encryptedAnthropicApiKey = updates.encryptedAnthropicApiKey;
     }
     if (updates.onboardingComplete !== undefined) {
-      prismaUpdates.onboardingComplete = updates.onboardingComplete;
+      supabaseDbUpdates.onboardingComplete = updates.onboardingComplete;
     }
     if (updates.name !== undefined) {
-      prismaUpdates.name = updates.name;
+      supabaseDbUpdates.name = updates.name;
     }
     if (updates.avatarUrl !== undefined) {
-      prismaUpdates.avatarUrl = updates.avatarUrl;
+      supabaseDbUpdates.avatarUrl = updates.avatarUrl;
     }
 
-    await prisma.user.update({ where: { id }, data: prismaUpdates });
+    await supabaseDb.user.update({ where: { id }, data: supabaseDbUpdates });
     return true;
   } catch (error) {
     console.error('Error updating researcher:', error);
@@ -128,7 +128,7 @@ export async function registerStudyOwnership(
   researcherId: string
 ): Promise<boolean> {
   try {
-    await prisma.study.update({
+    await supabaseDb.study.update({
       where: { id: studyId },
       data: { userId: researcherId },
     });
@@ -141,7 +141,7 @@ export async function registerStudyOwnership(
 
 export async function getStudyOwner(studyId: string): Promise<string | null> {
   try {
-    const study = await prisma.study.findUnique({
+    const study = await supabaseDb.study.findUnique({
       where: { id: studyId },
       select: { userId: true },
     });
@@ -154,7 +154,7 @@ export async function getStudyOwner(studyId: string): Promise<string | null> {
 
 export async function deleteStudyOwnership(studyId: string): Promise<boolean> {
   try {
-    await prisma.study.update({
+    await supabaseDb.study.update({
       where: { id: studyId },
       data: { userId: null },
     });
@@ -169,7 +169,7 @@ export async function deleteStudyOwnership(studyId: string): Promise<boolean> {
 // Helpers
 // ============================================
 
-// Convert Prisma User row to ResearcherAccount domain type
+// Convert Supabase User row to ResearcherAccount domain type
 function userToResearcherAccount(user: {
   id: string;
   email: string | null;
@@ -193,11 +193,11 @@ function userToResearcherAccount(user: {
     createdAt: user.createdAt.getTime(),
     lastLoginAt: user.updatedAt.getTime(),
     onboardingComplete: user.onboardingComplete,
-    encryptedRedisUrl: null,      // No longer used — Redis removed
-    encryptedRedisToken: null,    // No longer used — Redis removed
+    encryptedRedisUrl: null,      // No longer used - storage is Supabase Postgres
+    encryptedRedisToken: null,    // No longer used - storage is Supabase Postgres
     encryptedGeminiApiKey: user.encryptedGeminiApiKey,
     encryptedAnthropicApiKey: user.encryptedAnthropicApiKey,
-    redisConfiguredAt: null,      // No longer used — Redis removed
+    redisConfiguredAt: null,      // No longer used - storage is Supabase Postgres
   };
 }
 
@@ -209,7 +209,7 @@ export function toResearcherProfile(account: ResearcherAccount): ResearcherProfi
     name: account.name,
     avatarUrl: account.avatarUrl,
     onboardingComplete: account.onboardingComplete,
-    hasRedisConfigured: true,  // Always true — SQLite is always available
+    hasRedisConfigured: true,  // Kept for compatibility; storage is Supabase Postgres.
     hasGeminiKey: !!account.encryptedGeminiApiKey,
     hasAnthropicKey: !!account.encryptedAnthropicApiKey,
   };

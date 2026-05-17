@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,8 +22,12 @@
       }
     ],
     "paths": {
-      "@/*": ["../user/src/*"],
-      "@interviewer/*": ["./src/*"]
+      "@/*": [
+        "../user/src/*"
+      ],
+      "@interviewer/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
@@ -30,7 +38,10 @@
     "../user/src/components/StudySetup.tsx",
     "../user/src/store.ts",
     "../user/src/types.ts",
-    "../user/src/services/**/*.ts"
+    "../user/src/services/**/*.ts",
+    ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

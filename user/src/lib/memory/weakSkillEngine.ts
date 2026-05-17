@@ -4,7 +4,7 @@
 // Read-only — fetches top weak skills by frequency
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 /**
  * Retrieves the top N weakest skills for a user, ordered by weakness frequency.
@@ -24,7 +24,7 @@ export async function getTopWeakSkills(
     limit: number = 5
 ): Promise<string[]> {
     try {
-        const records = await prisma.weakSkillMemory.findMany({
+        const records = await supabaseDb.weakSkillMemory.findMany({
             where: { userId },
             orderBy: { weaknessCount: 'desc' },
             take: Math.max(1, Math.floor(limit)),

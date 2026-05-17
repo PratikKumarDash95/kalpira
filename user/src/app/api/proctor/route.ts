@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
                     : null);
 
         // In a real implementation, you would store this in your database
-        // e.g. await prisma.violation.create({ ... })
+        // e.g. await supabaseDb.violation.create({ ... })
         console.log(`[Proctor API] Violation reported for session ${sessionId}: ${type} - ${details || ''}`);
         if (isCritical) {
             console.log(`[Proctor API] Session ${sessionId} marked ${tag || 'cheating'}: ${finalReason}`);

@@ -1,5 +1,5 @@
 // Storage Service - Client-side interface for interview storage
-// Calls API routes which interact with Vercel KV
+// Calls API routes which persist through Supabase to Supabase Postgres.
 
 import { StoredInterview, StoredStudy } from '@/types';
 

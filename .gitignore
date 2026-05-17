@@ -24,6 +24,12 @@ coverage
 .env.test.local
 .env.production.local
 
+# Local databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # Vercel
 .vercel
 

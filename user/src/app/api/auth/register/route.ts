@@ -1,7 +1,7 @@
 // POST /api/auth/register - Researcher registration
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME, hashPassword } from '@/lib/auth';
 import { isHostedMode } from '@/lib/mode';
 
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         }
 
         // Check if user already exists
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await supabaseDb.user.findUnique({
             where: { email },
         });
 
@@ -35,14 +35,14 @@ export async function POST(request: Request) {
         const passwordHash = await hashPassword(password);
 
         // Create user
-        const user = await prisma.user.create({
+        const user = await supabaseDb.user.create({
             data: {
                 email,
                 password: passwordHash, // We store the hashed password (salt:hash) here
                 name,
                 // In hosted mode, we might want to flag standalone accounts differently, 
                 // but for now, we treat password-based users as standalone/admin equivalents in the context of authentication.
-                // However, Prisma schema comment says "Hashed password for standalone mode".
+                // However, Supabase schema comment says "Hashed password for standalone mode".
                 // We are enabling it generally for this feature request.
             },
         });

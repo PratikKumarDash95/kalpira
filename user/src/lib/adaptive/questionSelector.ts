@@ -4,7 +4,7 @@
 // Pure database logic — no LLM, no scoring
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import type { DifficultyLevel } from './difficultyEngine';
 
 /** Parameters for selecting the next question */
@@ -19,7 +19,7 @@ export interface QuestionSelectionParams {
     weakTopics?: string[];
 }
 
-/** Shape of the returned question (matches Prisma Question model) */
+/** Shape of the returned question (matches Supabase Question model) */
 export interface SelectedQuestion {
     id: string;
     text: string;
@@ -50,7 +50,7 @@ export async function selectNextQuestion(
     const { sessionId, difficulty, category, weakTopics } = params;
 
     // Step 1: Build exclusion list — all questions already asked in this session
-    const askedQuestions = await prisma.question.findMany({
+    const askedQuestions = await supabaseDb.question.findMany({
         where: { sessionId },
         select: { id: true },
     });
@@ -110,7 +110,7 @@ async function attemptPrimarySelection(
         return null;
     }
 
-    const candidates = await prisma.question.findMany({
+    const candidates = await supabaseDb.question.findMany({
         where: {
             difficulty,
             id: { notIn: excludedIds.length > 0 ? excludedIds : undefined },
@@ -134,7 +134,7 @@ async function attemptDifficultyOnlySelection(
     difficulty: DifficultyLevel,
     excludedIds: string[]
 ): Promise<SelectedQuestion | null> {
-    const candidates = await prisma.question.findMany({
+    const candidates = await supabaseDb.question.findMany({
         where: {
             difficulty,
             id: { notIn: excludedIds.length > 0 ? excludedIds : undefined },
@@ -156,7 +156,7 @@ async function attemptDifficultyOnlySelection(
 async function attemptFinalFallback(
     difficulty: DifficultyLevel
 ): Promise<SelectedQuestion | null> {
-    const candidates = await prisma.question.findMany({
+    const candidates = await supabaseDb.question.findMany({
         where: { difficulty },
         select: {
             id: true,

@@ -1,12 +1,13 @@
-// SQLite/Prisma Storage Layer
-// Replaces the previous Redis-based kv.ts
-// All functions maintain the same public API signatures used by API routes
+// Supabase Storage Layer
+// Backed by Supabase Postgres through DATABASE_URL.
+// This file keeps the old kv.ts public API so existing API routes do not need
+// to know which database implementation backs persistent storage.
 
-import prisma from './prisma';
+import supabaseDb from './supabaseDb';
 import { StoredInterview, StoredStudy } from '@/types';
 
 // ============================================
-// Helper: Convert Prisma StoredInterview row to domain type
+// Helper: Convert Supabase StoredInterview row to domain type
 // ============================================
 function toDomainInterview(row: {
   id: string;
@@ -39,7 +40,7 @@ function toDomainInterview(row: {
 }
 
 // ============================================
-// Helper: Convert Prisma Study row to domain type
+// Helper: Convert Supabase Study row to domain type
 // ============================================
 function toDomainStudy(row: {
   id: string;
@@ -65,7 +66,7 @@ function toDomainStudy(row: {
 
 export async function getInterview(id: string, userId?: string | null): Promise<StoredInterview | null> {
   try {
-    const row = await prisma.storedInterview.findFirst({
+    const row = await supabaseDb.storedInterview.findFirst({
       where: {
         id,
         ...(userId ? { OR: [{ userId }, { study: { userId } }] } : {}),
@@ -81,7 +82,7 @@ export async function getInterview(id: string, userId?: string | null): Promise<
 
 export async function saveInterview(interview: StoredInterview): Promise<boolean> {
   try {
-    await prisma.storedInterview.upsert({
+    await supabaseDb.storedInterview.upsert({
       where: { id: interview.id },
       update: {
         studyId: interview.studyId,
@@ -117,7 +118,7 @@ export async function saveInterview(interview: StoredInterview): Promise<boolean
 
 export async function getAllInterviews(userId?: string | null): Promise<StoredInterview[]> {
   try {
-    const rows = await prisma.storedInterview.findMany({
+    const rows = await supabaseDb.storedInterview.findMany({
       where: userId ? { OR: [{ userId }, { study: { userId } }] } : {},
       orderBy: { createdAt: 'desc' },
     });
@@ -130,7 +131,7 @@ export async function getAllInterviews(userId?: string | null): Promise<StoredIn
 
 export async function getStudyInterviews(studyId: string, userId?: string | null): Promise<StoredInterview[]> {
   try {
-    const rows = await prisma.storedInterview.findMany({
+    const rows = await supabaseDb.storedInterview.findMany({
       where: {
         studyId,
         ...(userId ? { OR: [{ userId }, { study: { userId } }] } : {}),
@@ -146,7 +147,7 @@ export async function getStudyInterviews(studyId: string, userId?: string | null
 
 export async function deleteInterview(id: string, studyId: string, userId?: string | null): Promise<boolean> {
   try {
-    const result = await prisma.storedInterview.deleteMany({
+    const result = await supabaseDb.storedInterview.deleteMany({
       where: {
         id,
         studyId,
@@ -166,9 +167,8 @@ export async function deleteInterview(id: string, studyId: string, userId?: stri
 
 export async function isKVAvailable(): Promise<boolean> {
   try {
-    // SQLite is always available as an embedded database
-    // Just verify the connection works
-    await prisma.$queryRaw`SELECT 1`;
+    // Verify the Supabase connection to Supabase Postgres works.
+    await supabaseDb.$queryRaw`SELECT 1`;
     return true;
   } catch {
     return false;
@@ -181,7 +181,7 @@ export async function isKVAvailable(): Promise<boolean> {
 
 export async function saveStudy(study: StoredStudy, userId?: string | null): Promise<boolean> {
   try {
-    await prisma.study.upsert({
+    await supabaseDb.study.upsert({
       where: { id: study.id },
       update: {
         configJSON: JSON.stringify(study.config),
@@ -209,7 +209,7 @@ export async function saveStudy(study: StoredStudy, userId?: string | null): Pro
 
 export async function getStudy(id: string, userId?: string | null): Promise<StoredStudy | null> {
   try {
-    const row = await prisma.study.findFirst({
+    const row = await supabaseDb.study.findFirst({
       where: {
         id,
         ...(userId ? { userId } : {}),
@@ -225,7 +225,7 @@ export async function getStudy(id: string, userId?: string | null): Promise<Stor
 
 export async function getAllStudies(userId?: string | null): Promise<StoredStudy[]> {
   try {
-    const rows = await prisma.study.findMany({
+    const rows = await supabaseDb.study.findMany({
       where: userId ? { userId } : {},
       orderBy: { createdAt: 'desc' },
     });
@@ -238,7 +238,7 @@ export async function getAllStudies(userId?: string | null): Promise<StoredStudy
 
 export async function deleteStudy(id: string, userId?: string | null): Promise<{ success: boolean; error?: string }> {
   try {
-    const study = await prisma.study.findFirst({
+    const study = await supabaseDb.study.findFirst({
       where: {
         id,
         ...(userId ? { userId } : {}),
@@ -251,16 +251,16 @@ export async function deleteStudy(id: string, userId?: string | null): Promise<{
     }
 
     // Check for interviews first
-    const interviewCount = await prisma.storedInterview.count({
+    const interviewCount = await supabaseDb.storedInterview.count({
       where: { studyId: id },
     });
 
     if (interviewCount > 0) {
       // Delete all associated interviews first (cascade)
-      await prisma.storedInterview.deleteMany({ where: { studyId: id } });
+      await supabaseDb.storedInterview.deleteMany({ where: { studyId: id } });
     }
 
-    await prisma.study.delete({ where: { id } });
+    await supabaseDb.study.delete({ where: { id } });
     return { success: true };
   } catch (error) {
     console.error('Error deleting study:', error);
@@ -274,7 +274,7 @@ export async function deleteStudy(id: string, userId?: string | null): Promise<{
 
 export async function incrementStudyInterviewCount(studyId: string): Promise<void> {
   try {
-    await prisma.study.update({
+    await supabaseDb.study.update({
       where: { id: studyId },
       data: { interviewCount: { increment: 1 } },
     });
@@ -285,7 +285,7 @@ export async function incrementStudyInterviewCount(studyId: string): Promise<voi
 
 export async function lockStudy(studyId: string): Promise<void> {
   try {
-    await prisma.study.update({
+    await supabaseDb.study.update({
       where: { id: studyId },
       data: { isLocked: true },
     });

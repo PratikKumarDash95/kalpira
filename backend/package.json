@@ -8,12 +8,11 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "node server/server.js",
-    "test": "node scripts/test-db.ts"
+    "test": "echo \"No backend database test script. Supabase is the database layer.\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
     "@google/genai": "^1.0.0",
-    "@prisma/client": "^5.22.0",
     "arctic": "^3.7.0",
     "axios": "^1.13.5",
     "cors": "^2.8.6",
@@ -21,8 +20,7 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "prisma": "^5.22.0"
+    "@types/node": "^20"
   },
   "engines": {
     "node": ">=20.0.0"

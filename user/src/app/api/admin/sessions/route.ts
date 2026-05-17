@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ export async function GET() {
     }
 
     try {
-        const sessions = await prisma.interviewSession.findMany({
+        const sessions = await supabaseDb.interviewSession.findMany({
             orderBy: { startedAt: 'desc' },
             take: 50,
             select: {

@@ -1,7 +1,7 @@
 // Researcher Context Resolution
 // Central abstraction for resolving per-request credentials in both deployment modes
 // Every API route calls one of these to get the appropriate DB access and API keys
-// Migrated from Redis to SQLite/Prisma — kvClient removed entirely
+// Uses Supabase over Supabase Postgres for persistent app data.
 
 import { cookies } from 'next/headers';
 import { isStandaloneMode, isHostedMode } from './mode';
@@ -9,7 +9,7 @@ import { getResearcherById, getStudyOwner } from './platformDb';
 import { decrypt } from './crypto';
 import { verifySessionToken, verifyParticipantToken, SESSION_COOKIE_NAME } from './auth';
 import { getStudy } from './kv';
-import prisma from './prisma';
+import supabaseDb from './supabaseDb';
 
 export interface ResearcherContext {
   // Identity (null in standalone mode, unless mapped to userId)
@@ -48,8 +48,8 @@ async function resolveById(researcherId: string): Promise<ResearcherContext> {
 async function getStandaloneContext(userId?: string): Promise<ResearcherContext> {
   // In standalone mode, use the single admin user as the context user
   const user = userId
-    ? await prisma.user.findUnique({ where: { id: userId } })
-    : await prisma.user.findFirst();
+    ? await supabaseDb.user.findUnique({ where: { id: userId } })
+    : await supabaseDb.user.findFirst();
 
   return {
     researcherId: null,

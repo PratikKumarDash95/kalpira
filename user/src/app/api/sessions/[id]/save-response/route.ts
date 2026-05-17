@@ -1,6 +1,6 @@
 // POST /api/sessions/[id]/save-response — Save a Q&A pair with scores to DB
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +51,7 @@ export async function POST(
         }
 
         // Verify session exists
-        const session = await prisma.interviewSession.findUnique({
+        const session = await supabaseDb.interviewSession.findUnique({
             where: { id: sessionId },
             include: { study: true },
         });
@@ -72,7 +72,7 @@ export async function POST(
         }
 
         // Create question record
-        const question = await prisma.question.create({
+        const question = await supabaseDb.question.create({
             data: {
                 sessionId,
                 text: questionText,
@@ -82,7 +82,7 @@ export async function POST(
         });
 
         // Create response record with scores
-        const response = await prisma.response.create({
+        const response = await supabaseDb.response.create({
             data: {
                 sessionId,
                 questionId: question.id,

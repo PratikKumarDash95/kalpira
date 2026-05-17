@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     try {
         // Cast to any to bypass stale client types until restart
-        await (prisma.user.update as any)({
+        await (supabaseDb.user.update as any)({
             where: { email },
             data: { role: 'interviewer' },
         });

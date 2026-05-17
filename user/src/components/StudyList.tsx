@@ -261,7 +261,7 @@ const StudyList: React.FC = () => {
           </AnimatePresence>
         </motion.div>
 
-        {/* KV Warning Banner */}
+        {/* Storage Warning Banner */}
         {kvWarning && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -273,7 +273,7 @@ const StudyList: React.FC = () => {
               <h4 className="font-medium text-amber-300 mb-1">Storage Not Configured</h4>
               <p className="text-sm text-amber-400/80">{kvWarning}</p>
               <p className="text-sm text-amber-400/60 mt-2">
-                See the README for setup instructions using Vercel KV (Upstash Redis).
+                Check Supabase project and table setup for Supabase Postgres.
               </p>
             </div>
           </motion.div>

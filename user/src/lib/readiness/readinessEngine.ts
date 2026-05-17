@@ -4,7 +4,7 @@
 // Fetches data, computes readiness, upserts atomically
 // ============================================
 
-import prisma from '@/lib/prisma';
+import supabaseDb from '@/lib/supabaseDb';
 import { calculateReadiness, type DifficultyLevel } from './readinessCalculator';
 
 /** Valid difficulty values for runtime guard */
@@ -32,7 +32,7 @@ const VALID_DIFFICULTIES: ReadonlySet<string> = new Set(['easy', 'medium', 'hard
  */
 export async function updateReadinessIndex(userId: string): Promise<number> {
     try {
-        const readinessScore = await prisma.$transaction(async (tx) => {
+        const readinessScore = await supabaseDb.$transaction(async (tx) => {
             // 1. Fetch the latest session
             const latestSession = await tx.interviewSession.findFirst({
                 where: { userId },
@@ -134,7 +134,7 @@ export async function updateReadinessIndex(userId: string): Promise<number> {
  */
 export async function getReadinessScore(userId: string): Promise<number> {
     try {
-        const record = await prisma.readinessIndex.findUnique({
+        const record = await supabaseDb.readinessIndex.findUnique({
             where: { userId },
             select: { readinessScore: true },
         });
