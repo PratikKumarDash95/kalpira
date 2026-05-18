@@ -38,6 +38,10 @@ export async function POST(_request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: 'This interview is not assigned to your email' }, { status: 403 });
   }
 
+  if (session.completedAt || session.mode === 'terminated') {
+    return NextResponse.json({ error: 'This interview has already been completed or terminated' }, { status: 409 });
+  }
+
   if (!session.study) {
     return NextResponse.json({ error: 'Interview study not found' }, { status: 404 });
   }

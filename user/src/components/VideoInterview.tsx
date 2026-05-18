@@ -292,6 +292,13 @@ const VideoInterview: React.FC = () => {
                     }),
                 });
                 const data = await res.json();
+
+                if (!res.ok) {
+                    const reason = data.error || 'This interview is no longer available.';
+                    router.push(`/interview/terminated?reason=${encodeURIComponent(reason)}`);
+                    return;
+                }
+
                 setSessionId(data.sessionId);
                 setSessionGuest(data.guest || false);
             } catch {
@@ -300,7 +307,7 @@ const VideoInterview: React.FC = () => {
             }
         };
         if (studyConfig) startSession();
-    }, [studyConfig]);
+    }, [studyConfig, router]);
 
     // ── Initialize Greeting ───────────────────────────────────────────────────────
     useEffect(() => {

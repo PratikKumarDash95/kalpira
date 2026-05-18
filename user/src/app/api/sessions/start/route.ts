@@ -90,6 +90,46 @@ export async function POST(request: Request) {
             return NextResponse.json({ sessionId: `guest-${Date.now()}`, guest: true });
         }
 
+        const normalizedCandidateEmail = normalizeEmail(candidateEmail);
+        if (studyId && normalizedCandidateEmail) {
+            const existingSession = await supabaseDb.interviewSession.findFirst({
+                where: {
+                    studyId,
+                    candidateEmail: normalizedCandidateEmail,
+                },
+            });
+
+            if (existingSession?.completedAt || existingSession?.mode === 'terminated') {
+                return NextResponse.json(
+                    {
+                        error: existingSession.mode === 'terminated'
+                            ? 'This interview was terminated and cannot be rejoined.'
+                            : 'This interview has already been completed.',
+                    },
+                    { status: 409 }
+                );
+            }
+
+            if (existingSession) {
+                const session = existingSession.mode === 'assigned'
+                    ? await supabaseDb.interviewSession.update({
+                        where: { id: existingSession.id },
+                        data: {
+                            userId,
+                            role,
+                            difficulty,
+                            mode,
+                            startedAt: new Date(),
+                            ...(candidateName && { candidateName }),
+                            candidateEmail: normalizedCandidateEmail,
+                        },
+                    })
+                    : existingSession;
+
+                return NextResponse.json({ sessionId: session.id, guest: false, reused: true });
+            }
+        }
+
         const session = await supabaseDb.interviewSession.create({
             data: {
                 userId,
@@ -101,7 +141,7 @@ export async function POST(request: Request) {
                 // Interviewer-linked fields (optional)
                 ...(studyId && { studyId }),
                 ...(candidateName && { candidateName }),
-                ...(candidateEmail && { candidateEmail }),
+                ...(normalizedCandidateEmail && { candidateEmail: normalizedCandidateEmail }),
             },
         });
 
