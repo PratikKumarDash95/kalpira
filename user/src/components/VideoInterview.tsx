@@ -454,11 +454,7 @@ const VideoInterview: React.FC = () => {
             }
             setActiveStream(null);
 
-            // Navigate IMMEDIATELY
-            // Navigate with fallback
-            const targetUrl = (sessionId && !sessionGuest) ? `/results/${sessionId}` : '/synthesis';
-
-            if (sessionGuest) setStep('synthesis');
+            const targetUrl = '/dashboard';
 
             // Attempt Next.js router first
             router.push(targetUrl);
@@ -468,7 +464,7 @@ const VideoInterview: React.FC = () => {
                 window.location.href = targetUrl;
             }, 3000);
         }
-    }, [isFinishing, sessionId, sessionGuest, router, completeInterview, setStep]);
+    }, [isFinishing, sessionId, participantToken, router, completeInterview]);
 
     const isComplete = questionProgress.isComplete;
     const totalQuestions = studyConfig?.coreQuestions?.length || 0;
@@ -483,7 +479,7 @@ const VideoInterview: React.FC = () => {
     }
 
     return (
-        <VideoProctorGuard sessionId={sessionId} strictMode={true} onFullscreenExit={handleFinish} mediaStream={activeStream}>
+        <VideoProctorGuard sessionId={sessionId} strictMode={true} mediaStream={activeStream}>
             <div className="flex flex-col h-screen bg-slate-950 overflow-hidden">
                 {/* ── Top Bar ── */}
                 <div className="h-14 flex items-center justify-between px-3 sm:px-6 bg-slate-900/80 border-b border-slate-800 backdrop-blur-md flex-shrink-0 gap-2">

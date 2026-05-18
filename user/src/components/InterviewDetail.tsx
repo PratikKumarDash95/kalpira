@@ -59,6 +59,8 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
 
   const handleDownloadTranscript = () => {
     if (!interview) return;
+    const transcript = interview.transcript ?? [];
+    const profileFields = interview.participantProfile?.fields ?? [];
 
     const lines = [
       `# Interview Transcript`,
@@ -68,9 +70,9 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
     ];
 
     // Add participant profile
-    if (interview.participantProfile?.fields.length > 0) {
+    if (profileFields.length > 0) {
       lines.push(`## Participant Profile`);
-      interview.participantProfile.fields.forEach(f => {
+      profileFields.forEach(f => {
         if (f.status === 'extracted' && f.value) {
           lines.push(`- **${f.fieldId}**: ${f.value}`);
         }
@@ -81,7 +83,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
     lines.push(`## Conversation`);
     lines.push(``);
 
-    interview.transcript.forEach(msg => {
+    transcript.forEach(msg => {
       const time = new Date(msg.timestamp).toLocaleTimeString();
       const role = msg.role === 'user' ? 'PARTICIPANT' : 'INTERVIEWER';
       lines.push(`[${time}] ${role}:`);
@@ -152,6 +154,15 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
     );
   }
 
+  const transcript = interview.transcript ?? [];
+  const profileFields = interview.participantProfile?.fields ?? [];
+  const synthesis = interview.synthesis;
+  const statedPreferences = synthesis?.statedPreferences ?? [];
+  const revealedPreferences = synthesis?.revealedPreferences ?? [];
+  const themes = synthesis?.themes ?? [];
+  const contradictions = synthesis?.contradictions ?? [];
+  const keyInsights = synthesis?.keyInsights ?? [];
+
   return (
     <div className="kalpira-light min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
@@ -179,7 +190,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                 </div>
                 <div className="flex items-center gap-1">
                   <MessageSquare size={14} />
-                  {interview.transcript.length} messages
+                  {transcript.length} messages
                 </div>
                 <div>
                   {new Date(interview.createdAt).toLocaleDateString('en-US', {
@@ -211,7 +222,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
         </motion.div>
 
         {/* Participant Profile */}
-        {interview.participantProfile && interview.participantProfile.fields.length > 0 && (
+        {profileFields.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -223,7 +234,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
               Participant Profile
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-              {interview.participantProfile.fields
+              {profileFields
                 .filter(f => f.status === 'extracted' && f.value)
                 .map(f => (
                   <div key={f.fieldId}>
@@ -267,7 +278,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
             className="bg-stone-800/50 rounded-xl border border-stone-700 p-6"
           >
             <div className="space-y-4">
-              {interview.transcript.map((msg, i) => (
+              {transcript.map((msg, i) => (
                 <div
                   key={i}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -309,7 +320,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {interview.synthesis ? (
+            {synthesis ? (
               <>
                 {/* Key Insight */}
                 <div className="bg-stone-700 text-white rounded-xl p-6">
@@ -319,7 +330,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                       Key Insight
                     </span>
                   </div>
-                  <p className="text-xl font-medium">{interview.synthesis.bottomLine}</p>
+                  <p className="text-xl font-medium">{synthesis.bottomLine}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -336,7 +347,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                           What they said
                         </div>
                         <div className="space-y-1">
-                          {interview.synthesis.statedPreferences.map((item, i) => (
+                          {statedPreferences.map((item, i) => (
                             <div
                               key={i}
                               className="text-sm bg-stone-800 text-stone-300 px-3 py-1.5 rounded-lg"
@@ -352,7 +363,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                           What behavior revealed
                         </div>
                         <div className="space-y-1">
-                          {interview.synthesis.revealedPreferences.map((item, i) => (
+                          {revealedPreferences.map((item, i) => (
                             <div
                               key={i}
                               className="text-sm bg-stone-700 text-stone-200 px-3 py-1.5 rounded-lg"
@@ -373,7 +384,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                     </h3>
 
                     <div className="space-y-3">
-                      {interview.synthesis.themes.map((theme, i) => (
+                      {themes.map((theme, i) => (
                         <div key={i} className="border-b border-stone-700 pb-3 last:border-0">
                           <div className="font-medium text-stone-100">{theme.theme}</div>
                           <div className="text-sm text-stone-400 mt-1">{theme.evidence}</div>
@@ -384,14 +395,14 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                 </div>
 
                 {/* Contradictions */}
-                {interview.synthesis.contradictions.length > 0 && (
+                {contradictions.length > 0 && (
                   <div className="bg-stone-800 border border-stone-600 rounded-xl p-6">
                     <h3 className="font-semibold text-stone-200 mb-3 flex items-center gap-2">
                       <AlertTriangle size={18} className="text-stone-400" />
                       Potential Contradictions
                     </h3>
                     <ul className="space-y-2">
-                      {interview.synthesis.contradictions.map((c, i) => (
+                      {contradictions.map((c, i) => (
                         <li key={i} className="text-stone-300 text-sm">
                           {c}
                         </li>
@@ -406,7 +417,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                     Additional Insights
                   </h3>
                   <ul className="space-y-2">
-                    {interview.synthesis.keyInsights.map((insight, i) => (
+                    {keyInsights.map((insight, i) => (
                       <li key={i} className="flex items-start gap-2 text-stone-300">
                         <span className="text-stone-500 mt-1">-</span>
                         {insight}

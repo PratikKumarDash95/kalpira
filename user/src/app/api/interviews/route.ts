@@ -38,11 +38,20 @@ export async function GET(request: Request) {
 
     const ownerId = researcherId || context.userId;
     if (ownerId) {
-      // 1. INTERVIEWER VIEW: Only show sessions from studies OWNED by this researcher
-      // This strictly hides "practice" sessions or other users' private data
-      where.study = {
-        userId: ownerId
-      };
+      // The Supabase shim cannot evaluate nested relation filters before includes load.
+      // Resolve owned study IDs first, then constrain sessions by studyId.
+      const ownedStudies = await supabaseDb.study.findMany({
+        where: { userId: ownerId },
+        select: { id: true },
+      });
+
+      const ownedStudyIds = ownedStudies.map((study: { id: string }) => study.id);
+
+      if (ownedStudyIds.length === 0) {
+        return NextResponse.json({ interviews: [] });
+      }
+
+      where.studyId = studyId ? studyId : { in: ownedStudyIds };
     }
 
     const sessions = await supabaseDb.interviewSession.findMany({
