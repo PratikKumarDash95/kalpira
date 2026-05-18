@@ -63,10 +63,18 @@ function mapSessionToStoredInterview(session: any): StoredInterview {
     studyId: session.studyId || 'practice',
     studyName: session.study?.configJSON ? JSON.parse(session.study.configJSON).name : (session.role || 'Practice Interview'),
     transcript,
-    participantProfile: {} as any, // Placeholder for strict type
+    participantProfile: {
+      id: `p-${session.id}`,
+      timestamp: new Date(session.startedAt).getTime(),
+      rawContext: '',
+      fields: [
+        { fieldId: 'name', value: session.candidateName || 'Candidate', status: 'extracted' },
+        { fieldId: 'email', value: session.candidateEmail || 'N/A', status: 'extracted' }
+      ]
+    },
     synthesis,
     behaviorData,
-    status: session.status as 'in_progress' | 'completed',
+    status: session.completedAt ? 'completed' : 'in_progress',
     createdAt: new Date(session.startedAt).getTime(),
     completedAt: session.completedAt ? new Date(session.completedAt).getTime() : Date.now(),
   };
