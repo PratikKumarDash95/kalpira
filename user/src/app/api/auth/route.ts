@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       const cookieStore = await cookies();
       cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, user: { id: user.id, role: user.role || 'candidate' } });
     }
 
     // Scenario 2: Legacy Standalone Admin Password (No Email)

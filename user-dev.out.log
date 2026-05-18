@@ -707,3 +707,425 @@
  GET /api/interviews?summary=1&limit=50 200 in 647ms
  GET /api/studies 200 in 568ms
  GET /api/interviews?summary=1&limit=50 200 in 582ms
+ GET /api/auth 200 in 340ms
+ GET /api/auth 200 in 88ms
+ GET /api/studies 200 in 1414ms
+ GET /api/auth 200 in 186ms
+ GET /api/auth 200 in 83ms
+ GET /api/studies 200 in 581ms
+ GET /api/interviews?summary=1&limit=50 200 in 569ms
+ GET /api/studies 200 in 498ms
+ GET /api/interviews?summary=1&limit=50 200 in 502ms
+ GET /api/studies 200 in 448ms
+ GET /api/interviews 200 in 420ms
+ GET /api/interviews 200 in 449ms
+ GET /api/auth 200 in 220ms
+ GET /api/auth 200 in 103ms
+ GET /api/studies 200 in 578ms
+ GET /api/interviews?summary=1&limit=50 200 in 607ms
+ GET /api/auth 200 in 108ms
+ GET /api/studies 200 in 582ms
+ GET /api/auth 200 in 127ms
+ GET /api/interviews?summary=1&limit=50 200 in 599ms
+ GET /api/studies 200 in 452ms
+ GET /api/studies 200 in 433ms
+ GET /api/auth 200 in 162ms
+ GET /api/auth 200 in 99ms
+ GET /api/interviews?summary=1&limit=50 200 in 571ms
+ GET /api/studies 200 in 585ms
+ GET /api/auth 200 in 102ms
+ GET /api/interviews?summary=1&limit=50 200 in 559ms
+ GET /api/studies 200 in 601ms
+ GET /api/auth 200 in 156ms
+ GET /api/studies 200 in 419ms
+ GET /api/studies 200 in 426ms
+ ✓ Compiled in 1017ms (903 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 1043ms (896 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.2s (1693 modules)
+ GET / 404 in 1274ms
+ GET / 404 in 79ms
+ ○ Compiling / ...
+ ✓ Compiled / in 3s (1713 modules)
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 971ms (843 modules)
+ GET /api/auth/me 200 in 2344ms
+ GET /api/auth/me 200 in 250ms
+ ✓ Compiled in 1066ms (1746 modules)
+ ✓ Compiled in 2.3s (1724 modules)
+ GET /dashboard 200 in 1675ms
+ ○ Compiling /api/interviews ...
+ ✓ Compiled /api/interviews in 3.9s (838 modules)
+ ✓ Compiled (847 modules)
+ GET /api/auth 200 in 5573ms
+ GET /api/auth 200 in 71ms
+ GET /api/interviews?summary=1&limit=50 200 in 6411ms
+ GET /api/studies 200 in 6505ms
+ GET /api/interviews?summary=1&limit=50 200 in 377ms
+ GET /api/studies 200 in 382ms
+ ○ Compiling /studies ...
+ ✓ Compiled /studies in 1401ms (676 modules)
+ ○ Compiling /api/studies ...
+ ✓ Compiled /api/studies in 853ms (846 modules)
+ ✓ Compiled (852 modules)
+ GET /api/auth 200 in 2048ms
+ GET /api/auth 200 in 133ms
+ GET /api/studies 200 in 3257ms
+ GET /api/studies 200 in 450ms
+ GET /api/auth 200 in 165ms
+ ○ Compiling /api/interviews ...
+ ✓ Compiled /api/interviews in 752ms (855 modules)
+ GET /api/auth 200 in 1802ms
+ GET /api/interviews?summary=1&limit=50 200 in 2710ms
+ GET /api/studies 200 in 2720ms
+ GET /allinterviews 200 in 1078ms
+ GET /api/interviews 200 in 381ms
+ GET /dashboard 200 in 230ms
+ GET /api/auth 200 in 165ms
+ GET /api/auth 200 in 107ms
+ GET /api/studies 200 in 832ms
+ GET /api/interviews?summary=1&limit=50 200 in 931ms
+ GET /api/studies 200 in 475ms
+ GET /api/interviews?summary=1&limit=50 200 in 462ms
+ GET /studies 200 in 107ms
+ GET /api/auth 200 in 198ms
+ GET /api/auth 200 in 82ms
+ GET /api/studies 200 in 537ms
+ GET /api/studies 200 in 469ms
+ GET / 200 in 106ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 2.1s (847 modules)
+ GET /api/auth/me 200 in 3321ms
+ GET /api/auth/me 200 in 2075ms
+ GET /api/auth 200 in 2173ms
+ GET /api/auth 200 in 208ms
+ GET /api/studies 200 in 2606ms
+ GET /api/auth/me 200 in 724ms
+ GET /api/auth/me 200 in 294ms
+ GET /api/studies 200 in 465ms
+ GET / 200 in 450ms
+ GET /api/auth/me 200 in 356ms
+ GET /api/auth/me 200 in 309ms
+ ○ Compiling /profile ...
+ ✓ Compiled /profile in 5.3s (1764 modules)
+ GET /api/auth/me 200 in 537ms
+ GET /api/auth/me 200 in 267ms
+ PATCH /api/auth/me 200 in 956ms
+ PATCH /api/auth/me 200 in 641ms
+ PATCH /api/auth/me 200 in 568ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 3.3s (1762 modules)
+ ✓ Compiled in 968ms (914 modules)
+ ○ Compiling /api/auth ...
+ ✓ Compiled /api/auth in 1005ms (850 modules)
+ ✓ Compiled (852 modules)
+ GET /api/auth 200 in 3021ms
+ GET /api/auth 200 in 180ms
+ GET /api/studies 200 in 3958ms
+ GET /api/studies 200 in 516ms
+ GET /api/auth/me 200 in 334ms
+ GET /api/auth/me 200 in 264ms
+ GET /api/auth/me 200 in 294ms
+ GET /api/auth/me 200 in 280ms
+ GET /api/auth 200 in 161ms
+ GET /api/auth 200 in 135ms
+ GET /api/studies 200 in 676ms
+ GET /api/studies 200 in 467ms
+ GET /api/auth/me 200 in 300ms
+ GET /api/auth/me 200 in 311ms
+ GET /api/auth 200 in 210ms
+ GET /api/auth 200 in 83ms
+ GET /api/studies 200 in 680ms
+ GET /api/studies 200 in 480ms
+ ✓ Compiled /dashboard in 504ms (864 modules)
+ ○ Compiling /api/interviews ...
+ ✓ Compiled /api/interviews in 2.3s (867 modules)
+ GET /api/auth 200 in 4808ms
+ GET /api/auth 200 in 459ms
+ GET /api/studies 200 in 7937ms
+ GET /api/interviews?summary=1&limit=50 200 in 8072ms
+ GET /api/studies 200 in 492ms
+ GET /api/interviews?summary=1&limit=50 200 in 479ms
+ GET /api/interviews?studyId=9ed1c623-8f71-48f0-82a4-ed597dc7ee34&summary=1&limit=50 200 in 604ms
+ GET /api/interviews?summary=1&limit=50 200 in 566ms
+ GET /api/interviews 200 in 472ms
+ GET /api/interviews 200 in 398ms
+ GET /api/auth 200 in 183ms
+ GET /api/auth 200 in 169ms
+ GET /api/studies 200 in 739ms
+ GET /api/interviews?summary=1&limit=50 200 in 859ms
+ GET /api/studies 200 in 698ms
+ GET /api/interviews?summary=1&limit=50 200 in 725ms
+ ✓ Compiled in 1393ms (1734 modules)
+ ✓ Compiled in 724ms (834 modules)
+ ✓ Compiled in 701ms (914 modules)
+ ✓ Compiled in 636ms (914 modules)
+ ✓ Compiled in 703ms (914 modules)
+ ✓ Compiled in 854ms (914 modules)
+ ✓ Compiled in 2.6s (1721 modules)
+ ✓ Compiled in 2.3s (1709 modules)
+ ✓ Compiled in 2.2s (1695 modules)
+ GET / 200 in 353ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 3.2s (821 modules)
+ GET /api/auth/me 200 in 5709ms
+ GET / 200 in 2439ms
+ GET /api/auth/me 200 in 326ms
+ GET /api/auth/me 200 in 300ms
+ ○ Compiling /profile ...
+ ✓ Compiled /profile in 3.9s (1747 modules)
+ GET /api/auth/me 200 in 455ms
+ GET /api/auth/me 200 in 285ms
+ ○ Compiling /api/profile/media ...
+ ✓ Compiled /api/profile/media in 625ms (833 modules)
+ POST /api/profile/media 200 in 1522ms
+ POST /api/profile/media 200 in 2011ms
+ POST /api/profile/media 200 in 1458ms
+ PATCH /api/auth/me 200 in 645ms
+ POST /api/profile/media 200 in 1758ms
+ PATCH /api/auth/me 200 in 670ms
+ ○ Compiling /api/auth ...
+ ✓ Compiled /api/auth in 3.5s (831 modules)
+ ✓ Compiled (833 modules)
+ GET /api/auth 200 in 5892ms
+ GET /api/auth 200 in 183ms
+ GET /api/studies 200 in 8360ms
+ GET /api/studies 200 in 453ms
+ GET /api/auth 200 in 266ms
+ GET /api/auth 200 in 113ms
+ GET /api/studies 200 in 1235ms
+ GET /api/studies 200 in 481ms
+ GET / 200 in 489ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 1253ms (835 modules)
+ GET /api/auth/me 200 in 1866ms
+ GET /api/auth/me 200 in 315ms
+ GET /api/auth/me 200 in 281ms
+ GET /api/auth/me 200 in 302ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 1214ms (848 modules)
+ GET /api/auth/me 200 in 710ms
+ GET /api/auth/me 200 in 354ms
+ GET /api/auth 200 in 227ms
+ GET /api/auth 200 in 117ms
+ GET /api/studies 200 in 872ms
+ GET /api/studies 200 in 506ms
+ GET /api/auth 200 in 244ms
+ ○ Compiling /api/interviews ...
+ ✓ Compiled /api/interviews in 3.8s (842 modules)
+ GET /api/auth 200 in 4331ms
+ GET /api/interviews?summary=1&limit=50 200 in 5213ms
+ GET /api/studies 200 in 5260ms
+ GET /api/interviews?summary=1&limit=50 200 in 397ms
+ GET /api/studies 200 in 404ms
+ GET /api/auth 200 in 240ms
+ GET /api/auth 200 in 99ms
+ GET /api/studies 200 in 747ms
+ GET /api/studies 200 in 528ms
+ GET /api/auth 200 in 208ms
+ GET /api/auth 200 in 146ms
+ GET /api/interviews?summary=1&limit=50 200 in 673ms
+ GET /api/studies 200 in 748ms
+ GET /api/interviews?summary=1&limit=50 200 in 706ms
+ GET /api/studies 200 in 676ms
+ ✓ Compiled /allinterviews in 433ms (849 modules)
+ GET /api/interviews 200 in 639ms
+ GET /api/interviews 200 in 420ms
+ GET /api/auth 200 in 197ms
+ GET /api/auth 200 in 116ms
+ GET /api/studies 200 in 570ms
+ GET /api/interviews?summary=1&limit=50 200 in 615ms
+ GET /api/studies 200 in 638ms
+ GET /api/interviews?summary=1&limit=50 200 in 595ms
+ GET /api/interviews 200 in 419ms
+ GET /api/interviews 200 in 411ms
+ GET /api/auth 200 in 200ms
+ GET /api/auth 200 in 130ms
+ GET /api/interviews?summary=1&limit=50 200 in 603ms
+ GET /api/studies 200 in 804ms
+ GET /api/interviews?summary=1&limit=50 200 in 544ms
+ GET /api/studies 200 in 571ms
+ GET /api/interviews 200 in 423ms
+ GET /api/interviews 200 in 406ms
+ GET /api/auth 200 in 229ms
+ GET /api/auth 200 in 118ms
+ GET /api/studies 200 in 642ms
+ GET /api/interviews?summary=1&limit=50 200 in 674ms
+ GET /api/studies 200 in 560ms
+ GET /api/interviews?summary=1&limit=50 200 in 587ms
+ GET /api/interviews 200 in 484ms
+ GET /api/interviews 200 in 388ms
+ GET /api/auth 200 in 329ms
+ GET /api/auth 200 in 131ms
+ GET /api/studies 200 in 750ms
+ GET /api/interviews?summary=1&limit=50 200 in 784ms
+ GET /api/studies 200 in 593ms
+ GET /api/interviews?summary=1&limit=50 200 in 599ms
+ GET /api/auth 200 in 152ms
+ GET /api/auth 200 in 121ms
+ GET /api/studies 200 in 508ms
+ GET /api/studies 200 in 478ms
+ ✓ Compiled in 2.2s (1573 modules)
+ ✓ Compiled in 1394ms (1573 modules)
+ ✓ Compiled in 1706ms (1573 modules)
+ ✓ Compiled in 2.2s (1573 modules)
+ GET /studies 200 in 309ms
+ ○ Compiling /api/auth ...
+ ✓ Compiled /api/auth in 1760ms (831 modules)
+ ✓ Compiled (833 modules)
+ GET /api/auth 200 in 2774ms
+ GET /api/auth 200 in 61ms
+ GET /api/studies 200 in 3710ms
+ GET /api/studies 200 in 405ms
+ ✓ Compiled /api/interviews in 488ms (836 modules)
+ GET /api/auth 200 in 1055ms
+ GET /api/auth 200 in 90ms
+ GET /api/studies 200 in 1431ms
+ GET /api/interviews?summary=1&limit=50 200 in 1457ms
+ GET /api/studies 200 in 583ms
+ GET /api/interviews?summary=1&limit=50 200 in 672ms
+ ✓ Compiled in 2.1s (1752 modules)
+ ✓ Compiled in 1406ms (1752 modules)
+ ✓ Compiled in 1248ms (1752 modules)
+ ✓ Compiled in 1238ms (1752 modules)
+ ✓ Compiled in 1105ms (1573 modules)
+ ✓ Compiled in 875ms (916 modules)
+ ✓ Compiled in 910ms (916 modules)
+ ✓ Compiled in 2s (1573 modules)
+ ✓ Compiled in 1000ms (1573 modules)
+ ✓ Compiled in 971ms (1573 modules)
+ ✓ Compiled in 1291ms (1573 modules)
+ ✓ Compiled in 1006ms (1573 modules)
+ ✓ Compiled in 580ms (916 modules)
+ ○ Compiling /api/auth ...
+ ✓ Compiled /api/auth in 2.3s (831 modules)
+ ✓ Compiled (833 modules)
+ GET /api/auth 200 in 3437ms
+ GET /api/auth 200 in 83ms
+ GET /api/studies 200 in 4398ms
+ GET /api/studies 200 in 416ms
+ ✓ Compiled in 2.2s (1749 modules)
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 969ms (831 modules)
+ GET /api/auth/me 200 in 1685ms
+ GET /api/auth/me 200 in 297ms
+ ✓ Compiled /api/auth in 506ms (833 modules)
+ ✓ Compiled (835 modules)
+ GET /api/auth 200 in 1245ms
+ GET /api/auth 200 in 77ms
+ GET /api/studies 200 in 1773ms
+ GET /api/studies 200 in 415ms
+ ✓ Compiled in 2.1s (1573 modules)
+ ✓ Compiled in 799ms (916 modules)
+ GET /studies 200 in 397ms
+ ○ Compiling /api/auth ...
+ ✓ Compiled /api/auth in 774ms (831 modules)
+ ✓ Compiled (833 modules)
+ GET /api/auth 200 in 1521ms
+ GET /api/auth 200 in 76ms
+ GET /api/studies 200 in 2897ms
+ GET /api/studies 200 in 435ms
+ POST /api/studies 200 in 1054ms
+ ○ Compiling /api/generate-link ...
+ ✓ Compiled /api/generate-link in 1164ms (835 modules)
+ POST /api/generate-link 200 in 1612ms
+ ○ Compiling /p/[token] ...
+ ✓ Compiled /p/[token] in 1849ms (1064 modules)
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiM2I1YzhkYTMtMThiNS00NWUzLWI3ZjUtNmU3MmUwYmIwYTMxIiwic3R1ZHlDb25maWciOnsiaWQiOiIzYjVjOGRhMy0xOGI1LTQ1ZTMtYjdmNS02ZTcyZTBiYjBhMzEiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNTY2ODU1MDN9LCJjcmVhdGVkQXQiOjE3NzkwNTY2ODc3NDQsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA1NjY4N30.VNKJCKHVS7Uw0GY36YQOLilPlKdqp4_x3eTHCt3oGAA 200 in 302ms
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiM2I1YzhkYTMtMThiNS00NWUzLWI3ZjUtNmU3MmUwYmIwYTMxIiwic3R1ZHlDb25maWciOnsiaWQiOiIzYjVjOGRhMy0xOGI1LTQ1ZTMtYjdmNS02ZTcyZTBiYjBhMzEiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNTY2ODU1MDN9LCJjcmVhdGVkQXQiOjE3NzkwNTY2ODc3NDQsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA1NjY4N30.VNKJCKHVS7Uw0GY36YQOLilPlKdqp4_x3eTHCt3oGAA 200 in 69ms
+ GET /api/auth 200 in 125ms
+ GET /api/auth 200 in 78ms
+ GET /api/studies 200 in 640ms
+ GET /api/studies 200 in 411ms
+ POST /api/studies 200 in 1617ms
+ POST /api/generate-link 200 in 313ms
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiYjFmNDNiNmItMjUxNC00NWIxLTg0MjItOGQzMDQyM2IwZDBmIiwic3R1ZHlDb25maWciOnsiaWQiOiJiMWY0M2I2Yi0yNTE0LTQ1YjEtODQyMi04ZDMwNDIzYjBkMGYiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNTcwOTY0ODV9LCJjcmVhdGVkQXQiOjE3NzkwNTcwOTczNzAsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA1NzA5N30.56eY70uHug8Atp8GKGei-duz72YIajPujUXreTZahm8 200 in 123ms
+ GET /api/generate-link?token=eyJhbGciOiJIUzI1NiJ9.eyJzdHVkeUlkIjoiYjFmNDNiNmItMjUxNC00NWIxLTg0MjItOGQzMDQyM2IwZDBmIiwic3R1ZHlDb25maWciOnsiaWQiOiJiMWY0M2I2Yi0yNTE0LTQ1YjEtODQyMi04ZDMwNDIzYjBkMGYiLCJuYW1lIjoiSW50ZXJ2aWV3ZXIgUHJhY3RpY2UgLSA1LzE4LzIwMjYiLCJkZXNjcmlwdGlvbiI6IkEgc2ltdWxhdGVkIGludGVydmlldyBzZXNzaW9uIHRvIHRlc3QgdGhlIHBsYXRmb3JtIGNhcGFiaWxpdGllcyBmcm9tIGEgcGFydGljaXBhbnQncyBwZXJzcGVjdGl2ZS4iLCJyZXNlYXJjaFF1ZXN0aW9uIjoiUGxhdGZvcm0gQ2FwYWJpbGl0aWVzIiwiY29yZVF1ZXN0aW9ucyI6WyJXaGF0IGFyZSB5b3VyIG1haW4gZ29hbHMgZm9yIHVzaW5nIHRoaXMgcGxhdGZvcm0_IiwiSG93IGRvIHlvdSBjdXJyZW50bHkgY29uZHVjdCB1c2VyIHJlc2VhcmNoIGludGVydmlld3M_Il0sInRvcGljQXJlYXMiOlsiVXNlciBSZXNlYXJjaCIsIkFJIFRvb2xzIl0sInByb2ZpbGVTY2hlbWEiOlt7ImlkIjoicm9sZSIsImxhYmVsIjoiQ3VycmVudCBSb2xlIiwiZXh0cmFjdGlvbkhpbnQiOiJKb2IgdGl0bGUiLCJyZXF1aXJlZCI6ZmFsc2V9XSwiYWlCZWhhdmlvciI6InN0YW5kYXJkIiwiYWlQcm92aWRlciI6ImdlbWluaSIsImFpTW9kZWwiOiJnZW1pbmktMi41LWZsYXNoIiwibGlua0V4cGlyYXRpb24iOiJuZXZlciIsImxpbmtzRW5hYmxlZCI6dHJ1ZSwiY29uc2VudFRleHQiOiJUaGlzIGlzIGEgcHJhY3RpY2Ugc2Vzc2lvbi4gTm8gZGF0YSB3aWxsIGJlIHBlcm1hbmVudGx5IHN0b3JlZC4iLCJjcmVhdGVkQXQiOjE3NzkwNTcwOTY0ODV9LCJjcmVhdGVkQXQiOjE3NzkwNTcwOTczNzAsInJlc2VhcmNoZXJJZCI6IjZlNjZmM2U3LWViNGUtNDgwMy05ZTcwLTlhNzQ1MzUwZTE2NiIsImlhdCI6MTc3OTA1NzA5N30.56eY70uHug8Atp8GKGei-duz72YIajPujUXreTZahm8 200 in 66ms
+ GET /api/auth 200 in 106ms
+ GET /api/auth 200 in 120ms
+ GET /api/studies 200 in 680ms
+ GET /api/studies 200 in 455ms
+ ○ Compiling /api/studies/[id] ...
+ ✓ Compiled /api/studies/[id] in 1080ms (1056 modules)
+ DELETE /api/studies/a1cee78e-6cf2-4baa-9d1d-60cb9217b534 200 in 2396ms
+ ○ Compiling /studies/[id] ...
+ ✓ Compiled /studies/[id] in 854ms (1065 modules)
+ ○ Compiling /api/interviews ...
+ ✓ Compiled /api/interviews in 1211ms (1068 modules)
+ GET /api/interviews?studyId=9ed1c623-8f71-48f0-82a4-ed597dc7ee34 200 in 2766ms
+ GET /api/studies/9ed1c623-8f71-48f0-82a4-ed597dc7ee34 200 in 2800ms
+ GET /api/interviews?studyId=9ed1c623-8f71-48f0-82a4-ed597dc7ee34 200 in 444ms
+ GET /api/studies/9ed1c623-8f71-48f0-82a4-ed597dc7ee34 200 in 430ms
+ GET /api/auth 200 in 175ms
+ GET /api/auth 200 in 66ms
+ GET /api/studies 200 in 778ms
+ GET /api/studies 200 in 413ms
+ GET /api/auth 200 in 184ms
+ GET /api/auth 200 in 119ms
+ GET /api/interviews?summary=1&limit=50 200 in 676ms
+ GET /api/studies 200 in 742ms
+ GET /api/interviews?summary=1&limit=50 200 in 504ms
+ GET /api/studies 200 in 463ms
+ GET /api/auth 200 in 144ms
+ GET /api/auth 200 in 78ms
+ GET /api/studies 200 in 487ms
+ GET /api/studies 200 in 410ms
+ ○ Compiling /profile ...
+ ✓ Compiled /profile in 1416ms (1077 modules)
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 1392ms (1079 modules)
+ GET /api/auth/me 200 in 1976ms
+ GET /api/auth/me 200 in 382ms
+ GET /profile 200 in 201ms
+ GET /api/auth/me 200 in 336ms
+ GET /api/auth/me 200 in 299ms
+ ○ Compiling /api/profile/media ...
+ ✓ Compiled /api/profile/media in 1633ms (1073 modules)
+ POST /api/profile/media 200 in 3381ms
+ PATCH /api/auth/me 200 in 605ms
+ PATCH /api/auth/me 200 in 668ms
+ GET /studies 200 in 4472ms
+ GET /api/auth 200 in 502ms
+ GET /api/auth 200 in 190ms
+ GET /api/studies 200 in 1776ms
+ GET /api/studies 200 in 424ms
+ ✓ Compiled in 7.7s (1795 modules)
+ ✓ Compiled in 3s (1947 modules)
+ ○ Compiling /setup ...
+ ✓ Compiled /setup in 1911ms (896 modules)
+ ○ Compiling /api/auth ...
+ ✓ Compiled /api/auth in 2.2s (1069 modules)
+ ✓ Compiled (1071 modules)
+ GET /api/auth 200 in 3595ms
+ GET /api/auth 200 in 100ms
+ GET /api/studies 200 in 5164ms
+ GET /api/studies 200 in 498ms
+ ✓ Compiled in 3.8s (2132 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1367ms (1072 modules)
+ ○ Compiling /api/interviews ...
+ GET /api/studies 200 in 1938ms
+ ✓ Compiled /api/interviews in 2.2s (1075 modules)
+ ✓ Compiled in 1ms (1075 modules)
+ GET /api/auth 200 in 3406ms
+ ✓ Compiled in 2ms (1075 modules)
+ GET /api/studies 200 in 2918ms
+ GET /api/auth 200 in 2132ms
+ GET /api/interviews?summary=1&limit=50 200 in 5860ms
+ GET /api/interviews?summary=1&limit=50 200 in 451ms
+ ✓ Compiled in 17.2s (1762 modules)
+ ✓ Compiled in 2.3s (916 modules)
+ GET /api/auth 200 in 469ms
+ GET /api/auth 200 in 139ms
+ GET /api/studies 200 in 1643ms
+ GET /api/studies 200 in 441ms
+ GET /setup 200 in 484ms
+ GET /api/auth 200 in 139ms
+ GET /api/auth 200 in 81ms
+ GET /api/studies 200 in 633ms
+ GET /api/studies 200 in 434ms
+ GET /api/auth 200 in 153ms
+ GET /api/auth 200 in 89ms
+ GET /api/studies 200 in 631ms
+ GET /api/studies 200 in 489ms

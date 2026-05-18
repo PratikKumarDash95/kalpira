@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
-import { ParticipantToken } from '@/types';
+import { InterviewerAssignment, ParticipantToken } from '@/types';
 import Consent from '@/components/Consent';
 import VideoInterview from '@/components/VideoInterview';
 import Synthesis from '@/components/Synthesis';
@@ -14,20 +14,38 @@ import { motion } from 'framer-motion';
 // ── Candidate Info Form ──────────────────────────────────────────────────────
 function CandidateInfoForm({
   studyName,
+  assignment,
   onSubmit,
 }: {
   studyName: string;
+  assignment?: InterviewerAssignment | null;
   onSubmit: (name: string, email: string) => void;
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  const normalizeName = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
+  const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { setError('Please enter your name.'); return; }
     if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email.'); return; }
-    onSubmit(name.trim(), email.trim());
+
+    if (assignment) {
+      const nameMatches = normalizeName(name) === normalizeName(assignment.candidateName);
+      const emailMatches = normalizeEmail(email) === normalizeEmail(assignment.candidateEmail);
+      if (!nameMatches || !emailMatches) {
+        setError('These details do not match the participant assigned to this interview.');
+        return;
+      }
+
+      onSubmit(assignment.candidateName, assignment.candidateEmail);
+      return;
+    }
+
+    onSubmit(name.trim(), normalizeEmail(email));
   };
 
   const inputCls = "w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
@@ -101,6 +119,7 @@ export default function ParticipantPage() {
   const [needsCandidateInfo, setNeedsCandidateInfo] = useState(false);
   const [studyName, setStudyName] = useState('');
   const [studyId, setStudyId] = useState<string | null>(null);
+  const [assignment, setAssignment] = useState<InterviewerAssignment | null>(null);
 
   useEffect(() => {
     const loadStudyFromToken = async () => {
@@ -123,10 +142,12 @@ export default function ParticipantPage() {
 
         // Check if this is an interviewer-created study (has an id that's a real DB id)
         const config = tokenData.studyConfig;
+        const assignedCandidate = tokenData.assignment || config?.interviewerAssignment || null;
         if (config?.id && !config.id.startsWith('study-')) {
           // This is a saved study — ask for candidate info
           setStudyName(config.name || 'Interview');
           setStudyId(config.id);
+          setAssignment(assignedCandidate);
           setNeedsCandidateInfo(true);
         } else {
           setStep('consent');
@@ -186,7 +207,7 @@ export default function ParticipantPage() {
 
   // Show candidate info form for interviewer-created studies
   if (needsCandidateInfo) {
-    return <CandidateInfoForm studyName={studyName} onSubmit={handleCandidateInfoSubmit} />;
+    return <CandidateInfoForm studyName={studyName} assignment={assignment} onSubmit={handleCandidateInfoSubmit} />;
   }
 
   switch (currentStep) {

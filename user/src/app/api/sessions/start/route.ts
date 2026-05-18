@@ -4,8 +4,17 @@ import { cookies } from 'next/headers';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
+import { getAuthUser } from '@/lib/accessControl';
 
 export const dynamic = 'force-dynamic';
+
+function normalizeName(value?: string | null) {
+    return (value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function normalizeEmail(value?: string | null) {
+    return (value || '').trim().toLowerCase();
+}
 
 export async function POST(request: Request) {
     try {
@@ -37,12 +46,42 @@ export async function POST(request: Request) {
             candidateEmail?: string;
         };
 
+        const authUser = await getAuthUser();
         const participantAuth = await getParticipantRequestContext(request);
         if (studyId) {
-            if (!participantAuth.valid || !participantAuth.context || participantAuth.studyId !== studyId) {
+            const isCandidateAssigned = Boolean(authUser?.id && authUser.role === 'candidate' && candidateEmail);
+            if (!participantAuth.valid && !isCandidateAssigned) {
                 return NextResponse.json({ error: 'Valid participant link required for this study' }, { status: 401 });
             }
-            userId = participantAuth.context.userId;
+
+            if (participantAuth.valid && participantAuth.studyId === studyId && candidateEmail) {
+                const study = await supabaseDb.study.findFirst({
+                    where: { id: studyId },
+                    select: { configJSON: true },
+                });
+
+                if (study?.configJSON) {
+                    const config = JSON.parse(study.configJSON);
+                    const assigned = config.interviewerAssignment;
+                    if (assigned?.candidateEmail) {
+                        const nameMatches = normalizeName(candidateName) === normalizeName(assigned.candidateName);
+                        const emailMatches = normalizeEmail(candidateEmail) === normalizeEmail(assigned.candidateEmail);
+
+                        if (!nameMatches || !emailMatches) {
+                            return NextResponse.json(
+                                { error: 'Candidate details do not match this interview assignment' },
+                                { status: 403 }
+                            );
+                        }
+                    }
+                }
+            }
+
+            if (participantAuth.valid && participantAuth.context && participantAuth.studyId === studyId) {
+                userId = participantAuth.context.userId;
+            } else if (authUser?.id) {
+                userId = authUser.id;
+            }
         }
 
         // Only persist sessions with a real authenticated user or a valid participant link.

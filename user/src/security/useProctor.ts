@@ -19,6 +19,12 @@ export type ViolationType =
     | 'resize_suspicious'
     | 'prolonged_absence_browser';
 
+const TERMINATING_VIOLATION_TYPES = new Set<ViolationType>([
+    'fullscreen_exit',
+    'devtools_open',
+    'prolonged_absence_browser',
+]);
+
 export interface ViolationEvent {
     type: ViolationType;
     timestamp: number;
@@ -89,6 +95,17 @@ export function useProctor(options: UseProctorOptions): ProctorState {
     const absenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastWidthRef = useRef(window.innerWidth);
     const lastHeightRef = useRef(window.innerHeight);
+    const onViolationRef = useRef(onViolation);
+    const onTerminatedRef = useRef(onTerminated);
+    const rehydratedSessionRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        onViolationRef.current = onViolation;
+    }, [onViolation]);
+
+    useEffect(() => {
+        onTerminatedRef.current = onTerminated;
+    }, [onTerminated]);
 
     // ---- Server state rehydration ----
     const rehydrateFromServer = useCallback(async () => {
@@ -110,18 +127,19 @@ export function useProctor(options: UseProctorOptions): ProctorState {
                 }));
 
                 // If terminated, call callback
-                if (serverStatus.status === 'TERMINATED' && onTerminated) {
-                    onTerminated(serverStatus.terminatedReason || 'Session terminated');
+                if (serverStatus.status === 'TERMINATED' && onTerminatedRef.current) {
+                    onTerminatedRef.current(serverStatus.terminatedReason || 'Session terminated');
                 }
             }
         } catch (error) {
             console.warn('[Proctor] Failed to rehydrate state from server:', error);
         }
-    }, [sessionId, onTerminated]);
+    }, [sessionId]);
 
     // Rehydrate on mount and sessionId change
     useEffect(() => {
-        if (enabled && sessionId) {
+        if (enabled && sessionId && rehydratedSessionRef.current !== sessionId) {
+            rehydratedSessionRef.current = sessionId;
             rehydrateFromServer();
         }
     }, [enabled, sessionId, rehydrateFromServer]);
@@ -162,12 +180,31 @@ export function useProctor(options: UseProctorOptions): ProctorState {
                 prolonged_absence_browser: '🔴 Interview terminated due to prolonged tab switching/inactivity.',
             };
 
+            const shouldTerminate = strictMode && TERMINATING_VIOLATION_TYPES.has(type);
+            const localTerminatedReason =
+                type === 'fullscreen_exit'
+                    ? 'Interview terminated: fullscreen was exited.'
+                    : type === 'devtools_open'
+                        ? 'Interview terminated: developer tools or source inspection was attempted.'
+                        : type === 'prolonged_absence_browser'
+                            ? 'Interview terminated due to prolonged tab switching/inactivity.'
+                            : undefined;
+
             // Report to server and get updated status
             try {
                 const response = await fetch('/api/proctor', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId, type, details }),
+                    body: JSON.stringify({
+                        sessionId,
+                        type,
+                        details,
+                        ...(shouldTerminate && {
+                            status: 'TERMINATED',
+                            terminatedReason: localTerminatedReason,
+                            tag: 'cheating',
+                        }),
+                    }),
                 });
 
                 if (response.ok) {
@@ -178,16 +215,16 @@ export function useProctor(options: UseProctorOptions): ProctorState {
                         violationCount: serverStatus.violationCount,
                         complianceScore: serverStatus.complianceScore,
                         violations: serverStatus.violations,
-                        isTerminated: serverStatus.status === 'TERMINATED',
+                        isTerminated: serverStatus.status === 'TERMINATED' || shouldTerminate,
                         terminatedAt: serverStatus.terminatedAt,
-                        terminatedReason: serverStatus.terminatedReason,
+                        terminatedReason: serverStatus.terminatedReason || localTerminatedReason,
                         showWarning: true,
                         warningMessage: warningMessages[type],
                     }));
 
                     // If terminated, call callback
-                    if (serverStatus.status === 'TERMINATED' && onTerminated) {
-                        onTerminated(serverStatus.terminatedReason || 'Session terminated');
+                    if ((serverStatus.status === 'TERMINATED' || shouldTerminate) && onTerminatedRef.current) {
+                        onTerminatedRef.current(serverStatus.terminatedReason || localTerminatedReason || 'Session terminated');
                     }
                 } else {
                     // Fallback to local state if server fails
@@ -200,8 +237,12 @@ export function useProctor(options: UseProctorOptions): ProctorState {
                             violations: [...prev.violations, violation],
                             showWarning: true,
                             warningMessage: warningMessages[type],
+                            isTerminated: shouldTerminate,
+                            terminatedAt: shouldTerminate ? new Date().toISOString() : prev.terminatedAt,
+                            terminatedReason: shouldTerminate ? localTerminatedReason : prev.terminatedReason,
                         };
                     });
+                    if (shouldTerminate) onTerminatedRef.current?.(localTerminatedReason || 'Session terminated');
                 }
             } catch (error) {
                 console.warn('[Proctor] Failed to report violation to server:', error);
@@ -215,8 +256,12 @@ export function useProctor(options: UseProctorOptions): ProctorState {
                         violations: [...prev.violations, violation],
                         showWarning: true,
                         warningMessage: warningMessages[type],
+                        isTerminated: shouldTerminate,
+                        terminatedAt: shouldTerminate ? new Date().toISOString() : prev.terminatedAt,
+                        terminatedReason: shouldTerminate ? localTerminatedReason : prev.terminatedReason,
                     };
                 });
+                if (shouldTerminate) onTerminatedRef.current?.(localTerminatedReason || 'Session terminated');
             }
 
             // Auto-hide warning after 4 seconds
@@ -226,9 +271,9 @@ export function useProctor(options: UseProctorOptions): ProctorState {
             }, 4000);
 
             // Callback
-            onViolation?.(violation);
+            onViolationRef.current?.(violation);
         },
-        [enabled, sessionId, onViolation, onTerminated]
+        [enabled, sessionId]
     );
 
     // ---- Fullscreen helpers ----
@@ -265,7 +310,6 @@ export function useProctor(options: UseProctorOptions): ProctorState {
                 if (strictMode && !absenceTimeoutRef.current) {
                     absenceTimeoutRef.current = setTimeout(() => {
                         handleViolation('prolonged_absence_browser');
-                        if (onTerminated) onTerminated('Interview terminated due to prolonged tab switching (10s+).');
                     }, 10000);
                 }
             } else {
@@ -284,12 +328,11 @@ export function useProctor(options: UseProctorOptions): ProctorState {
             setState((prev) => ({ ...prev, isFocused: false, absenceStartTime: Date.now() }));
 
             // Start strict 10s timer
-            if (strictMode && !absenceTimeoutRef.current) {
-                absenceTimeoutRef.current = setTimeout(() => {
-                    handleViolation('prolonged_absence_browser');
-                    if (onTerminated) onTerminated('Interview terminated due to prolonged window backgrounding (10s+).');
-                }, 10000);
-            }
+                if (strictMode && !absenceTimeoutRef.current) {
+                    absenceTimeoutRef.current = setTimeout(() => {
+                        handleViolation('prolonged_absence_browser');
+                    }, 10000);
+                }
         };
 
         const onFocus = () => {
@@ -345,6 +388,10 @@ export function useProctor(options: UseProctorOptions): ProctorState {
 
         // 7. Keyboard shortcuts (F12, Ctrl+Shift+I, Ctrl+U)
         const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && strictMode) {
+                e.preventDefault();
+                handleViolation('fullscreen_exit', 'Escape pressed during secure interview');
+            }
             // F12
             if (e.key === 'F12') {
                 e.preventDefault();

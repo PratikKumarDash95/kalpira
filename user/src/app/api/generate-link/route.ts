@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import * as jose from 'jose';
-import { StudyConfig, ParticipantToken, LinkExpirationOption } from '@/types';
+import { StudyConfig, ParticipantToken, LinkExpirationOption, InterviewerAssignment } from '@/types';
 import { getRequestContext } from '@/lib/researcherContext';
 import supabaseDb from '@/lib/supabaseDb';
 import { isHostedMode } from '@/lib/mode';
@@ -56,7 +56,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { studyConfig } = body as { studyConfig: StudyConfig };
+    const { studyConfig, assignment } = body as {
+      studyConfig: StudyConfig;
+      assignment?: InterviewerAssignment;
+    };
 
     // Validate required fields
     if (!studyConfig) {
@@ -98,6 +101,7 @@ export async function POST(request: Request) {
       ...(expirationTime && { expiresAt: Date.now() + (expirationTime === '7d' ? 7 : expirationTime === '30d' ? 30 : 90) * 24 * 60 * 60 * 1000 }),
       // In hosted mode, embed researcherId so participant requests can resolve the correct researcher
       researcherId: ownerId,
+      ...(assignment && { assignment }),
     };
 
     // Sign the token (with or without expiration)

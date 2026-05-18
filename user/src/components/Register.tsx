@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Lock, Loader2, AlertCircle, User, Mail, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -9,7 +9,7 @@ const Register: React.FC = () => {
     const router = useRouter();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const passwordRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -17,6 +17,14 @@ const Register: React.FC = () => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        const password = passwordRef.current?.value ?? '';
+
+        if (!password) {
+            setError('Password is required');
+            setLoading(false);
+            return;
+        }
 
         try {
             const response = await fetch('/api/auth/register', {
@@ -33,7 +41,8 @@ const Register: React.FC = () => {
             }
 
             // On success, login is auto-handled by API setting cookie, so redirect
-            router.push('/studies');
+            const redirect = new URLSearchParams(window.location.search).get('redirect');
+            router.push(redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/candidate/dashboard');
         } catch {
             setError('Connection error. Please try again.');
         } finally {
@@ -113,8 +122,7 @@ const Register: React.FC = () => {
                                 <input
                                     id="password"
                                     type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    ref={passwordRef}
                                     placeholder="Create a password"
                                     autoComplete="new-password"
                                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"

@@ -57,3 +57,5 @@ Greeting API error: Error: GEMINI_API_KEY is required
     at async requestHandlerImpl (C:\Users\prati\Desktop\kalpira\user\node_modules\next\dist\server\lib\router-server.js:383:13)
     at async Server.requestListener (C:\Users\prati\Desktop\kalpira\user\node_modules\next\dist\server\lib\start-server.js:141:13)
  ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.

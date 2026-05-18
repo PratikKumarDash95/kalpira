@@ -117,7 +117,14 @@ const VideoInterview: React.FC = () => {
 
         const startCamera = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        frameRate: { ideal: 15, max: 20 },
+                    },
+                    audio: true,
+                });
                 if (!mounted) {
                     stream.getTracks().forEach(t => t.stop());
                     return;
@@ -253,7 +260,7 @@ const VideoInterview: React.FC = () => {
         const startSession = async () => {
             try {
                 // Read candidate info stored by /p/[token] form (for interviewer-created studies)
-                let candidateInfo: { name?: string; email?: string; studyId?: string; difficulty?: string } = {};
+                let candidateInfo: { name?: string; email?: string; studyId?: string; difficulty?: string; sessionId?: string } = {};
                 try {
                     const stored = sessionStorage.getItem('candidateInfo');
                     if (stored) {
@@ -262,6 +269,12 @@ const VideoInterview: React.FC = () => {
                         // sessionStorage.removeItem('candidateInfo'); 
                     }
                 } catch { /* ignore */ }
+
+                if (candidateInfo.sessionId) {
+                    setSessionId(candidateInfo.sessionId);
+                    setSessionGuest(false);
+                    return;
+                }
 
                 const res = await fetch('/api/sessions/start', {
                     method: 'POST',

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Briefcase, Plus, Users, BarChart2, Clock, ChevronRight,
     LogOut, Loader2, AlertTriangle, Copy, Check, ExternalLink,
-    TrendingUp, FileText, Zap
+    TrendingUp, FileText, Zap, Send
 } from 'lucide-react';
 
 interface StudySummary {
@@ -36,6 +36,7 @@ const InterviewerDashboard: React.FC = () => {
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [generatingLink, setGeneratingLink] = useState<string | null>(null);
     const [studyLinks, setStudyLinks] = useState<Record<string, string>>({});
+    const [assigningStudyId, setAssigningStudyId] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -92,6 +93,37 @@ const InterviewerDashboard: React.FC = () => {
             }
         } catch { /* silent */ }
         finally { setGeneratingLink(null); }
+    };
+
+    const handleAssignCandidate = async (study: StudySummary) => {
+        const candidateName = window.prompt('Candidate name');
+        if (!candidateName?.trim()) return;
+        const candidateEmail = window.prompt('Candidate email');
+        if (!candidateEmail?.trim()) return;
+
+        setAssigningStudyId(study.id);
+        try {
+            const res = await fetch(`/api/interviewer/studies/${study.id}/assignments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    candidateName: candidateName.trim(),
+                    candidateEmail: candidateEmail.trim(),
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.error || 'Failed to assign interview');
+                return;
+            }
+
+            alert(data.reused ? 'Existing assignment reused.' : 'Interview assigned successfully.');
+        } catch {
+            alert('Failed to assign interview');
+        } finally {
+            setAssigningStudyId(null);
+        }
     };
 
     const scoreColor = (score: number) => {
@@ -225,6 +257,15 @@ const InterviewerDashboard: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2 flex-shrink-0">
+                                            <button
+                                                onClick={() => handleAssignCandidate(study)}
+                                                disabled={assigningStudyId === study.id}
+                                                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl text-xs transition-colors disabled:opacity-50"
+                                            >
+                                                {assigningStudyId === study.id ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                                                Assign
+                                            </button>
+
                                             {/* Copy link */}
                                             <button
                                                 onClick={() => handleGenerateLink(study)}

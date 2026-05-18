@@ -80,15 +80,28 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Study config with name is required' }, { status: 400 });
         }
 
+        const now = new Date();
         const study = await db.study.create({
             data: {
                 userId: interviewerId,
-                configJSON: JSON.stringify(config),
+                configJSON: JSON.stringify({
+                    ...config,
+                    createdAt: config.createdAt || now.getTime(),
+                }),
                 interviewCount: 0,
+                isLocked: false,
+                createdAt: now,
+                updatedAt: now,
             },
         });
 
-        return NextResponse.json({ study: { id: study.id, config } });
+        const savedConfig = {
+            ...config,
+            id: study.id,
+            createdAt: config.createdAt || now.getTime(),
+        };
+
+        return NextResponse.json({ study: { id: study.id, config: savedConfig } });
     } catch (error) {
         console.error('Error creating interviewer study:', error);
         return NextResponse.json({ error: 'Failed to create study' }, { status: 500 });

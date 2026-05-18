@@ -104,6 +104,14 @@ export const CLAUDE_SYNTHESIS_MODEL = 'claude-opus-4-5';
 // Link expiration options
 export type LinkExpirationOption = 'never' | '7days' | '30days' | '90days';
 
+export interface InterviewerAssignment {
+  sessionId?: string;
+  candidateName: string;
+  candidateEmail: string;
+  candidatePhone?: string;
+  publishedAt?: number;
+}
+
 export interface StudyConfig {
   id: string;
   name: string;
@@ -126,6 +134,8 @@ export interface StudyConfig {
   linkExpiration?: LinkExpirationOption;  // When links expire (default: 'never')
   // AI Reasoning
   enableReasoning?: boolean;      // undefined=auto, true=force on, false=force off
+  // Interviewer publishing
+  interviewerAssignment?: InterviewerAssignment;
 }
 
 // ============================================
@@ -230,6 +240,7 @@ export interface ParticipantToken {
   createdAt: number;
   expiresAt?: number;
   researcherId?: string;  // Present in hosted mode for researcher context resolution
+  assignment?: InterviewerAssignment;
 }
 
 // ============================================
