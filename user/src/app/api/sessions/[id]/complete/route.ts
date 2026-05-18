@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
+import { getAuthUser } from '@/lib/accessControl';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,10 @@ export async function POST(
         }
 
         if (session.studyId) {
+            const authUser = await getAuthUser();
+            if (authUser?.id && authUser.role === 'candidate' && session.userId === authUser.id) {
+                // Authenticated candidate owns this assigned session.
+            } else {
             const participantAuth = await getParticipantRequestContext(request);
             if (
                 !participantAuth.valid ||
@@ -34,6 +39,7 @@ export async function POST(
                 participantAuth.context.userId !== session.study?.userId
             ) {
                 return NextResponse.json({ error: 'Valid participant link required for this session' }, { status: 401 });
+            }
             }
         }
 

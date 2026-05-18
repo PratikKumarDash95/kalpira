@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
@@ -12,8 +12,8 @@ const InterviewerRegister: React.FC = () => {
     const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    const passwordRef = useRef<HTMLInputElement>(null);
+    const confirmPasswordRef = useRef<HTMLInputElement>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,8 @@ const InterviewerRegister: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        const password = passwordRef.current?.value ?? '';
+        const confirmPassword = confirmPasswordRef.current?.value ?? '';
 
         if (!name.trim() || !email.trim() || !password) {
             setError('All fields are required.');
@@ -98,8 +100,7 @@ const InterviewerRegister: React.FC = () => {
                         {/* Password */}
                         <div className="relative">
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                            <input type={showPassword ? 'text' : 'password'} value={password}
-                                onChange={e => setPassword(e.target.value)}
+                            <input type={showPassword ? 'text' : 'password'} ref={passwordRef}
                                 autoComplete="new-password"
                                 placeholder="Password (min 6 chars)" className={`${inputCls} pr-10`} required />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -111,8 +112,7 @@ const InterviewerRegister: React.FC = () => {
                         {/* Confirm Password */}
                         <div className="relative">
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                            <input type={showPassword ? 'text' : 'password'} value={confirmPassword}
-                                onChange={e => setConfirmPassword(e.target.value)}
+                            <input type={showPassword ? 'text' : 'password'} ref={confirmPasswordRef}
                                 autoComplete="new-password"
                                 placeholder="Confirm password" className={inputCls} required />
                         </div>

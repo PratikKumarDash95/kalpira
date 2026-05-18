@@ -202,29 +202,57 @@ export async function verifyParticipantToken(request: Request): Promise<Particip
 }
 
 // === Password Hashing Utilities ===
-import { pbkdf2, randomBytes } from 'crypto';
+import { pbkdf2, randomBytes, timingSafeEqual } from 'crypto';
 import { promisify } from 'util';
 
 const pbkdf2Async = promisify(pbkdf2);
+const PASSWORD_HASH_ALGORITHM = 'pbkdf2_sha512';
+const PASSWORD_HASH_ITERATIONS = 310000;
+const PASSWORD_HASH_BYTES = 64;
 
 /**
- * Hash a password using PBKDF2
- * Returns format: "salt:hash"
+ * Hash a password using a versioned PBKDF2 format.
+ * Returns format: "pbkdf2_sha512$iterations$salt$hash"
  */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString('hex');
-  const derivedKey = await pbkdf2Async(password, salt, 1000, 64, 'sha512');
-  return `${salt}:${derivedKey.toString('hex')}`;
+  const derivedKey = await pbkdf2Async(password, salt, PASSWORD_HASH_ITERATIONS, PASSWORD_HASH_BYTES, 'sha512');
+  return `${PASSWORD_HASH_ALGORITHM}$${PASSWORD_HASH_ITERATIONS}$${salt}$${derivedKey.toString('hex')}`;
 }
 
 /**
  * Verify a password against a stored hash
- * Stored hash format: "salt:hash"
+ * Supports both the current versioned format and the legacy "salt:hash" format.
  */
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  const versionedParts = storedHash.split('$');
+  if (versionedParts.length === 4) {
+    const [algorithm, iterationText, salt, key] = versionedParts;
+    const iterations = Number(iterationText);
+
+    if (
+      algorithm !== PASSWORD_HASH_ALGORITHM ||
+      !salt ||
+      !key ||
+      !Number.isInteger(iterations) ||
+      iterations <= 0
+    ) {
+      return false;
+    }
+
+    const derivedKey = await pbkdf2Async(password, salt, iterations, PASSWORD_HASH_BYTES, 'sha512');
+    const expected = Buffer.from(key, 'hex');
+    const actual = Buffer.from(derivedKey.toString('hex'), 'hex');
+
+    return expected.length === actual.length && timingSafeEqual(expected, actual);
+  }
+
   const [salt, key] = storedHash.split(':');
   if (!salt || !key) return false;
 
-  const derivedKey = await pbkdf2Async(password, salt, 1000, 64, 'sha512');
-  return key === derivedKey.toString('hex');
+  const derivedKey = await pbkdf2Async(password, salt, 1000, PASSWORD_HASH_BYTES, 'sha512');
+  const expected = Buffer.from(key, 'hex');
+  const actual = Buffer.from(derivedKey.toString('hex'), 'hex');
+
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }

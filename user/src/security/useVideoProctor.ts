@@ -231,7 +231,9 @@ export function useVideoProctor(options: UseVideoProctorOptions & { mediaStream:
             isProcessingRef.current = false;
         }
 
-        requestRef.current = requestAnimationFrame(processVideo);
+        window.setTimeout(() => {
+            requestRef.current = requestAnimationFrame(processVideo);
+        }, 120);
     }, [enabled, videoRef]);
 
     useEffect(() => {

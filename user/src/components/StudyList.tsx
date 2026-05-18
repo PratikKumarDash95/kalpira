@@ -57,70 +57,7 @@ const StudyList: React.FC = () => {
   };
 
   const handleInterviewerPractice = async () => {
-    setLoading(true);
-    try {
-      const now = Date.now();
-      // Create a persistent "practice" study configuration
-      const practiceConfig: StudyConfig = {
-        id: `practice-${now}`,
-        name: `Interviewer Practice - ${new Date().toLocaleDateString()}`,
-        description: "A simulated interview session to test the platform capabilities from a participant's perspective.",
-        researchQuestion: "Platform Capabilities",
-        coreQuestions: [
-          "What are your main goals for using this platform?",
-          "How do you currently conduct user research interviews?"
-        ],
-        topicAreas: ["User Research", "AI Tools"],
-        profileSchema: [
-          { id: "role", label: "Current Role", extractionHint: "Job title", required: false }
-        ],
-        aiBehavior: "standard",
-        aiProvider: "gemini",
-        aiModel: "gemini-2.5-flash",
-        linkExpiration: "never",
-        linksEnabled: true,
-        consentText: "This is a practice session. No data will be permanently stored.",
-        createdAt: now
-      };
-
-      // Create the study from the researcher workspace so this action works for
-      // normal researcher/admin sessions as well as standalone installs.
-      const studyRes = await fetch('/api/studies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: practiceConfig })
-      });
-
-      if (!studyRes.ok) {
-        const data = await studyRes.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to create practice study record');
-      }
-      const studyData = await studyRes.json();
-      const savedStudy = studyData.study as StoredStudy;
-      const savedConfig = savedStudy.config;
-
-      // 2. Generate link for this specific study ID
-      const response = await fetch('/api/generate-link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studyConfig: savedConfig })
-      });
-
-      const data = await response.json();
-
-      if (data.url) {
-        // Navigate to the participant flow
-        const urlObj = new URL(data.url);
-        router.push(urlObj.pathname);
-      } else {
-        alert('Failed to generate practice link: ' + (data.error || 'Unknown error'));
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Error generating practice link:', error);
-      alert('Failed to start practice session');
-      setLoading(false);
-    }
+    router.push('/setup');
   };
 
   const handleDelete = async (id: string) => {

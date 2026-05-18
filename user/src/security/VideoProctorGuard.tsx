@@ -6,7 +6,7 @@
 // Shows video feed with real-time monitoring
 // ============================================
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useVideoProctor, VideoViolationEvent } from './useVideoProctor';
 import { ViolationOverlay } from './ViolationOverlay';
@@ -23,7 +23,6 @@ export function VideoProctorGuard({
     sessionId,
     strictMode = true,
     children,
-    onFullscreenExit,
     mediaStream,
 }: VideoProctorGuardProps & { onFullscreenExit?: () => void; mediaStream?: MediaStream | null }) {
     const [mounted, setMounted] = useState(false);
@@ -32,14 +31,22 @@ export function VideoProctorGuard({
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Video proctoring for face detection
-    const handleTermination = (reason: string) => {
+    const handleTermination = useCallback((reason: string) => {
         console.log('[VideoProctorGuard] Session terminated:', reason);
         if (sessionId) {
             // Mark session as complete/terminated in DB
             fetch(`/api/sessions/${sessionId}/complete`, { method: 'POST', keepalive: true }).catch(() => { });
         }
         router.push(`/interview/terminated?reason=${encodeURIComponent(reason)}`);
-    };
+    }, [router, sessionId]);
+
+    const handleVideoViolation = useCallback((violation: VideoViolationEvent) => {
+        console.log('[VideoProctorGuard] Video violation:', violation);
+    }, []);
+
+    const handleBrowserViolation = useCallback((violation: unknown) => {
+        console.log('[VideoProctorGuard] Browser violation:', violation);
+    }, []);
 
     // Video proctoring for face detection
     const videoProctor = useVideoProctor({
@@ -49,9 +56,7 @@ export function VideoProctorGuard({
         videoRef,
         mediaStream: mediaStream || null, // Pass shared stream
         onTerminated: handleTermination,
-        onViolation: (violation: VideoViolationEvent) => {
-            console.log('[VideoProctorGuard] Video violation:', violation);
-        },
+        onViolation: handleVideoViolation,
     });
 
     // Browser proctoring for tab switching, etc.
@@ -60,26 +65,12 @@ export function VideoProctorGuard({
         enabled: mounted && !!sessionId,
         strictMode,
         onTerminated: handleTermination,
-        onViolation: (violation) => {
-            console.log('[VideoProctorGuard] Browser violation:', violation);
-        },
+        onViolation: handleBrowserViolation,
     });
 
     useEffect(() => {
         setMounted(true);
     }, []);
-
-    // Track if we have ever been in fullscreen
-    const hasEnteredFullscreen = useRef(false);
-
-    useEffect(() => {
-        if (browserProctor.isFullscreen) {
-            hasEnteredFullscreen.current = true;
-        } else if (hasEnteredFullscreen.current && strictMode && onFullscreenExit) {
-            // Check if we just exited fullscreen after having been in it
-            onFullscreenExit();
-        }
-    }, [browserProctor.isFullscreen, strictMode, onFullscreenExit]);
 
     // Strict Mode: Force Fullscreen before starting
     if (mounted && strictMode && !browserProctor.isFullscreen && !browserProctor.isTerminated) {

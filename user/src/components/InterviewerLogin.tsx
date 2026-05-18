@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
@@ -12,7 +12,7 @@ const InterviewerLogin: React.FC = () => {
     const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
     const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const passwordRef = useRef<HTMLInputElement>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,6 +20,7 @@ const InterviewerLogin: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        const password = passwordRef.current?.value ?? '';
         if (!email.trim() || !password) { setError('Email and password are required.'); return; }
 
         setIsLoading(true);
@@ -84,8 +85,7 @@ const InterviewerLogin: React.FC = () => {
 
                         <div className="relative">
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                            <input type={showPassword ? 'text' : 'password'} value={password}
-                                onChange={e => setPassword(e.target.value)}
+                            <input type={showPassword ? 'text' : 'password'} ref={passwordRef}
                                 autoComplete="current-password"
                                 placeholder="Password" className={`${inputCls} pr-10`} required />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}

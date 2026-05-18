@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Lock, Loader2, AlertCircle, Mail, UserPlus, UserCircle, Briefcase } from 'lucide-react';
+import { Lock, Loader2, AlertCircle, Mail, UserPlus, Briefcase } from 'lucide-react';
 import OAuthLogin from './OAuthLogin';
 
 const Login: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<'standalone' | 'hosted' | null>(null);
@@ -50,6 +50,13 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const password = passwordRef.current?.value ?? '';
+
+    if (!password) {
+      setError('Password is required');
+      setLoading(false);
+      return;
+    }
 
     const payload = loginMethod === 'email'
       ? { email, password }
@@ -75,11 +82,13 @@ const Login: React.FC = () => {
         return;
       }
 
-      // Redirect to studies on success (validate to prevent open redirect)
-      const rawRedirect = searchParams.get('redirect') || '/studies';
+      const userRole = data.user?.role || 'candidate';
+      const defaultRedirect = userRole === 'candidate' ? '/candidate/dashboard' : '/studies';
+      // Redirect on success (validate to prevent open redirect)
+      const rawRedirect = searchParams.get('redirect') || defaultRedirect;
       const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !['/login', '/register'].includes(rawRedirect)
         ? rawRedirect
-        : '/studies';
+        : defaultRedirect;
       router.push(redirect);
     } catch {
       setError('Connection error. Please try again.');
@@ -178,14 +187,13 @@ const Login: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-stone-300 mb-1">
-                    Password
-                  </label>
+                    <label htmlFor="password" className="block text-sm font-medium text-stone-300 mb-1">
+                      Password
+                    </label>
                   <input
                     id="password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    ref={passwordRef}
                     placeholder="Enter password"
                     autoComplete="current-password"
                     className="w-full px-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
@@ -193,7 +201,7 @@ const Login: React.FC = () => {
                 </div>
                 <button
                   type="submit"
-                  disabled={!email || !password || loading}
+                  disabled={!email || loading}
                   className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
                   {loading ? (
@@ -239,8 +247,7 @@ const Login: React.FC = () => {
                   <input
                     id="password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    ref={passwordRef}
                     placeholder={loginMethod === 'admin' ? "Enter admin password" : "Enter password"}
                     autoComplete="current-password"
                     className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
@@ -251,7 +258,7 @@ const Login: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={(!password.trim()) || (loginMethod === 'email' && !email) || loading}
+                disabled={(loginMethod === 'email' && !email) || loading}
                 className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 {loading ? (

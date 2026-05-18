@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store';
 import { generateParticipantLink } from '@/services/geminiService';
-import { StudyConfig, ProfileField, AIBehavior, AIProviderType, LinkExpirationOption, GEMINI_MODELS, CLAUDE_MODELS, OLLAMA_MODELS, DEFAULT_GEMINI_MODEL, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_MODEL } from '@/types';
+import { StudyConfig, ProfileField, AIBehavior, AIProviderType, LinkExpirationOption, InterviewerAssignment, GEMINI_MODELS, CLAUDE_MODELS, OLLAMA_MODELS, DEFAULT_GEMINI_MODEL, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_MODEL } from '@/types';
 import {
   FileText, Plus, X, ArrowRight, ArrowLeft, Sparkles, Eye,
   Lightbulb, User, ToggleLeft, ToggleRight, Link as LinkIcon,
@@ -68,6 +68,13 @@ const StudySetup: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [candidateName, setCandidateName] = useState('');
+  const [candidateEmail, setCandidateEmail] = useState('');
+  const [candidatePhone, setCandidatePhone] = useState('');
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishedAssignment, setPublishedAssignment] = useState<InterviewerAssignment | null>(null);
   const [configStatus, setConfigStatus] = useState<{ hasAnthropicKey: boolean; hasGeminiKey: boolean; hasOllamaConfigured: boolean; } | null>(null);
 
   useEffect(() => {
@@ -140,6 +147,13 @@ const StudySetup: React.FC = () => {
       setEnableReasoning(studyConfig.enableReasoning);
       setLinkExpiration(studyConfig.linkExpiration || 'never');
       setConsentText(studyConfig.consentText);
+      if (studyConfig.interviewerAssignment) {
+        setCandidateName(studyConfig.interviewerAssignment.candidateName || '');
+        setCandidateEmail(studyConfig.interviewerAssignment.candidateEmail || '');
+        setCandidatePhone(studyConfig.interviewerAssignment.candidatePhone || '');
+        setPublishedAssignment(studyConfig.interviewerAssignment);
+        setIsPublished(true);
+      }
     }
   }, [studyConfig]);
 
@@ -173,6 +187,7 @@ const StudySetup: React.FC = () => {
     aiBehavior, aiProvider, aiModel, enableReasoning, linkExpiration,
     linksEnabled: true, consentText,
     createdAt: studyConfig?.createdAt || Date.now(),
+    ...(publishedAssignment && { interviewerAssignment: publishedAssignment }),
     ...(parentStudyInfo && { parentStudyId: parentStudyInfo.id, parentStudyName: parentStudyInfo.name, generatedFrom: 'synthesis' as const })
   });
 
@@ -223,6 +238,72 @@ const StudySetup: React.FC = () => {
       setParticipantLink(data.url);
     } catch { setLinkError('Network error. Please try again.'); }
     finally { setIsGeneratingLink(false); }
+  };
+
+  const handlePublishInterview = async () => {
+    if (!candidateName.trim() || !candidateEmail.trim() || !candidateEmail.includes('@')) {
+      setPublishError('Add a candidate name and valid email before publishing.');
+      return;
+    }
+
+    setIsPublishing(true);
+    setSaveError(null);
+    setPublishError(null);
+    setLinkError(null);
+
+    try {
+      const assignment: InterviewerAssignment = {
+        candidateName: candidateName.trim(),
+        candidateEmail: candidateEmail.trim().toLowerCase(),
+        ...(candidatePhone.trim() && { candidatePhone: candidatePhone.trim() }),
+        publishedAt: Date.now(),
+      };
+
+      const config = { ...buildConfig(), interviewerAssignment: assignment };
+      const response = await fetch('/api/interviewer/studies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setSaveError(data.error || 'Failed to save study.');
+        return;
+      }
+
+      const data = await response.json();
+      const savedConfig = data.study.config as StudyConfig;
+      setSavedStudyId(data.study.id);
+      setStudyConfig(savedConfig);
+      setPublishedAssignment(assignment);
+      setIsPublished(true);
+      setSaveSuccess(true);
+      setIsDirty(false);
+
+      const linkResponse = await fetch('/api/generate-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studyConfig: { ...savedConfig, id: data.study.id },
+          assignment,
+        })
+      });
+
+      if (!linkResponse.ok) {
+        const linkData = await linkResponse.json().catch(() => ({}));
+        setLinkError(linkData.error || 'Failed to generate participant link');
+        return;
+      }
+
+      const linkData = await linkResponse.json();
+      setParticipantLink(linkData.url);
+    } catch {
+      setSaveError('Network error. Please check your connection.');
+    } finally {
+      setIsPublishing(false);
+      setIsGeneratingLink(false);
+    }
   };
 
   const handleCopyLink = () => {
@@ -278,6 +359,7 @@ const StudySetup: React.FC = () => {
   };
 
   const isValid = name.trim() && researchQuestion.trim();
+  const candidateReady = candidateName.trim() && candidateEmail.trim() && candidateEmail.includes('@');
   const availablePresets = PROFILE_PRESETS.filter(p => !profileSchema.some(f => f.id === p.id));
 
   const behaviorOptions: { id: AIBehavior; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -371,7 +453,7 @@ const StudySetup: React.FC = () => {
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
             <AlertTriangle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-red-300">Save Failed</p>
+              <p className="text-sm font-medium text-red-300">{isInterviewerFlow ? 'Publish Failed' : 'Save Failed'}</p>
               <p className="text-xs text-red-400/80 mt-0.5">{saveError}</p>
             </div>
             <button onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-300"><X size={16} /></button>
@@ -656,6 +738,40 @@ const StudySetup: React.FC = () => {
           {currentStep === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
 
+              {isInterviewerFlow && (
+                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+                  <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <User size={14} className="text-violet-400" /> Participant Details
+                  </h2>
+                  <p className="text-xs text-slate-500">Required before publishing the interview.</p>
+                  <div className="grid gap-3">
+                    <input
+                      type="text"
+                      value={candidateName}
+                      onChange={e => { setCandidateName(e.target.value); setIsDirty(true); }}
+                      placeholder="Candidate name"
+                      className={inputCls}
+                      required
+                    />
+                    <input
+                      type="email"
+                      value={candidateEmail}
+                      onChange={e => { setCandidateEmail(e.target.value); setIsDirty(true); }}
+                      placeholder="Candidate email"
+                      className={inputCls}
+                      required
+                    />
+                    <input
+                      type="tel"
+                      value={candidatePhone}
+                      onChange={e => { setCandidatePhone(e.target.value); setIsDirty(true); }}
+                      placeholder="Candidate phone (optional)"
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Consent Text */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Consent Text</h2>
@@ -684,7 +800,7 @@ const StudySetup: React.FC = () => {
                 </div>
 
                 {/* Generate Participant Link */}
-                {isValid && (
+                {isValid && !isInterviewerFlow && (
                   <div className="pt-2">
                     <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
                       <LinkIcon size={14} className="text-violet-400" /> Participant Link
@@ -720,6 +836,26 @@ const StudySetup: React.FC = () => {
                     {linkError && linkError !== 'auth' && <p className="text-xs text-red-400 mt-1">{linkError}</p>}
                   </div>
                 )}
+
+                {isInterviewerFlow && (
+                  <div className="pt-2 space-y-3">
+                    {publishError && (
+                      <p className="text-xs text-red-400">{publishError}</p>
+                    )}
+                    {isPublished && participantLink && (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input type="text" value={participantLink} readOnly className="flex-1 px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-xs font-mono" />
+                          <button onClick={handleCopyLink} className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl transition-colors flex items-center gap-2 text-sm">
+                            {linkCopied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                            {linkCopied ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-600">Publish is complete. Share this link with the candidate.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Summary Card */}
@@ -736,11 +872,11 @@ const StudySetup: React.FC = () => {
               {/* Action Buttons */}
               <div className="space-y-3">
                 <button
-                  onClick={handleSubmit}
-                  disabled={!isValid}
+                  onClick={isInterviewerFlow ? handlePublishInterview : handleSubmit}
+                  disabled={!isValid || isPublishing || (isInterviewerFlow && !candidateReady)}
                   className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-900/30"
                 >
-                  <Zap size={18} /> Start Interview Now
+                  <Zap size={18} /> {isInterviewerFlow ? (isPublishing ? 'Publishing...' : 'Publish Interview') : 'Start Interview Now'}
                 </button>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -754,7 +890,7 @@ const StudySetup: React.FC = () => {
                   </button>
                   <button
                     onClick={handleSaveStudy}
-                    disabled={!isValid || !isAuthenticated || isSaving || (!!savedStudyId && !isDirty)}
+                    disabled={!isValid || !isAuthenticated || isSaving || (!!savedStudyId && !isDirty) || isInterviewerFlow}
                     className={`py-3 font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-40 border ${savedStudyId && !isDirty ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'}`}
                   >
                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : savedStudyId && !isDirty ? <CheckCircle size={16} /> : <Save size={16} />}

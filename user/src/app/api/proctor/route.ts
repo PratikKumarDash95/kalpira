@@ -8,6 +8,8 @@ const CRITICAL_TYPES = new Set([
     'camera_stream_stopped',
     'camera_disabled',
     'prolonged_absence_browser',
+    'fullscreen_exit',
+    'devtools_open',
 ]);
 
 export async function POST(req: NextRequest) {
