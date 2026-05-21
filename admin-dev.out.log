@@ -1,8 +1,0 @@
-  ▲ Next.js 14.2.35
-  - Local:        http://localhost:3003
-  - Environments: .env.local
-
- ✓ Starting...
- ✓ Ready in 7.5s
- ○ Compiling /src/middleware ...
- ✓ Compiled /src/middleware in 4s (153 modules)
