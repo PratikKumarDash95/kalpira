@@ -10,6 +10,7 @@ const protectedRoutes = [
   '/dashboard',
   '/export',
   '/interviewer/dashboard',
+  '/interviewer/profile',
   '/interviewer/setup',
   '/interviewer/studies',
   '/onboarding',

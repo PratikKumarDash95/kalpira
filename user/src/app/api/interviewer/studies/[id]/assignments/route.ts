@@ -6,6 +6,7 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 const db = supabaseDb as any;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function getInterviewerId(): Promise<string | null> {
   try {
@@ -38,42 +39,65 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   const body = await request.json();
-  const candidateName = typeof body.candidateName === 'string' ? body.candidateName.trim() : '';
-  const candidateEmail = typeof body.candidateEmail === 'string' ? body.candidateEmail.trim().toLowerCase() : '';
+  const rawCandidates = Array.isArray(body.candidates)
+    ? body.candidates
+    : [{ candidateName: body.candidateName, candidateEmail: body.candidateEmail }];
+  const candidates = rawCandidates.map((candidate: any) => ({
+    candidateName: typeof candidate.candidateName === 'string' ? candidate.candidateName.trim() : '',
+    candidateEmail: typeof candidate.candidateEmail === 'string' ? candidate.candidateEmail.trim().toLowerCase() : '',
+  })).filter((candidate: any) => candidate.candidateName || candidate.candidateEmail);
 
-  if (!candidateName || !candidateEmail || !candidateEmail.includes('@')) {
-    return NextResponse.json({ error: 'Candidate name and valid email are required' }, { status: 400 });
+  if (!candidates.length || candidates.some((candidate: any) => !candidate.candidateName || !emailPattern.test(candidate.candidateEmail))) {
+    return NextResponse.json({ error: 'Candidate names and valid emails are required' }, { status: 400 });
   }
 
-  const existing = await db.interviewSession.findFirst({
-    where: {
-      studyId: params.id,
-      candidateEmail,
-      completedAt: null,
-    },
-  });
-
-  if (existing) {
-    return NextResponse.json({
-      assignment: existing,
-      reused: true,
-    });
-  }
-
+  const uniqueCandidates = Array.from(new Map(candidates.map((candidate: any) => [candidate.candidateEmail, candidate])).values()) as {
+    candidateName: string;
+    candidateEmail: string;
+  }[];
   const config = JSON.parse(study.configJSON);
-  const assignment = await db.interviewSession.create({
-    data: {
-      userId: interviewerId,
-      role: config.name || 'Interview',
-      difficulty: 'medium',
-      mode: 'assigned',
-      startedAt: new Date(),
-      averageScore: 0,
-      studyId: params.id,
-      candidateName,
-      candidateEmail,
-    },
-  });
+  const assignments = [];
+  let reusedCount = 0;
+  let createdCount = 0;
 
-  return NextResponse.json({ assignment, reused: false });
+  for (const candidate of uniqueCandidates) {
+    const existing = await db.interviewSession.findFirst({
+      where: {
+        studyId: params.id,
+        candidateEmail: candidate.candidateEmail,
+        completedAt: null,
+      },
+    });
+
+    if (existing) {
+      reusedCount += 1;
+      assignments.push(existing);
+      continue;
+    }
+
+    const assignment = await db.interviewSession.create({
+      data: {
+        userId: interviewerId,
+        role: config.name || 'Interview',
+        difficulty: 'medium',
+        mode: 'assigned',
+        startedAt: new Date(),
+        averageScore: 0,
+        studyId: params.id,
+        candidateName: candidate.candidateName,
+        candidateEmail: candidate.candidateEmail,
+      },
+    });
+
+    createdCount += 1;
+    assignments.push(assignment);
+  }
+
+  return NextResponse.json({
+    assignment: assignments[0] || null,
+    assignments,
+    reused: createdCount === 0,
+    reusedCount,
+    createdCount,
+  });
 }

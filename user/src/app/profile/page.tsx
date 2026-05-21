@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ArrowLeft, Camera, ImagePlus, Loader2, LogOut, Save, Settings, Upload, UserCircle } from 'lucide-react';
 
 interface Profile {
@@ -19,6 +19,13 @@ type MediaKind = 'avatar' | 'cover';
 
 export default function ProfilePage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isStandaloneInterviewerPortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer';
+  const isInterviewerProfile = isStandaloneInterviewerPortal || pathname.startsWith('/interviewer');
+  const profileApi = isInterviewerProfile ? '/api/interviewer/me' : '/api/auth/me';
+  const loginPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/login' : '/interviewer/login') : '/login';
+  const dashboardPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/dashboard' : '/interviewer/dashboard') : '/studies';
+  const profilePath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/profile' : '/interviewer/profile') : '/profile';
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -32,25 +39,26 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    fetch(profileApi)
       .then((res) => {
         if (res.status === 401) {
-          router.push('/login?redirect=/profile');
+          router.push(`${loginPath}?redirect=${encodeURIComponent(profilePath)}`);
           return null;
         }
         return res.json();
       })
       .then((data) => {
-        if (data?.profile) {
-          setProfile(data.profile);
-          setName(data.profile.name || '');
-          setAvatarUrl(data.profile.avatarUrl || '');
-          setCoverUrl(data.profile.coverUrl || '');
+        const loadedProfile = data?.profile || data?.user;
+        if (loadedProfile) {
+          setProfile(loadedProfile);
+          setName(loadedProfile.name || '');
+          setAvatarUrl(loadedProfile.avatarUrl || '');
+          setCoverUrl(loadedProfile.coverUrl || '');
         }
       })
       .catch(() => setError('Failed to load profile.'))
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [loginPath, profileApi, profilePath, router]);
 
   const uploadMedia = async (kind: MediaKind, file: File) => {
     setUploading(kind);
@@ -79,7 +87,7 @@ export default function ProfilePage() {
       if (kind === 'avatar') setAvatarUrl(data.publicUrl);
       else setCoverUrl(data.publicUrl);
 
-      const saveRes = await fetch('/api/auth/me', {
+      const saveRes = await fetch(profileApi, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,11 +102,12 @@ export default function ProfilePage() {
         return;
       }
 
-      setProfile(saveData.profile);
-      if (saveData.profile) {
-        setName(saveData.profile.name || '');
-        setAvatarUrl(saveData.profile.avatarUrl || '');
-        setCoverUrl(saveData.profile.coverUrl || '');
+      const savedProfile = saveData.profile || saveData.user;
+      setProfile(savedProfile);
+      if (savedProfile) {
+        setName(savedProfile.name || '');
+        setAvatarUrl(savedProfile.avatarUrl || '');
+        setCoverUrl(savedProfile.coverUrl || '');
       }
       setMessage(`${kind === 'avatar' ? 'Profile photo' : 'Cover image'} uploaded and saved.`);
     } catch {
@@ -121,7 +130,7 @@ export default function ProfilePage() {
     setError(null);
 
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(profileApi, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, avatarUrl, coverUrl }),
@@ -131,7 +140,7 @@ export default function ProfilePage() {
         setError(data.error || 'Failed to save profile.');
         return;
       }
-      setProfile(data.profile);
+      setProfile(data.profile || data.user);
       setMessage('Profile saved.');
     } catch {
       setError('Failed to save profile.');
@@ -188,7 +197,7 @@ export default function ProfilePage() {
       <main className="kalpira-light flex min-h-screen items-center justify-center p-6">
         <div className="surface max-w-md rounded-2xl p-6 text-center">
           <p className="text-sm text-slate-600">{error || 'No profile found.'}</p>
-          <button onClick={() => router.push('/login')} className="btn-primary mt-4 px-5 py-2 text-sm font-semibold">
+          <button onClick={() => router.push(loginPath)} className="btn-primary mt-4 px-5 py-2 text-sm font-semibold">
             Sign in
           </button>
         </div>
@@ -200,11 +209,11 @@ export default function ProfilePage() {
     <main className="kalpira-light min-h-screen p-4 sm:p-8">
       <div className="mx-auto max-w-4xl">
         <button
-          onClick={() => router.push('/studies')}
+          onClick={() => router.push(dashboardPath)}
           className="mb-5 inline-flex items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-white"
         >
           <ArrowLeft size={16} />
-          Back to studies
+          {isInterviewerProfile ? 'Back to dashboard' : 'Back to studies'}
         </button>
 
         <section className="surface overflow-hidden rounded-3xl">
@@ -265,13 +274,15 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => router.push('/settings')}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/80 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
-              >
-                <Settings size={16} />
-                Settings
-              </button>
+              {!isInterviewerProfile && (
+                <button
+                  onClick={() => router.push('/settings')}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/80 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
+                >
+                  <Settings size={16} />
+                  Settings
+                </button>
+              )}
             </div>
 
             <div className="mt-8 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -324,7 +335,7 @@ export default function ProfilePage() {
                   <button
                     onClick={async () => {
                       await fetch('/api/auth', { method: 'DELETE' });
-                      router.push('/login');
+                      router.push(loginPath);
                     }}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-white"
                   >
@@ -337,18 +348,28 @@ export default function ProfilePage() {
               <div className="rounded-2xl border border-white/80 bg-white/65 p-5">
                 <h2 className="text-base font-semibold text-slate-950">Account status</h2>
                 <div className="mt-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
-                    <span className="text-slate-600">Gemini key</span>
-                    <span className={profile.hasGeminiKey ? 'text-emerald-600' : 'text-slate-400'}>
-                      {profile.hasGeminiKey ? 'Configured' : 'Missing'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
-                    <span className="text-slate-600">Claude key</span>
-                    <span className={profile.hasAnthropicKey ? 'text-emerald-600' : 'text-slate-400'}>
-                      {profile.hasAnthropicKey ? 'Configured' : 'Missing'}
-                    </span>
-                  </div>
+                  {!isInterviewerProfile && (
+                    <>
+                      <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
+                        <span className="text-slate-600">Gemini key</span>
+                        <span className={profile.hasGeminiKey ? 'text-emerald-600' : 'text-slate-400'}>
+                          {profile.hasGeminiKey ? 'Configured' : 'Missing'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
+                        <span className="text-slate-600">Claude key</span>
+                        <span className={profile.hasAnthropicKey ? 'text-emerald-600' : 'text-slate-400'}>
+                          {profile.hasAnthropicKey ? 'Configured' : 'Missing'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  {isInterviewerProfile && (
+                    <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
+                      <span className="text-slate-600">Portal</span>
+                      <span className="text-indigo-600">Interviewer</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
                     <span className="text-slate-600">Supabase media</span>
                     <span className="text-indigo-600">Uploads enabled</span>
