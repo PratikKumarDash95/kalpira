@@ -3,6 +3,17 @@
 
 import { StoredInterview, StoredStudy } from '@/types';
 
+export type InterviewPage = {
+  interviews: StoredInterview[];
+  pagination: {
+    limit: number;
+    offset: number;
+    count: number;
+    hasMore: boolean;
+    nextOffset: number;
+  };
+};
+
 // Save completed interview
 export async function saveCompletedInterview(
   interview: Omit<StoredInterview, 'completedAt' | 'status'>,
@@ -36,9 +47,15 @@ export async function saveCompletedInterview(
 }
 
 // Get all interviews (researcher only)
-export async function getAllInterviews(options?: { summary?: boolean }): Promise<StoredInterview[]> {
+export async function getAllInterviews(options?: { summary?: boolean; limit?: number; offset?: number }): Promise<StoredInterview[]> {
   try {
-    const response = await fetch(options?.summary ? '/api/interviews?summary=1&limit=50' : '/api/interviews');
+    const params = new URLSearchParams();
+    if (options?.summary) params.set('summary', '1');
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.offset) params.set('offset', String(options.offset));
+    if (options?.summary && !options?.limit) params.set('limit', '50');
+
+    const response = await fetch(`/api/interviews${params.size ? `?${params.toString()}` : ''}`);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -49,6 +66,46 @@ export async function getAllInterviews(options?: { summary?: boolean }): Promise
   } catch (error) {
     console.error('Error fetching interviews:', error);
     return [];
+  }
+}
+
+export async function getAllInterviewsPage(options?: { summary?: boolean; limit?: number; offset?: number }): Promise<InterviewPage> {
+  try {
+    const params = new URLSearchParams();
+    if (options?.summary) params.set('summary', '1');
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.offset) params.set('offset', String(options.offset));
+
+    const response = await fetch(`/api/interviews${params.size ? `?${params.toString()}` : ''}`);
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const interviews = data.interviews || [];
+    return {
+      interviews,
+      pagination: data.pagination || {
+        limit: options?.limit || interviews.length,
+        offset: options?.offset || 0,
+        count: interviews.length,
+        hasMore: false,
+        nextOffset: (options?.offset || 0) + interviews.length
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching interview page:', error);
+    return {
+      interviews: [],
+      pagination: {
+        limit: options?.limit || 0,
+        offset: options?.offset || 0,
+        count: 0,
+        hasMore: false,
+        nextOffset: options?.offset || 0
+      }
+    };
   }
 }
 

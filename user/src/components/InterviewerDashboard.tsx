@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Briefcase, Plus, Users, BarChart2, Clock, ChevronRight,
     LogOut, Loader2, AlertTriangle, Copy, Check, ExternalLink,
-    TrendingUp, FileText, Zap, Send
+    TrendingUp, FileText, Zap, Send, X, User, Mail
 } from 'lucide-react';
 
 interface StudySummary {
@@ -37,6 +37,10 @@ const InterviewerDashboard: React.FC = () => {
     const [generatingLink, setGeneratingLink] = useState<string | null>(null);
     const [studyLinks, setStudyLinks] = useState<Record<string, string>>({});
     const [assigningStudyId, setAssigningStudyId] = useState<string | null>(null);
+    const [assignmentStudy, setAssignmentStudy] = useState<StudySummary | null>(null);
+    const [candidateName, setCandidateName] = useState('');
+    const [candidateEmail, setCandidateEmail] = useState('');
+    const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -95,32 +99,65 @@ const InterviewerDashboard: React.FC = () => {
         finally { setGeneratingLink(null); }
     };
 
-    const handleAssignCandidate = async (study: StudySummary) => {
-        const candidateName = window.prompt('Candidate name');
-        if (!candidateName?.trim()) return;
-        const candidateEmail = window.prompt('Candidate email');
-        if (!candidateEmail?.trim()) return;
+    const openAssignmentModal = (study: StudySummary) => {
+        setAssignmentStudy(study);
+        setCandidateName('');
+        setCandidateEmail('');
+        setAssignmentMessage(null);
+    };
 
-        setAssigningStudyId(study.id);
+    const closeAssignmentModal = () => {
+        if (assigningStudyId) return;
+        setAssignmentStudy(null);
+        setAssignmentMessage(null);
+    };
+
+    const handleAssignCandidate = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!assignmentStudy) return;
+
+        const trimmedName = candidateName.trim();
+        const trimmedEmail = candidateEmail.trim().toLowerCase();
+
+        if (!trimmedName || !trimmedEmail.includes('@')) {
+            setAssignmentMessage({ type: 'error', text: 'Add a candidate name and valid email.' });
+            return;
+        }
+
+        setAssigningStudyId(assignmentStudy.id);
+        setAssignmentMessage(null);
         try {
-            const res = await fetch(`/api/interviewer/studies/${study.id}/assignments`, {
+            const res = await fetch(`/api/interviewer/studies/${assignmentStudy.id}/assignments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    candidateName: candidateName.trim(),
-                    candidateEmail: candidateEmail.trim(),
+                    candidateName: trimmedName,
+                    candidateEmail: trimmedEmail,
                 }),
             });
 
             const data = await res.json();
             if (!res.ok) {
-                alert(data.error || 'Failed to assign interview');
+                setAssignmentMessage({ type: 'error', text: data.error || 'Failed to assign interview.' });
                 return;
             }
 
-            alert(data.reused ? 'Existing assignment reused.' : 'Interview assigned successfully.');
+            if (!data.reused) {
+                setStudies(prev => prev.map(study =>
+                    study.id === assignmentStudy.id
+                        ? { ...study, candidateCount: study.candidateCount + 1 }
+                        : study
+                ));
+            }
+
+            setAssignmentMessage({
+                type: 'success',
+                text: data.reused ? 'Existing assignment reused.' : 'Interview assigned successfully.',
+            });
+            setCandidateName('');
+            setCandidateEmail('');
         } catch {
-            alert('Failed to assign interview');
+            setAssignmentMessage({ type: 'error', text: 'Failed to assign interview.' });
         } finally {
             setAssigningStudyId(null);
         }
@@ -258,7 +295,7 @@ const InterviewerDashboard: React.FC = () => {
 
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <button
-                                                onClick={() => handleAssignCandidate(study)}
+                                                onClick={() => openAssignmentModal(study)}
                                                 disabled={assigningStudyId === study.id}
                                                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl text-xs transition-colors disabled:opacity-50"
                                             >
@@ -303,6 +340,95 @@ const InterviewerDashboard: React.FC = () => {
                     )}
                 </AnimatePresence>
             </div>
+
+            <AnimatePresence>
+                {assignmentStudy && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4"
+                    >
+                        <motion.form
+                            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                            onSubmit={handleAssignCandidate}
+                            className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl shadow-black/40"
+                        >
+                            <div className="flex items-start justify-between gap-4 mb-5">
+                                <div className="min-w-0">
+                                    <p className="text-xs text-slate-500 uppercase tracking-wider">Assign Candidate</p>
+                                    <h3 className="text-base font-semibold text-white truncate">{assignmentStudy.config.name}</h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={closeAssignmentModal}
+                                    disabled={!!assigningStudyId}
+                                    className="p-2 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-50"
+                                    aria-label="Close assignment form"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="block">
+                                    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
+                                        <User size={13} /> Candidate name
+                                    </span>
+                                    <input
+                                        type="text"
+                                        value={candidateName}
+                                        onChange={event => setCandidateName(event.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
+                                        placeholder="Enter candidate name"
+                                        autoFocus
+                                    />
+                                </label>
+
+                                <label className="block">
+                                    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
+                                        <Mail size={13} /> Candidate email
+                                    </span>
+                                    <input
+                                        type="email"
+                                        value={candidateEmail}
+                                        onChange={event => setCandidateEmail(event.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
+                                        placeholder="candidate@example.com"
+                                    />
+                                </label>
+                            </div>
+
+                            {assignmentMessage && (
+                                <p className={`mt-3 text-xs ${assignmentMessage.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {assignmentMessage.text}
+                                </p>
+                            )}
+
+                            <div className="flex gap-3 mt-5">
+                                <button
+                                    type="button"
+                                    onClick={closeAssignmentModal}
+                                    disabled={!!assigningStudyId}
+                                    className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-sm font-medium transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!!assigningStudyId}
+                                    className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {assigningStudyId ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                    Assign
+                                </button>
+                            </div>
+                        </motion.form>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

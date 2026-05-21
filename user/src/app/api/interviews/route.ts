@@ -9,6 +9,43 @@ import { getRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
 import { StoredInterview, InterviewMessage, SynthesisResult } from '@/types';
 
+const MAX_INTERVIEW_DURATION_MS = 60 * 60 * 1000;
+
+async function autoCompleteExpiredSessions(where: any) {
+  const now = Date.now();
+  const sessions = await supabaseDb.interviewSession.findMany({
+    where: {
+      ...where,
+      completedAt: null,
+    },
+    select: {
+      id: true,
+      startedAt: true,
+      averageScore: true,
+      mode: true,
+    },
+  });
+
+  await Promise.all(
+    sessions
+      .filter((session: any) => {
+        if (session.mode === 'terminated') return false;
+        const startedAt = new Date(session.startedAt).getTime();
+        return Number.isFinite(startedAt) && now - startedAt >= MAX_INTERVIEW_DURATION_MS;
+      })
+      .map((session: any) => {
+        const startedAt = new Date(session.startedAt).getTime();
+        return supabaseDb.interviewSession.update({
+          where: { id: session.id },
+          data: {
+            completedAt: new Date(startedAt + MAX_INTERVIEW_DURATION_MS),
+            averageScore: session.averageScore || 0,
+          },
+        });
+      })
+  );
+}
+
 export async function GET(request: Request) {
   try {
     const { authorized, context, researcherId, error } = await getRequestContext();
@@ -28,6 +65,7 @@ export async function GET(request: Request) {
     const studyId = searchParams.get('studyId');
     const summaryOnly = searchParams.get('summary') === '1';
     const limit = Math.min(Math.max(Number(searchParams.get('limit') || 50), 1), 100);
+    const offset = Math.max(Number(searchParams.get('offset') || 0), 0);
 
     // Build strict query based on role
     const where: any = {};
@@ -54,6 +92,8 @@ export async function GET(request: Request) {
       where.studyId = studyId ? studyId : { in: ownedStudyIds };
     }
 
+    await autoCompleteExpiredSessions(where);
+
     const sessions = await supabaseDb.interviewSession.findMany({
       where,
       include: {
@@ -69,11 +109,15 @@ export async function GET(request: Request) {
         study: true,
       },
       orderBy: { startedAt: 'desc' },
-      take: limit,
+      skip: offset,
+      take: limit + 1,
     });
 
+    const hasMore = sessions.length > limit;
+    const visibleSessions = hasMore ? sessions.slice(0, limit) : sessions;
+
     // Map Supabase sessions to StoredInterview format
-    const interviews: StoredInterview[] = sessions.map(session => {
+    const interviews: StoredInterview[] = visibleSessions.map(session => {
       // Reconstruct transcript
       const transcript: InterviewMessage[] = [];
       if (!summaryOnly) session.questions.forEach((q: any) => {
@@ -136,12 +180,23 @@ export async function GET(request: Request) {
           contradictions: []
         },
         createdAt: session.startedAt.getTime(),
-        completedAt: session.completedAt ? session.completedAt.getTime() : Date.now(),
+        completedAt: session.completedAt
+          ? session.completedAt.getTime()
+          : Math.min(Date.now(), session.startedAt.getTime() + MAX_INTERVIEW_DURATION_MS),
         status: session.completedAt ? 'completed' : 'in_progress'
       };
     });
 
-    return NextResponse.json({ interviews });
+    return NextResponse.json({
+      interviews,
+      pagination: {
+        limit,
+        offset,
+        count: interviews.length,
+        hasMore,
+        nextOffset: offset + interviews.length,
+      },
+    });
   } catch (error) {
     console.error('Interviews API error:', error);
     return NextResponse.json(

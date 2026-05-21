@@ -207,9 +207,10 @@ function delegate(model: ModelName) {
   return {
     async findMany(args: Row = {}) {
       let rows = await rowsWhere(model, args.where);
-      rows = await Promise.all(rows.map((row) => loadRelations(model, row, args.include)));
       rows = applyOrder(rows, args.orderBy);
+      if (typeof args.skip === 'number') rows = rows.slice(Math.max(0, args.skip));
       if (typeof args.take === 'number') rows = rows.slice(0, args.take);
+      rows = await Promise.all(rows.map((row) => loadRelations(model, row, args.include)));
       return rows.map((row) => applySelect(row, args.select));
     },
     async findFirst(args: Row = {}) {
