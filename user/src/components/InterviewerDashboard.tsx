@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import JSZip from 'jszip';
 import {
     Briefcase, Plus, Users, BarChart2, Clock, ChevronRight,
     LogOut, Loader2, AlertTriangle, Copy, Check, ExternalLink,
-    TrendingUp, FileText, Zap, Send, X, User, Mail
+    TrendingUp, FileText, Zap, Send, X, User, Mail, UserCircle,
+    FileSpreadsheet, Trash2, UserPlus
 } from 'lucide-react';
 
 interface StudySummary {
@@ -24,6 +26,127 @@ interface InterviewerInfo {
     email: string;
 }
 
+interface AssignmentCandidate {
+    id: string;
+    name: string;
+    email: string;
+    source: 'manual' | 'file';
+}
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const createCandidate = (source: AssignmentCandidate['source'] = 'manual'): AssignmentCandidate => ({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: '',
+    email: '',
+    source,
+});
+
+const normalizeCell = (value: string) => value.replace(/\s+/g, ' ').trim();
+
+const parseXml = (xml: string) => new DOMParser().parseFromString(xml, 'application/xml');
+
+const columnIndexFromRef = (cellRef: string) => {
+    const letters = cellRef.replace(/[0-9]/g, '').toUpperCase();
+    return letters.split('').reduce((total, letter) => total * 26 + letter.charCodeAt(0) - 64, 0) - 1;
+};
+
+const parseCsvRows = (text: string): string[][] => {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let cell = '';
+    let quoted = false;
+
+    for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === '"' && quoted && next === '"') {
+            cell += '"';
+            index += 1;
+        } else if (char === '"') {
+            quoted = !quoted;
+        } else if (char === ',' && !quoted) {
+            row.push(normalizeCell(cell));
+            cell = '';
+        } else if ((char === '\n' || char === '\r') && !quoted) {
+            if (char === '\r' && next === '\n') index += 1;
+            row.push(normalizeCell(cell));
+            if (row.some(Boolean)) rows.push(row);
+            row = [];
+            cell = '';
+        } else {
+            cell += char;
+        }
+    }
+
+    row.push(normalizeCell(cell));
+    if (row.some(Boolean)) rows.push(row);
+    return rows;
+};
+
+const parseXlsxRows = async (file: File): Promise<string[][]> => {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const sharedXml = await zip.file('xl/sharedStrings.xml')?.async('string');
+    const sharedStrings = sharedXml
+        ? Array.from(parseXml(sharedXml).getElementsByTagName('si')).map(item =>
+            normalizeCell(Array.from(item.getElementsByTagName('t')).map(node => node.textContent || '').join(''))
+        )
+        : [];
+
+    const sheetPath = zip.file('xl/worksheets/sheet1.xml')
+        ? 'xl/worksheets/sheet1.xml'
+        : Object.keys(zip.files).find(path => /^xl\/worksheets\/sheet\d+\.xml$/.test(path));
+
+    if (!sheetPath) return [];
+
+    const sheetXml = await zip.file(sheetPath)?.async('string');
+    if (!sheetXml) return [];
+
+    const sheet = parseXml(sheetXml);
+    return Array.from(sheet.getElementsByTagName('row')).map(rowNode => {
+        const row: string[] = [];
+
+        Array.from(rowNode.getElementsByTagName('c')).forEach(cellNode => {
+            const ref = cellNode.getAttribute('r') || '';
+            const type = cellNode.getAttribute('t');
+            const index = ref ? columnIndexFromRef(ref) : row.length;
+            const valueNode = cellNode.getElementsByTagName('v')[0];
+            const inlineNode = cellNode.getElementsByTagName('t')[0];
+            const rawValue = valueNode?.textContent || inlineNode?.textContent || '';
+            const value = type === 's' ? sharedStrings[Number(rawValue)] || '' : rawValue;
+            row[index] = normalizeCell(value);
+        });
+
+        return row.map(cell => cell || '');
+    }).filter(row => row.some(Boolean));
+};
+
+const candidatesFromRows = (rows: string[][]): AssignmentCandidate[] => {
+    if (!rows.length) return [];
+
+    const header = rows[0].map(cell => cell.toLowerCase());
+    const headerHasLabels = header.some(cell => cell.includes('name') || cell.includes('email') || cell.includes('mail'));
+    const nameIndex = header.findIndex(cell => cell.includes('name') || cell.includes('candidate'));
+    const emailIndex = header.findIndex(cell => cell.includes('email') || cell.includes('mail'));
+    const dataRows = headerHasLabels ? rows.slice(1) : rows;
+
+    return dataRows.flatMap(row => {
+        const detectedEmailIndex = emailIndex >= 0 ? emailIndex : row.findIndex(cell => emailPattern.test(cell.toLowerCase()));
+        if (detectedEmailIndex < 0) return [];
+
+        const detectedNameIndex = nameIndex >= 0
+            ? nameIndex
+            : row.findIndex((cell, index) => index !== detectedEmailIndex && cell && !emailPattern.test(cell.toLowerCase()));
+
+        const name = normalizeCell(row[detectedNameIndex] || '');
+        const email = normalizeCell(row[detectedEmailIndex] || '').toLowerCase();
+
+        if (!name || !emailPattern.test(email)) return [];
+        return [{ ...createCandidate('file'), name, email }];
+    });
+};
+
 const InterviewerDashboard: React.FC = () => {
     const router = useRouter();
     const pathname = usePathname();
@@ -38,8 +161,8 @@ const InterviewerDashboard: React.FC = () => {
     const [studyLinks, setStudyLinks] = useState<Record<string, string>>({});
     const [assigningStudyId, setAssigningStudyId] = useState<string | null>(null);
     const [assignmentStudy, setAssignmentStudy] = useState<StudySummary | null>(null);
-    const [candidateName, setCandidateName] = useState('');
-    const [candidateEmail, setCandidateEmail] = useState('');
+    const [assignmentCandidates, setAssignmentCandidates] = useState<AssignmentCandidate[]>([createCandidate()]);
+    const [importFileName, setImportFileName] = useState('');
     const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
@@ -101,8 +224,8 @@ const InterviewerDashboard: React.FC = () => {
 
     const openAssignmentModal = (study: StudySummary) => {
         setAssignmentStudy(study);
-        setCandidateName('');
-        setCandidateEmail('');
+        setAssignmentCandidates([createCandidate()]);
+        setImportFileName('');
         setAssignmentMessage(null);
     };
 
@@ -112,15 +235,70 @@ const InterviewerDashboard: React.FC = () => {
         setAssignmentMessage(null);
     };
 
+    const updateCandidate = (id: string, field: 'name' | 'email', value: string) => {
+        setAssignmentCandidates(prev => prev.map(candidate =>
+            candidate.id === id ? { ...candidate, [field]: value } : candidate
+        ));
+    };
+
+    const addManualCandidate = () => {
+        setAssignmentCandidates(prev => [...prev, createCandidate()]);
+    };
+
+    const removeCandidate = (id: string) => {
+        setAssignmentCandidates(prev => prev.length > 1 ? prev.filter(candidate => candidate.id !== id) : prev);
+    };
+
+    const handleImportCandidates = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+
+        setAssignmentMessage(null);
+        setImportFileName(file.name);
+
+        try {
+            const extension = file.name.split('.').pop()?.toLowerCase();
+            const rows = extension === 'csv'
+                ? parseCsvRows(await file.text())
+                : await parseXlsxRows(file);
+            const imported = candidatesFromRows(rows);
+            const unique = Array.from(new Map(imported.map(candidate => [candidate.email, candidate])).values());
+
+            if (!unique.length) {
+                setAssignmentCandidates([createCandidate('file')]);
+                setAssignmentMessage({ type: 'error', text: 'No valid candidate names and emails found in the sheet.' });
+                return;
+            }
+
+            setAssignmentCandidates(prev => {
+                const hasManualData = prev.some(candidate => candidate.name.trim() || candidate.email.trim());
+                const nextCandidates = hasManualData ? [...prev, ...unique] : unique;
+                return Array.from(new Map(nextCandidates.map(candidate => [candidate.email || candidate.id, candidate])).values());
+            });
+            setAssignmentMessage({ type: 'success', text: `Imported ${unique.length} candidate${unique.length !== 1 ? 's' : ''}.` });
+        } catch {
+            setAssignmentMessage({ type: 'error', text: 'Could not read that file. Upload an .xlsx or .csv with name and email columns.' });
+        }
+    };
+
     const handleAssignCandidate = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!assignmentStudy) return;
 
-        const trimmedName = candidateName.trim();
-        const trimmedEmail = candidateEmail.trim().toLowerCase();
+        const preparedCandidates = assignmentCandidates
+            .map(candidate => ({
+                candidateName: candidate.name.trim(),
+                candidateEmail: candidate.email.trim().toLowerCase(),
+            }))
+            .filter(candidate => candidate.candidateName || candidate.candidateEmail);
 
-        if (!trimmedName || !trimmedEmail.includes('@')) {
-            setAssignmentMessage({ type: 'error', text: 'Add a candidate name and valid email.' });
+        const invalidCandidate = preparedCandidates.find(candidate =>
+            !candidate.candidateName || !emailPattern.test(candidate.candidateEmail)
+        );
+
+        if (!preparedCandidates.length || invalidCandidate) {
+            setAssignmentMessage({ type: 'error', text: 'Add candidate names and valid emails before assigning.' });
             return;
         }
 
@@ -130,10 +308,7 @@ const InterviewerDashboard: React.FC = () => {
             const res = await fetch(`/api/interviewer/studies/${assignmentStudy.id}/assignments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    candidateName: trimmedName,
-                    candidateEmail: trimmedEmail,
-                }),
+                body: JSON.stringify({ candidates: preparedCandidates }),
             });
 
             const data = await res.json();
@@ -142,20 +317,23 @@ const InterviewerDashboard: React.FC = () => {
                 return;
             }
 
-            if (!data.reused) {
+            const createdCount = data.createdCount ?? (data.reused ? 0 : 1);
+            const reusedCount = data.reusedCount ?? (data.reused ? 1 : 0);
+
+            if (createdCount > 0) {
                 setStudies(prev => prev.map(study =>
                     study.id === assignmentStudy.id
-                        ? { ...study, candidateCount: study.candidateCount + 1 }
+                        ? { ...study, candidateCount: study.candidateCount + createdCount }
                         : study
                 ));
             }
 
             setAssignmentMessage({
                 type: 'success',
-                text: data.reused ? 'Existing assignment reused.' : 'Interview assigned successfully.',
+                text: `${createdCount} assigned${reusedCount ? `, ${reusedCount} already existed` : ''}.`,
             });
-            setCandidateName('');
-            setCandidateEmail('');
+            setAssignmentCandidates([createCandidate()]);
+            setImportFileName('');
         } catch {
             setAssignmentMessage({ type: 'error', text: 'Failed to assign interview.' });
         } finally {
@@ -196,10 +374,18 @@ const InterviewerDashboard: React.FC = () => {
                             <p className="text-sm font-semibold text-slate-200">{interviewer?.name}</p>
                         </div>
                     </div>
-                    <button onClick={handleLogout}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-sm transition-colors border border-slate-700">
-                        <LogOut size={15} /> Sign out
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => router.push(portalPath('/profile'))}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-sm transition-colors border border-slate-700"
+                        >
+                            <UserCircle size={15} /> Profile
+                        </button>
+                        <button onClick={handleLogout}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-sm transition-colors border border-slate-700">
+                            <LogOut size={15} /> Sign out
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── Stats Row ── */}
@@ -354,7 +540,7 @@ const InterviewerDashboard: React.FC = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 12, scale: 0.98 }}
                             onSubmit={handleAssignCandidate}
-                            className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl shadow-black/40"
+                            className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl shadow-black/40"
                         >
                             <div className="flex items-start justify-between gap-4 mb-5">
                                 <div className="min-w-0">
@@ -372,33 +558,71 @@ const InterviewerDashboard: React.FC = () => {
                                 </button>
                             </div>
 
-                            <div className="space-y-3">
-                                <label className="block">
-                                    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
-                                        <User size={13} /> Candidate name
-                                    </span>
+                            <div className="mb-4 flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={addManualCandidate}
+                                    disabled={!!assigningStudyId}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-50"
+                                >
+                                    <UserPlus size={14} /> Add candidate
+                                </button>
+                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-800">
+                                    <FileSpreadsheet size={14} />
+                                    {importFileName || 'Import sheet'}
                                     <input
-                                        type="text"
-                                        value={candidateName}
-                                        onChange={event => setCandidateName(event.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
-                                        placeholder="Enter candidate name"
-                                        autoFocus
+                                        type="file"
+                                        accept=".xlsx,.csv"
+                                        onChange={handleImportCandidates}
+                                        disabled={!!assigningStudyId}
+                                        className="hidden"
                                     />
                                 </label>
+                            </div>
 
-                                <label className="block">
-                                    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
-                                        <Mail size={13} /> Candidate email
-                                    </span>
-                                    <input
-                                        type="email"
-                                        value={candidateEmail}
-                                        onChange={event => setCandidateEmail(event.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
-                                        placeholder="candidate@example.com"
-                                    />
-                                </label>
+                            <div className="max-h-[42vh] overflow-y-auto pr-1">
+                                <div className="space-y-3">
+                                    {assignmentCandidates.map((candidate, index) => (
+                                        <div key={candidate.id} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                                            <label className="block min-w-0">
+                                                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
+                                                    <User size={13} /> Name
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={candidate.name}
+                                                    onChange={event => updateCandidate(candidate.id, 'name', event.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
+                                                    placeholder={`Candidate ${index + 1}`}
+                                                    autoFocus={index === 0}
+                                                />
+                                            </label>
+
+                                            <label className="block min-w-0">
+                                                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
+                                                    <Mail size={13} /> Email
+                                                </span>
+                                                <input
+                                                    type="email"
+                                                    value={candidate.email}
+                                                    onChange={event => updateCandidate(candidate.id, 'email', event.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
+                                                    placeholder="candidate@example.com"
+                                                />
+                                            </label>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => removeCandidate(candidate.id)}
+                                                disabled={!!assigningStudyId || assignmentCandidates.length === 1}
+                                                className="h-[46px] w-full rounded-xl border border-slate-700 bg-slate-800/70 text-slate-500 transition-colors hover:bg-slate-800 hover:text-red-300 disabled:opacity-40 sm:mt-6 sm:w-[46px]"
+                                                aria-label="Remove candidate"
+                                            >
+                                                <Trash2 size={16} className="mx-auto" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
                             {assignmentMessage && (
@@ -422,7 +646,7 @@ const InterviewerDashboard: React.FC = () => {
                                     className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     {assigningStudyId ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                    Assign
+                                    Assign{assignmentCandidates.filter(candidate => candidate.name.trim() && emailPattern.test(candidate.email.trim().toLowerCase())).length ? ` ${assignmentCandidates.filter(candidate => candidate.name.trim() && emailPattern.test(candidate.email.trim().toLowerCase())).length}` : ''}
                                 </button>
                             </div>
                         </motion.form>
