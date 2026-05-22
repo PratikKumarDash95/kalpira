@@ -29,7 +29,7 @@ const Export: React.FC = () => {
   const generateJSON = () => {
     // Build profile fields with labels
     const profileFields = participantProfile?.fields.map(f => {
-      const schema = studyConfig?.profileSchema.find(s => s.id === f.fieldId);
+      const schema = studyConfig?.profileSchema?.find(s => s.id === f.fieldId);
       return {
         fieldId: f.fieldId,
         label: schema?.label || f.fieldId,
@@ -58,7 +58,7 @@ const Export: React.FC = () => {
       interview: {
         messageCount: interviewHistory.length,
         questionsAsked: questionProgress.questionsAsked,
-        totalQuestions: studyConfig?.coreQuestions.length || 0,
+        totalQuestions: studyConfig?.coreQuestions?.length || 0,
         duration: interviewHistory.length > 1
           ? (interviewHistory[interviewHistory.length - 1].timestamp - interviewHistory[0].timestamp) / 1000
           : 0,
@@ -89,7 +89,7 @@ const Export: React.FC = () => {
     if (participantProfile && participantProfile.fields.length > 0) {
       lines.push(`## Participant Profile`);
       participantProfile.fields.forEach(f => {
-        const schema = studyConfig?.profileSchema.find(s => s.id === f.fieldId);
+        const schema = studyConfig?.profileSchema?.find(s => s.id === f.fieldId);
         const label = schema?.label || f.fieldId;
         const value = f.status === 'extracted' ? f.value : `(${f.status})`;
         lines.push(`- **${label}**: ${value}`);
@@ -216,7 +216,7 @@ const Export: React.FC = () => {
             </div>
             <div className="bg-stone-800 rounded-xl p-4">
               <div className="text-2xl font-bold text-white">
-                {questionProgress.questionsAsked.length}/{studyConfig?.coreQuestions.length || 0}
+                {questionProgress.questionsAsked.length}/{studyConfig?.coreQuestions?.length || 0}
               </div>
               <div className="text-xs text-stone-500">Questions</div>
             </div>
@@ -243,7 +243,7 @@ const Export: React.FC = () => {
               </h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {participantProfile.fields.map(f => {
-                  const schema = studyConfig?.profileSchema.find(s => s.id === f.fieldId);
+                  const schema = studyConfig?.profileSchema?.find(s => s.id === f.fieldId);
                   return (
                     <div key={f.fieldId} className="flex justify-between items-center py-1">
                       <span className="text-stone-400">{schema?.label || f.fieldId}</span>

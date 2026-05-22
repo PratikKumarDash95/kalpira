@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const pathname = usePathname();
   const isStandaloneInterviewerPortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer';
-  const isInterviewerProfile = isStandaloneInterviewerPortal || pathname.startsWith('/interviewer');
+  const isInterviewerProfile = isStandaloneInterviewerPortal || (pathname?.startsWith('/interviewer') ?? false);
   const profileApi = isInterviewerProfile ? '/api/interviewer/me' : '/api/auth/me';
   const loginPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/login' : '/interviewer/login') : '/login';
   const dashboardPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/dashboard' : '/interviewer/dashboard') : '/studies';
@@ -334,7 +334,16 @@ export default function ProfilePage() {
                   </button>
                   <button
                     onClick={async () => {
-                      await fetch('/api/auth', { method: 'DELETE' });
+                      try {
+                        const res = await fetch('/api/auth', { method: 'DELETE' });
+                        if (!res.ok) {
+                          setError('Logout failed. Please try again.');
+                          return;
+                        }
+                      } catch {
+                        setError('Logout failed. Please try again.');
+                        return;
+                      }
                       router.push(loginPath);
                     }}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-white"

@@ -12,9 +12,22 @@ export default function InterviewPage() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // Wait for Zustand to hydrate from sessionStorage
-    const timer = setTimeout(() => setHydrated(true), 300);
-    return () => clearTimeout(timer);
+    // Wait for Zustand persist to finish hydrating from sessionStorage.
+    // Using the persist API directly is more reliable than a fixed timer.
+    const anyStore = useStore as unknown as {
+      persist?: { hasHydrated: () => boolean; onFinishHydration: (cb: () => void) => () => void };
+    };
+    if (anyStore.persist?.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    const unsub = anyStore.persist?.onFinishHydration(() => setHydrated(true));
+    // Safety fallback: if persist API isn't available, hydrate after a short delay
+    const fallback = setTimeout(() => setHydrated(true), 500);
+    return () => {
+      unsub?.();
+      clearTimeout(fallback);
+    };
   }, []);
 
   if (!hydrated) {

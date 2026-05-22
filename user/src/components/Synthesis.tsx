@@ -95,17 +95,17 @@ const Synthesis: React.FC = () => {
     const analyzeAndSave = async () => {
       if (!studyConfig || interviewHistory.length === 0) return;
 
-      // If we already have synthesis, try to save if not already saved
+      // Synchronously claim the run BEFORE any await so a re-entrant effect
+      // triggered by setSynthesis/setSaveStatus inside the same microtask
+      // can't double-fire the analysis.
       if (synthesis) {
         if (saveStatus === null && !hasAttemptedAnalysis.current) {
-          // Page was refreshed with synthesis in store but save never attempted
           hasAttemptedAnalysis.current = true;
           doSave(synthesis);
         }
         return;
       }
 
-      // Prevent re-running analysis if already attempted
       if (hasAttemptedAnalysis.current) return;
       hasAttemptedAnalysis.current = true;
 
@@ -132,11 +132,12 @@ const Synthesis: React.FC = () => {
     };
 
     analyzeAndSave();
-    // Note: behaviorData, participantProfile, participantToken are intentionally
-    // not in deps - we only want to analyze once when the page loads, not on updates
-    // retryTrigger is included to allow manual retry after failure
+    // We intentionally exclude saveStatus, setSynthesis, behaviorData,
+    // participantProfile, and participantToken: this should run once on mount
+    // and again only when retryTrigger increments. Keeping setSynthesis or
+    // saveStatus here caused the effect to re-fire mid-run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studyConfig, interviewHistory, synthesis, saveStatus, setSynthesis, retryTrigger]);
+  }, [studyConfig, interviewHistory, synthesis, retryTrigger]);
 
   const handleBack = () => {
     setStep('interview');

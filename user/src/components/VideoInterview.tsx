@@ -190,14 +190,16 @@ const VideoInterview: React.FC = () => {
         const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
         if (!SpeechRecognition) return;
 
+        let isMounted = true;
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
-        recognition.onstart = () => setIsListening(true);
+        recognition.onstart = () => { if (isMounted) setIsListening(true); };
 
         recognition.onresult = (event: any) => {
+            if (!isMounted) return;
             let interim = '';
             let final = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -211,6 +213,7 @@ const VideoInterview: React.FC = () => {
                 // Auto-send after 2s silence
                 if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
                 silenceTimerRef.current = setTimeout(() => {
+                    if (!isMounted) return;
                     setInput(prev => {
                         if (prev.trim()) {
                             handleSendRef.current?.(prev.trim());
@@ -222,8 +225,9 @@ const VideoInterview: React.FC = () => {
             }
         };
 
-        recognition.onerror = () => setIsListening(false);
+        recognition.onerror = () => { if (isMounted) setIsListening(false); };
         recognition.onend = () => {
+            if (!isMounted) return;
             setIsListening(false);
             setInterimText('');
             if (silenceTimerRef.current) {
@@ -235,8 +239,18 @@ const VideoInterview: React.FC = () => {
         recognitionRef.current = recognition;
 
         return () => {
-            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            isMounted = false;
+            if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = null;
+            }
+            // Clear handlers so any in-flight callback after stop() doesn't touch state
+            recognition.onstart = null;
+            recognition.onresult = null;
+            recognition.onerror = null;
+            recognition.onend = null;
             recognition.stop?.();
+            recognitionRef.current = null;
         };
     }, []);
 

@@ -97,7 +97,10 @@ export function getSessionCookieOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const, // Strict - no cross-site embedding needed
+    // Lax allows the cookie on top-level cross-site navigations (e.g. OAuth
+    // callback redirects), which is required for OAuth flows. Strict blocks
+    // them and breaks the callback round-trip.
+    sameSite: 'lax' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   };
