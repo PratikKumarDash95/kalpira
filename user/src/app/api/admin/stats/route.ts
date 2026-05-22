@@ -10,7 +10,12 @@ async function isAdmin(): Promise<boolean> {
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     if (!token) return false;
     const result = await verifySessionToken(token);
-    return result.valid;
+    if (!result.valid || !result.researcherId) return false;
+    const user = await supabaseDb.user.findUnique({
+        where: { id: result.researcherId },
+        select: { role: true },
+    });
+    return user?.role === 'admin';
 }
 
 export async function GET() {
