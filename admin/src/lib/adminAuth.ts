@@ -8,9 +8,7 @@ export async function isAdminSession(): Promise<boolean> {
   if (!token) return false;
 
   const session = await verifySessionToken(token);
-  if (!session.valid) return false;
-
-  if (!session.researcherId) return true;
+  if (!session.valid || !session.researcherId) return false;
 
   const user = await supabaseDb.user.findUnique({
     where: { id: session.researcherId },

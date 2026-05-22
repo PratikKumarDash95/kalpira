@@ -50,13 +50,24 @@ class FreeModelService extends BaseAIService {
 
       if (typeof data.output === 'string') output = data.output;
       else if (data.choices && data.choices[0] && data.choices[0].text) output = data.choices[0].text;
-      else if (data.choices && data.choices[0] && data.choices[0].message) output = data.choices[0].message;
+      else if (data.choices && data.choices[0] && data.choices[0].message) {
+        const msg = data.choices[0].message;
+        output = typeof msg === 'string' ? msg : (msg.content || null);
+      }
       else if (data.result && typeof data.result === 'string') output = data.result;
-      else output = JSON.stringify(data);
+
+      if (!output || typeof output !== 'string' || !output.trim()) {
+        return this._buildError(
+          Object.assign(new Error('FreeModel returned an empty or unrecognized response.'), {
+            code: 'EMPTY_RESPONSE',
+          }),
+          targetModel
+        );
+      }
 
       return {
         success: true,
-        provider: this.providerKey,
+        provider: this.providerName,
         model: targetModel,
         output,
         meta: { raw: data },
@@ -75,11 +86,23 @@ class FreeModelService extends BaseAIService {
       };
     }
 
-    // Simple health check: attempt a minimal request or return available when key present
-    return {
-      available: true,
-      models: [this.defaultModel],
-    };
+    try {
+      const url = `${this.baseUrl.replace(/\/$/, '')}/v1/models`;
+      await axios.get(url, {
+        timeout: 5000,
+        headers: { Authorization: `Bearer ${this.apiKey}` },
+      });
+      return {
+        available: true,
+        models: [this.defaultModel],
+      };
+    } catch (err) {
+      return {
+        available: false,
+        models: [],
+        error: err.message || 'FreeModel endpoint unreachable.',
+      };
+    }
   }
 }
 
