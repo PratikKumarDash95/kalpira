@@ -190,10 +190,10 @@ const InterviewerStudyDetail: React.FC = () => {
                                     onClick={() => setExpandedId(expandedId === candidate.sessionId ? null : candidate.sessionId)}>
                                     <div className="flex items-center gap-4 flex-1 min-w-0">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                                            {candidate.candidateName.charAt(0).toUpperCase()}
+                                            {(candidate.candidateName?.charAt(0) || '?').toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-white">{candidate.candidateName}</p>
+                                            <p className="font-semibold text-white">{candidate.candidateName || 'Unnamed candidate'}</p>
                                             {candidate.candidateEmail && (
                                                 <div className="flex items-center gap-1 text-xs text-slate-500">
                                                     <Mail size={11} />{candidate.candidateEmail}

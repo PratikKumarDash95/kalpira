@@ -46,12 +46,31 @@ const normalizeCell = (value: string) => value.replace(/\s+/g, ' ').trim();
 
 const parseXml = (xml: string) => new DOMParser().parseFromString(xml, 'application/xml');
 
-const columnIndexFromRef = (cellRef: string) => {
+const columnIndexFromRef = (cellRef: string, fallback: number) => {
     const letters = cellRef.replace(/[0-9]/g, '').toUpperCase();
+    if (!letters) return fallback;
     return letters.split('').reduce((total, letter) => total * 26 + letter.charCodeAt(0) - 64, 0) - 1;
 };
 
-const parseCsvRows = (text: string): string[][] => {
+const detectDelimiter = (firstLine: string): string => {
+    const counts = { ',': 0, ';': 0, '\t': 0 };
+    let inQuote = false;
+    for (const ch of firstLine) {
+        if (ch === '"') inQuote = !inQuote;
+        else if (!inQuote && (ch === ',' || ch === ';' || ch === '\t')) {
+            counts[ch as ',' | ';' | '\t'] += 1;
+        }
+    }
+    return (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as string) || ',';
+};
+
+const parseCsvRows = (rawText: string): string[][] => {
+    // Strip UTF-8 BOM, normalize trailing whitespace
+    const text = rawText.replace(/^﻿/, '');
+    const firstLineEnd = text.search(/[\r\n]/);
+    const firstLine = firstLineEnd === -1 ? text : text.slice(0, firstLineEnd);
+    const delimiter = detectDelimiter(firstLine);
+
     const rows: string[][] = [];
     let row: string[] = [];
     let cell = '';
@@ -66,7 +85,7 @@ const parseCsvRows = (text: string): string[][] => {
             index += 1;
         } else if (char === '"') {
             quoted = !quoted;
-        } else if (char === ',' && !quoted) {
+        } else if (char === delimiter && !quoted) {
             row.push(normalizeCell(cell));
             cell = '';
         } else if ((char === '\n' || char === '\r') && !quoted) {
@@ -80,8 +99,11 @@ const parseCsvRows = (text: string): string[][] => {
         }
     }
 
-    row.push(normalizeCell(cell));
-    if (row.some(Boolean)) rows.push(row);
+    // Flush any final cell (even if unterminated quote — better than dropping it silently)
+    if (cell.length > 0 || row.length > 0) {
+        row.push(normalizeCell(cell));
+        if (row.some(Boolean)) rows.push(row);
+    }
     return rows;
 };
 
@@ -107,15 +129,15 @@ const parseXlsxRows = async (file: File): Promise<string[][]> => {
     return Array.from(sheet.getElementsByTagName('row')).map(rowNode => {
         const row: string[] = [];
 
-        Array.from(rowNode.getElementsByTagName('c')).forEach(cellNode => {
+        Array.from(rowNode.getElementsByTagName('c')).forEach((cellNode, fallbackIndex) => {
             const ref = cellNode.getAttribute('r') || '';
             const type = cellNode.getAttribute('t');
-            const index = ref ? columnIndexFromRef(ref) : row.length;
+            const index = columnIndexFromRef(ref, fallbackIndex);
             const valueNode = cellNode.getElementsByTagName('v')[0];
             const inlineNode = cellNode.getElementsByTagName('t')[0];
             const rawValue = valueNode?.textContent || inlineNode?.textContent || '';
             const value = type === 's' ? sharedStrings[Number(rawValue)] || '' : rawValue;
-            row[index] = normalizeCell(value);
+            if (index >= 0) row[index] = normalizeCell(value);
         });
 
         return row.map(cell => cell || '');
@@ -158,7 +180,7 @@ const InterviewerDashboard: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [generatingLink, setGeneratingLink] = useState<string | null>(null);
-    const [studyLinks, setStudyLinks] = useState<Record<string, string>>({});
+    const [studyLinks, setStudyLinks] = useState<Record<string, { url: string; createdAt: number }>>({});
     const [assigningStudyId, setAssigningStudyId] = useState<string | null>(null);
     const [assignmentStudy, setAssignmentStudy] = useState<StudySummary | null>(null);
     const [assignmentCandidates, setAssignmentCandidates] = useState<AssignmentCandidate[]>([createCandidate()]);
@@ -189,17 +211,29 @@ const InterviewerDashboard: React.FC = () => {
             }
         };
         load();
-    }, [router]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router, isStandalonePortal]);
 
     const handleLogout = async () => {
-        await fetch('/api/auth', { method: 'DELETE' });
+        try {
+            const res = await fetch('/api/auth', { method: 'DELETE' });
+            if (!res.ok) {
+                setError('Logout failed. Please try again.');
+                return;
+            }
+        } catch {
+            setError('Logout failed. Please try again.');
+            return;
+        }
         router.push(portalPath('/login'));
     };
 
     const handleGenerateLink = async (study: StudySummary) => {
-        if (studyLinks[study.id]) {
-            // Already generated — just copy
-            navigator.clipboard.writeText(studyLinks[study.id]);
+        // Cached links go stale; re-issue if older than 10 minutes
+        const LINK_TTL_MS = 10 * 60 * 1000;
+        const cached = studyLinks[study.id];
+        if (cached && Date.now() - cached.createdAt < LINK_TTL_MS) {
+            navigator.clipboard.writeText(cached.url);
             setCopiedId(study.id);
             setTimeout(() => setCopiedId(null), 2000);
             return;
@@ -213,7 +247,7 @@ const InterviewerDashboard: React.FC = () => {
             });
             if (res.ok) {
                 const data = await res.json();
-                setStudyLinks(prev => ({ ...prev, [study.id]: data.url }));
+                setStudyLinks(prev => ({ ...prev, [study.id]: { url: data.url, createdAt: Date.now() } }));
                 navigator.clipboard.writeText(data.url);
                 setCopiedId(study.id);
                 setTimeout(() => setCopiedId(null), 2000);
@@ -263,7 +297,12 @@ const InterviewerDashboard: React.FC = () => {
                 ? parseCsvRows(await file.text())
                 : await parseXlsxRows(file);
             const imported = candidatesFromRows(rows);
-            const unique = Array.from(new Map(imported.map(candidate => [candidate.email, candidate])).values());
+            // Dedup imported rows by email (skip ones without an email)
+            const importedByEmail = new Map<string, AssignmentCandidate>();
+            for (const candidate of imported) {
+                if (candidate.email) importedByEmail.set(candidate.email, candidate);
+            }
+            const unique = Array.from(importedByEmail.values());
 
             if (!unique.length) {
                 setAssignmentCandidates([createCandidate('file')]);
@@ -274,7 +313,14 @@ const InterviewerDashboard: React.FC = () => {
             setAssignmentCandidates(prev => {
                 const hasManualData = prev.some(candidate => candidate.name.trim() || candidate.email.trim());
                 const nextCandidates = hasManualData ? [...prev, ...unique] : unique;
-                return Array.from(new Map(nextCandidates.map(candidate => [candidate.email || candidate.id, candidate])).values());
+                // Dedup: candidates with email collapse to one entry per email;
+                // candidates without email are kept distinct via id
+                const seen = new Map<string, AssignmentCandidate>();
+                for (const candidate of nextCandidates) {
+                    const key = candidate.email ? `email:${candidate.email}` : `id:${candidate.id}`;
+                    seen.set(key, candidate);
+                }
+                return Array.from(seen.values());
             });
             setAssignmentMessage({ type: 'success', text: `Imported ${unique.length} candidate${unique.length !== 1 ? 's' : ''}.` });
         } catch {
@@ -395,9 +441,12 @@ const InterviewerDashboard: React.FC = () => {
                         { label: 'Total Candidates', value: studies.reduce((s, st) => s + st.candidateCount, 0), icon: Users, color: 'text-blue-400' },
                         {
                             label: 'Avg Score',
-                            value: studies.length > 0
-                                ? `${Math.round(studies.reduce((s, st) => s + st.averageScore, 0) / studies.filter(st => st.averageScore > 0).length || 0)}%`
-                                : '—',
+                            value: (() => {
+                                const scored = studies.filter(st => st.averageScore > 0);
+                                if (!scored.length) return '—';
+                                const sum = scored.reduce((s, st) => s + st.averageScore, 0);
+                                return `${Math.round(sum / scored.length)}%`;
+                            })(),
                             icon: TrendingUp,
                             color: 'text-emerald-400'
                         },
@@ -517,7 +566,7 @@ const InterviewerDashboard: React.FC = () => {
                                     {/* Link preview */}
                                     {studyLinks[study.id] && (
                                         <div className="mt-3 pt-3 border-t border-slate-800">
-                                            <p className="text-xs text-slate-600 font-mono truncate">{studyLinks[study.id]}</p>
+                                            <p className="text-xs text-slate-600 font-mono truncate">{studyLinks[study.id].url}</p>
                                         </div>
                                     )}
                                 </motion.div>

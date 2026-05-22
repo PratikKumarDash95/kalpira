@@ -95,6 +95,7 @@ export default function AdminPanel() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const fetchStats = useCallback(async () => {
         const res = await fetch('/api/admin/stats');
@@ -126,16 +127,25 @@ export default function AdminPanel() {
     const handleDeleteUser = async (userId: string) => {
         if (!confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
         setDeletingId(userId);
-        const res = await fetch('/api/admin/users', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId }),
-        });
-        if (res.ok) {
-            setUsers(prev => prev.filter(u => u.id !== userId));
-            if (stats) setStats({ ...stats, totalUsers: stats.totalUsers - 1 });
+        setErrorMsg(null);
+        try {
+            const res = await fetch('/api/admin/users', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            });
+            if (res.ok) {
+                setUsers(prev => prev.filter(u => u.id !== userId));
+                if (stats) setStats({ ...stats, totalUsers: stats.totalUsers - 1 });
+            } else {
+                const data = await res.json().catch(() => ({ error: 'Failed to delete user' }));
+                setErrorMsg(data.error || `Delete failed (${res.status})`);
+            }
+        } catch (e) {
+            setErrorMsg('Network error while deleting user.');
+        } finally {
+            setDeletingId(null);
         }
-        setDeletingId(null);
     };
 
     const handleLogout = async () => {
@@ -143,10 +153,14 @@ export default function AdminPanel() {
         window.location.href = `${mainAppUrl}/login`;
     };
 
-    const filteredUsers = users.filter(u =>
-    (u.name?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase()))
-    );
+    const filteredUsers = users.filter(u => {
+        if (!search) return true;
+        const s = search.toLowerCase();
+        return (
+            (u.name?.toLowerCase().includes(s) ?? false) ||
+            (u.email?.toLowerCase().includes(s) ?? false)
+        );
+    });
 
     const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
         { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -169,81 +183,75 @@ export default function AdminPanel() {
             {/* ── Sidebar ── */}
             <AnimatePresence>
                 {sidebarOpen && (
-                    <>
-                        {/* Mobile overlay */}
-                        {sidebarOpen && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 bg-black/60 z-20 lg:hidden"
-                                onClick={() => setSidebarOpen(false)}
-                            />
-                        )}
-
-                        <motion.aside
-                            initial={false}
-                            className={`
-                fixed lg:static inset-y-0 left-0 z-30 w-64 flex-shrink-0
-                bg-slate-900/95 backdrop-blur-xl border-r border-slate-800
-                flex flex-col transition-transform duration-300
-                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-              `}
-                        >
-                            {/* Logo */}
-                            <div className="p-6 border-b border-slate-800">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                                        <Shield size={18} className="text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-white text-sm">Admin Panel</p>
-                                        <p className="text-xs text-slate-400">InterviewCoach</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Nav */}
-                            <nav className="flex-1 p-4 space-y-1">
-                                {navItems.map(item => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === item.id
-                                            ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                                            }`}
-                                    >
-                                        <item.icon size={16} />
-                                        {item.label}
-                                        {activeTab === item.id && (
-                                            <ChevronRight size={14} className="ml-auto" />
-                                        )}
-                                    </button>
-                                ))}
-                            </nav>
-
-                            {/* Footer */}
-                            <div className="p-4 border-t border-slate-800 space-y-2">
-                                <button
-                                    onClick={() => { window.location.href = `${mainAppUrl}/studies`; }}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
-                                >
-                                    <Database size={16} />
-                                    Back to App
-                                </button>
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all"
-                                >
-                                    <LogOut size={16} />
-                                    Logout
-                                </button>
-                            </div>
-                        </motion.aside>
-                    </>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+                        onClick={() => setSidebarOpen(false)}
+                    />
                 )}
             </AnimatePresence>
+
+            <aside
+                className={`
+                    fixed lg:static inset-y-0 left-0 z-30 w-64 flex-shrink-0
+                    bg-slate-900/95 backdrop-blur-xl border-r border-slate-800
+                    flex flex-col transition-transform duration-300
+                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                `}
+            >
+                {/* Logo */}
+                <div className="p-6 border-b border-slate-800">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                            <Shield size={18} className="text-white" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-white text-sm">Admin Panel</p>
+                            <p className="text-xs text-slate-400">InterviewCoach</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Nav */}
+                <nav className="flex-1 p-4 space-y-1">
+                    {navItems.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === item.id
+                                ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                }`}
+                        >
+                            <item.icon size={16} />
+                            {item.label}
+                            {activeTab === item.id && (
+                                <ChevronRight size={14} className="ml-auto" />
+                            )}
+                        </button>
+                    ))}
+                </nav>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-slate-800 space-y-2">
+                    <button
+                        onClick={() => { window.location.href = `${mainAppUrl}/studies`; }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
+                    >
+                        <Database size={16} />
+                        Back to App
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all"
+                    >
+                        <LogOut size={16} />
+                        Logout
+                    </button>
+                </div>
+            </aside>
 
             {/* ── Main Content ── */}
             <div className="flex-1 flex flex-col min-w-0">
@@ -271,6 +279,14 @@ export default function AdminPanel() {
 
                 {/* Content */}
                 <main className="flex-1 p-4 sm:p-6 overflow-auto">
+                    {errorMsg && (
+                        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center justify-between">
+                            <span>{errorMsg}</span>
+                            <button onClick={() => setErrorMsg(null)} className="ml-3 text-red-400 hover:text-red-200" type="button" title="Dismiss" aria-label="Dismiss">
+                                <X size={14} />
+                            </button>
+                        </div>
+                    )}
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="flex flex-col items-center gap-3">

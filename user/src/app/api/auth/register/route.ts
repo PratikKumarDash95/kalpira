@@ -26,9 +26,49 @@ export async function POST(request: Request) {
             );
         }
 
+        if (typeof email !== 'string' || typeof password !== 'string' || typeof name !== 'string') {
+            return NextResponse.json(
+                { error: 'Email, password, and name must be strings' },
+                { status: 400 }
+            );
+        }
+
+        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedName = name.trim();
+
+        // Email format check
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(trimmedEmail)) {
+            return NextResponse.json(
+                { error: 'Please enter a valid email address' },
+                { status: 400 }
+            );
+        }
+
+        if (trimmedName.length < 1 || trimmedName.length > 100) {
+            return NextResponse.json(
+                { error: 'Name must be between 1 and 100 characters' },
+                { status: 400 }
+            );
+        }
+
+        if (password.length < 8) {
+            return NextResponse.json(
+                { error: 'Password must be at least 8 characters' },
+                { status: 400 }
+            );
+        }
+
+        if (password.length > 256) {
+            return NextResponse.json(
+                { error: 'Password is too long' },
+                { status: 400 }
+            );
+        }
+
         // Check if user already exists
         const existingUser = await supabaseDb.user.findUnique({
-            where: { email },
+            where: { email: trimmedEmail },
         });
 
         if (existingUser) {
@@ -45,17 +85,13 @@ export async function POST(request: Request) {
         const now = new Date();
         const user = await supabaseDb.user.create({
             data: {
-                email,
-                password: passwordHash, // We store the hashed password (salt:hash) here
-                name,
+                email: trimmedEmail,
+                password: passwordHash,
+                name: trimmedName,
                 avatarUrl: null,
                 coverUrl: null,
                 createdAt: now,
                 updatedAt: now,
-                // In hosted mode, we might want to flag standalone accounts differently, 
-                // but for now, we treat password-based users as standalone/admin equivalents in the context of authentication.
-                // However, Supabase schema comment says "Hashed password for standalone mode".
-                // We are enabling it generally for this feature request.
             },
         });
 

@@ -111,8 +111,20 @@ export async function POST(request: Request) {
             }
 
             if (existingSession) {
-                const session = existingSession.mode === 'assigned'
-                    ? await supabaseDb.interviewSession.update({
+                if (existingSession.mode === 'assigned') {
+                    // Best-effort atomic claim: re-read row inside a tight window to
+                    // detect a concurrent claim. Not a true SERIALIZABLE transaction
+                    // (would need a DB-side constraint), but it closes most of the race.
+                    const recheck = await supabaseDb.interviewSession.findUnique({
+                        where: { id: existingSession.id },
+                    });
+
+                    // If another tab has already flipped it out of 'assigned', reuse the row.
+                    if (!recheck || recheck.mode !== 'assigned') {
+                        return NextResponse.json({ sessionId: existingSession.id, guest: false, reused: true });
+                    }
+
+                    const session = await supabaseDb.interviewSession.update({
                         where: { id: existingSession.id },
                         data: {
                             userId,
@@ -123,10 +135,12 @@ export async function POST(request: Request) {
                             ...(candidateName && { candidateName }),
                             candidateEmail: normalizedCandidateEmail,
                         },
-                    })
-                    : existingSession;
+                    });
 
-                return NextResponse.json({ sessionId: session.id, guest: false, reused: true });
+                    return NextResponse.json({ sessionId: session.id, guest: false, reused: true });
+                }
+
+                return NextResponse.json({ sessionId: existingSession.id, guest: false, reused: true });
             }
         }
 
