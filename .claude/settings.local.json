@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc *)",
-      "Bash(node -e \"require\\('./server/utils/sanitize'\\); require\\('./server/utils/rateLimiter'\\); require\\('./server/utils/promptBuilder'\\); require\\('./server/services/ai/FreeModelService'\\); require\\('./server/routes/health.routes'\\); require\\('./server/routes/interview.routes'\\); console.log\\('all backend modules load OK'\\)\")"
+      "Bash(node -e \"require\\('./server/utils/sanitize'\\); require\\('./server/utils/rateLimiter'\\); require\\('./server/utils/promptBuilder'\\); require\\('./server/services/ai/FreeModelService'\\); require\\('./server/routes/health.routes'\\); require\\('./server/routes/interview.routes'\\); console.log\\('all backend modules load OK'\\)\")",
+      "Bash(xargs grep -l \"anthropic\\\\|claude\\\\|gemini\")",
+      "Bash(node -e ' *)"
     ]
   }
 }
