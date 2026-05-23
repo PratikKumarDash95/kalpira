@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":300\")",
+      "Bash(tasklist /FI \"PID eq 14220\" /FI \"PID eq 15812\" /FI \"PID eq 15904\" /FI \"PID eq 12048\" /FI \"PID eq 16868\")",
+      "Bash(taskkill //F //PID 14220 //PID 15812 //PID 15904 //PID 12048 //PID 16868)",
+      "Bash(timeout 4 node server/server.js)"
     ]
   }
 }
