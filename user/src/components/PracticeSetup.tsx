@@ -78,27 +78,47 @@ const PracticeSetup: React.FC = () => {
         };
 
         try {
-            // Generate token
-            const { token } = await generateParticipantLink(config);
-            setParticipantToken(token);
-            setStudyConfig(config);
+            // Persist the study to the user's account so it survives and the
+            // /api/interview route can verify ownership via session cookie.
+            // The server assigns a real UUID and ties the study to userId.
+            const saveRes = await fetch('/api/studies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ config }),
+            });
+            if (!saveRes.ok) {
+                const errBody = await saveRes.json().catch(() => ({}));
+                throw new Error(errBody.error || `Failed to save study (${saveRes.status})`);
+            }
+            const { study: savedStudy } = await saveRes.json();
+            const persistedConfig: StudyConfig = savedStudy?.config ?? config;
 
-            // Store practice settings in sessionStorage for VideoInterview to pick up
-            // We use 'candidateInfo' key which VideoInterview reads.
-            // We'll also store 'practiceMode' flag.
+            // Generate a token tied to the persisted study. We keep it
+            // client-side only — practice never goes through /p/{token}
+            // (that's the candidate-invitation flow for interviewer-issued
+            // interviews where name/email need to match an assignment).
+            const { token } = await generateParticipantLink(persistedConfig);
+            setParticipantToken(token);
+            setStudyConfig(persistedConfig);
+
+            // Practice is the user's own session — no invitation prompt.
+            // candidateInfo is recorded so transcripts have a label, but the
+            // session row is owned by the logged-in user via userId.
             sessionStorage.setItem('candidateInfo', JSON.stringify({
-                name: 'Candidate', // Default name
-                email: 'practice@user', // Dummy email
+                name: 'You (Practice)',
+                email: 'practice@self',
+                studyId: persistedConfig.id,
                 difficulty,
                 questionCount,
-                isPractice: true
+                isPractice: true,
             }));
 
-            // Redirect to participant view
-            router.push(`/p/${token}`);
+            // Go directly into the practice flow — skip /p/{token} which is
+            // the candidate-invitation page for interviewer-assigned studies.
+            router.push('/consent');
         } catch (err) {
             console.error('Error starting practice:', err);
-            setError('Failed to start interview. Please try again.');
+            setError(err instanceof Error ? err.message : 'Failed to start interview. Please try again.');
             setIsGenerating(false);
         }
     };
