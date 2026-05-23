@@ -173,21 +173,26 @@ export function useVideoProctor(options: UseVideoProctorOptions & { mediaStream:
     const onResults = useCallback((results: Results) => {
         if (!enabled || !videoRef.current || stateRef.current.isTerminated) return;
 
+        // Detection bounding-box overlay disabled by default to keep the
+        // participant view clean. Set NEXT_PUBLIC_PROCTOR_DEBUG=1 to show.
+        const showDebugOverlay = process.env.NEXT_PUBLIC_PROCTOR_DEBUG === '1';
         const canvasElement = document.getElementById('video-canvas') as HTMLCanvasElement;
         const canvasCtx = canvasElement?.getContext('2d');
         if (canvasElement && canvasCtx) {
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            for (const detection of results.detections || []) {
-                const bbox = detection.boundingBox;
-                if (!bbox) continue;
-                canvasCtx.strokeStyle = '#00FF00';
-                canvasCtx.lineWidth = 3;
-                canvasCtx.strokeRect(
-                    bbox.xCenter * canvasElement.width - (bbox.width * canvasElement.width) / 2,
-                    bbox.yCenter * canvasElement.height - (bbox.height * canvasElement.height) / 2,
-                    bbox.width * canvasElement.width,
-                    bbox.height * canvasElement.height
-                );
+            if (showDebugOverlay) {
+                for (const detection of results.detections || []) {
+                    const bbox = detection.boundingBox;
+                    if (!bbox) continue;
+                    canvasCtx.strokeStyle = '#00FF00';
+                    canvasCtx.lineWidth = 3;
+                    canvasCtx.strokeRect(
+                        bbox.xCenter * canvasElement.width - (bbox.width * canvasElement.width) / 2,
+                        bbox.yCenter * canvasElement.height - (bbox.height * canvasElement.height) / 2,
+                        bbox.width * canvasElement.width,
+                        bbox.height * canvasElement.height
+                    );
+                }
             }
         }
 
@@ -255,6 +260,11 @@ export function useVideoProctor(options: UseVideoProctorOptions & { mediaStream:
         });
 
         const startObjectDetection = async () => {
+            // Heavy: loads ~30 MB of TF.js + CoCo-SSD weights and runs detection
+            // every 1.5 s. Disabled by default on practice/dev to keep the
+            // browser responsive. Set NEXT_PUBLIC_OBJECT_DETECTION=1 to enable
+            // mobile-phone detection during real interviews.
+            if (process.env.NEXT_PUBLIC_OBJECT_DETECTION !== '1') return;
             if (objectDetectionLoadingRef.current || objectModelRef.current) return;
             objectDetectionLoadingRef.current = true;
             try {

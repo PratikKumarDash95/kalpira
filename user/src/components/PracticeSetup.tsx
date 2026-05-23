@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useStore } from '@/store';
 import { generateParticipantLink } from '@/services/geminiService';
-import { StudyConfig, AIProviderType, DEFAULT_GEMINI_MODEL } from '@/types';
+import { StudyConfig } from '@/types';
 import {
     FileText, Plus, X, ArrowRight, Sparkles, Brain, Briefcase, Layers,
     Code, Award, Hash, Zap, Loader2, AlertCircle
@@ -67,8 +67,9 @@ const PracticeSetup: React.FC = () => {
             topicAreas: topicAreas.filter(t => t.trim()),
             profileSchema: [], // No profile collection needed for self-practice
             aiBehavior: 'standard',
-            aiProvider: 'gemini', // Default
-            aiModel: DEFAULT_GEMINI_MODEL,
+            // Leave aiProvider/aiModel unset so the server-side factory picks the
+            // configured default (Claude via FreeModel when ANTHROPIC_BASE_URL /
+            // FREEMODEL_API_KEY are in the env, else Gemini).
             enableReasoning: false,
             linksEnabled: true,
             linkExpiration: 'never',

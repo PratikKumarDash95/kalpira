@@ -185,10 +185,22 @@ export class ClaudeProvider implements AIProvider {
         };
       }
 
+      // No tool_use block came back — fall back to any plain text content so
+      // we at least show the model's answer instead of the generic stub.
+      const textBlock = response.content.find(block => block.type === 'text');
+      if (textBlock && textBlock.type === 'text' && textBlock.text.trim()) {
+        return { ...defaultInterviewResponse, message: textBlock.text.trim() };
+      }
       return defaultInterviewResponse;
     } catch (error) {
-      console.error('Claude interview response error:', error);
-      return defaultInterviewResponse;
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Claude interview response error:', msg, error);
+      // Surface the actual error to the UI so it's debuggable instead of the
+      // silent generic fallback the participant kept seeing.
+      return {
+        ...defaultInterviewResponse,
+        message: `(AI error: ${msg.slice(0, 200)}) Could you rephrase that while I reconnect?`,
+      };
     }
   }
 

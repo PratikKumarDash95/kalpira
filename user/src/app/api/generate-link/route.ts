@@ -77,16 +77,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const ownedStudy = await supabaseDb.study.findFirst({
-      where: { id: studyConfig.id, userId: ownerId },
-      select: { id: true },
-    });
+    // Practice studies are ephemeral — created client-side in PracticeSetup
+    // and never persisted to the studies table. Skip the DB ownership check
+    // for them; the signed token still ties the session to this user.
+    const isPracticeStudy =
+      typeof studyConfig.id === 'string' && studyConfig.id.startsWith('study-practice-');
 
-    if (!ownedStudy) {
-      return NextResponse.json(
-        { error: 'Study not found or not owned by this account' },
-        { status: 403 }
-      );
+    if (!isPracticeStudy) {
+      const ownedStudy = await supabaseDb.study.findFirst({
+        where: { id: studyConfig.id, userId: ownerId },
+        select: { id: true },
+      });
+
+      if (!ownedStudy) {
+        return NextResponse.json(
+          { error: 'Study not found or not owned by this account' },
+          { status: 403 }
+        );
+      }
     }
 
     // Get expiration time from study config
