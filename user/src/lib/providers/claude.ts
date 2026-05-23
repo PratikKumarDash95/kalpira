@@ -35,20 +35,43 @@ const THINKING_BUDGET = 16384;
 export class ClaudeProvider implements AIProvider {
   private client: Anthropic;
   private model: string;
+  private synthesisModel: string;
 
-  constructor(model?: string, apiKey?: string | null) {
-    // Only fall back to env var when apiKey is undefined (not explicitly provided)
-    // In hosted mode, an empty string is passed to prevent env var fallback
-    const key = apiKey !== undefined ? (apiKey || undefined) : process.env.ANTHROPIC_API_KEY;
+  constructor(model?: string, apiKey?: string | null, baseURL?: string | null) {
+    // Resolve API key with FreeModel fallback.
+    // Only fall back to env when apiKey is undefined (not explicitly provided).
+    // Hosted mode passes '' to opt out of env fallback.
+    const key =
+      apiKey !== undefined
+        ? (apiKey || undefined)
+        : (process.env.ANTHROPIC_API_KEY || process.env.FREEMODEL_API_KEY);
+
     if (!key) {
-      throw new Error('ANTHROPIC_API_KEY is required for Claude provider');
+      throw new Error(
+        'ANTHROPIC_API_KEY (or FREEMODEL_API_KEY) is required for Claude provider'
+      );
     }
-    this.client = new Anthropic({ apiKey: key });
-    // Priority: constructor param > CLAUDE_MODEL env > AI_MODEL env (legacy) > default
-    this.model = model ||
-      process.env.CLAUDE_MODEL ||
-      process.env.AI_MODEL ||
-      DEFAULT_CLAUDE_MODEL;
+
+    // Resolve base URL — defaults to Anthropic's API, can be overridden for
+    // Anthropic-compatible proxies like FreeModel (cc.freemodel.dev).
+    const resolvedBaseURL =
+      baseURL !== undefined && baseURL !== null
+        ? baseURL
+        : (process.env.ANTHROPIC_BASE_URL || process.env.FREEMODEL_BASE_URL || undefined);
+
+    this.client = new Anthropic({
+      apiKey: key,
+      ...(resolvedBaseURL && { baseURL: resolvedBaseURL }),
+    });
+
+    // Interview model: constructor param > CLAUDE_MODEL env > AI_MODEL env (legacy) > default
+    this.model =
+      model || process.env.CLAUDE_MODEL || process.env.AI_MODEL || DEFAULT_CLAUDE_MODEL;
+
+    // Synthesis model: env override > built-in default. Set
+    // CLAUDE_SYNTHESIS_MODEL=claude-sonnet-4-5 when running against FreeModel
+    // if Opus isn't available on your tier.
+    this.synthesisModel = process.env.CLAUDE_SYNTHESIS_MODEL || CLAUDE_SYNTHESIS_MODEL;
   }
 
   // For interview responses - no thinking by default (unless explicitly enabled)
@@ -126,8 +149,13 @@ export class ClaudeProvider implements AIProvider {
       }
     };
 
-    // Convert history to Claude format
-    const messages: Anthropic.MessageParam[] = history.slice(-10).map(h => ({
+    // Convert history to Claude format.
+    // We pass the most recent N turns as conversation memory. The system prompt
+    // (built each turn) carries study config, participant profile, question
+    // progress, and current context — everything older than this window.
+    // Override with CLAUDE_HISTORY_TURNS env var if needed.
+    const historyWindow = Number(process.env.CLAUDE_HISTORY_TURNS) || 10;
+    const messages: Anthropic.MessageParam[] = history.slice(-historyWindow).map(h => ({
       role: h.role === 'ai' ? 'assistant' : 'user',
       content: h.content
     }));
@@ -243,7 +271,7 @@ export class ClaudeProvider implements AIProvider {
     try {
       const thinkingConfig = this.getSynthesisThinking(studyConfig.enableReasoning);
       const response = await this.client.messages.create({
-        model: CLAUDE_SYNTHESIS_MODEL,  // Auto-upgrade to best model for reasoning
+        model: this.synthesisModel,  // Auto-upgrade to best model for reasoning
         max_tokens: thinkingConfig ? THINKING_BUDGET + 4096 : 2048,  // Increase for thinking
         ...(thinkingConfig && { thinking: thinkingConfig }),
         tools: [synthesisTool],
@@ -330,7 +358,7 @@ export class ClaudeProvider implements AIProvider {
     try {
       const thinkingConfig = this.getSynthesisThinking(studyConfig.enableReasoning);
       const response = await this.client.messages.create({
-        model: CLAUDE_SYNTHESIS_MODEL,  // Auto-upgrade to best model for reasoning
+        model: this.synthesisModel,  // Auto-upgrade to best model for reasoning
         max_tokens: thinkingConfig ? THINKING_BUDGET + 8192 : 4096,  // Increase for thinking
         ...(thinkingConfig && { thinking: thinkingConfig }),
         tools: [aggregateTool],
@@ -402,7 +430,7 @@ Use the followup_study tool to provide your response.`;
     try {
       const thinkingConfig = this.getSynthesisThinking(parentConfig.enableReasoning);
       const response = await this.client.messages.create({
-        model: CLAUDE_SYNTHESIS_MODEL,  // Auto-upgrade to best model for reasoning
+        model: this.synthesisModel,  // Auto-upgrade to best model for reasoning
         max_tokens: thinkingConfig ? THINKING_BUDGET + 2048 : 1024,  // Increase for thinking
         ...(thinkingConfig && { thinking: thinkingConfig }),
         tools: [followupTool],

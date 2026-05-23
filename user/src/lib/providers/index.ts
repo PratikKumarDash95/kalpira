@@ -17,16 +17,22 @@ export interface AIProviderKeys {
   ollamaBaseUrl?: string | null;
 }
 
+// Pick the default provider when none is explicitly configured.
+// When FreeModel (or any Anthropic-compatible proxy) is wired up via
+// ANTHROPIC_BASE_URL or FREEMODEL_API_KEY, default to Claude so requests
+// flow through that endpoint without needing per-study config.
+function getDefaultProvider(): ProviderType {
+  if (process.env.AI_PROVIDER) return process.env.AI_PROVIDER as ProviderType;
+  if (process.env.ANTHROPIC_BASE_URL || process.env.FREEMODEL_API_KEY) return 'claude';
+  return 'gemini';
+}
+
 // Get the interview AI provider based on configuration
-// Provider priority: studyConfig.aiProvider > env.AI_PROVIDER > 'gemini'
+// Provider priority: studyConfig.aiProvider > getDefaultProvider()
 // Model priority: studyConfig.aiModel > env.GEMINI_MODEL/CLAUDE_MODEL/OLLAMA_MODEL > env.AI_MODEL > default
 // In hosted mode, pass keys from ResearcherContext; in standalone, keys are null and env vars are used
 export function getInterviewProvider(studyConfig?: StudyConfig, keys?: AIProviderKeys): AIProvider {
-  const providerType = (
-    studyConfig?.aiProvider ||          // Study-level preference
-    process.env.AI_PROVIDER ||          // Environment fallback
-    'gemini'                            // Ultimate default
-  ) as ProviderType;
+  const providerType = (studyConfig?.aiProvider as ProviderType) || getDefaultProvider();
 
   // Pass model from studyConfig (if set) to provider constructor
   const model = studyConfig?.aiModel;
@@ -38,6 +44,7 @@ export function getInterviewProvider(studyConfig?: StudyConfig, keys?: AIProvide
   switch (providerType) {
     case 'claude': {
       const key = hosted ? (keys?.anthropicApiKey || '') : (keys?.anthropicApiKey ?? undefined);
+      // baseURL is read from env by ClaudeProvider when not passed here
       return new ClaudeProvider(model, key);
     }
     case 'ollama': {
