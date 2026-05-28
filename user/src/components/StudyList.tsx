@@ -33,6 +33,7 @@ const StudyList: React.FC = () => {
   const [kvWarning, setKvWarning] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [assignedInterviewCount, setAssignedInterviewCount] = useState(0);
 
   useEffect(() => {
     loadStudies();
@@ -40,6 +41,17 @@ const StudyList: React.FC = () => {
     fetch('/api/auth')
       .then(r => r.json())
       .then(d => setIsAdmin(d.authenticated && !d.researcherId))
+      .catch(() => { });
+
+    fetch('/api/candidate/sessions')
+      .then(async r => {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then(data => {
+        const assignedCount = (data?.sessions || []).filter((session: { status?: string }) => session.status === 'assigned').length;
+        setAssignedInterviewCount(assignedCount);
+      })
       .catch(() => { });
   }, []);
 
@@ -118,6 +130,16 @@ const StudyList: React.FC = () => {
     </div>
   );
 
+  const renderAssignedBadge = () => {
+    if (assignedInterviewCount <= 0) return null;
+
+    return (
+      <span className="absolute -right-2 -top-2 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold leading-5 text-center shadow-lg shadow-red-500/30 ring-2 ring-white">
+        {assignedInterviewCount > 99 ? '99+' : assignedInterviewCount}
+      </span>
+    );
+  };
+
   return (
     <div className="kalpira-light min-h-screen p-4 sm:p-8">
       <div className="max-w-5xl mx-auto">
@@ -152,10 +174,11 @@ const StudyList: React.FC = () => {
 
               <button
                 onClick={handleInterviewerPractice}
-                className="px-3 py-2 text-sm border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
+                className="relative px-3 py-2 text-sm border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
               >
                 <Briefcase size={16} />
                 Interviewer Practice
+                {renderAssignedBadge()}
               </button>
 
               <button
@@ -196,8 +219,9 @@ const StudyList: React.FC = () => {
                 <button onClick={() => router.push('/setup')} className="px-3 py-2 text-sm bg-stone-600 text-white rounded-xl flex items-center gap-2 justify-center">
                   <Plus size={14} /> Create Study
                 </button>
-                <button onClick={handleInterviewerPractice} className="px-3 py-2 text-sm bg-violet-900/50 text-violet-200 rounded-xl flex items-center gap-2 justify-center">
+                <button onClick={handleInterviewerPractice} className="relative px-3 py-2 text-sm bg-violet-900/50 text-violet-200 rounded-xl flex items-center gap-2 justify-center">
                   <Briefcase size={14} /> Interviewer Practice
+                  {renderAssignedBadge()}
                 </button>
                 <button onClick={() => router.push('/dashboard')} className="px-3 py-2 text-sm bg-stone-700 text-stone-300 rounded-xl flex items-center gap-2 justify-center">
                   <Users size={14} /> All Interviews
@@ -256,10 +280,11 @@ const StudyList: React.FC = () => {
 
               <button
                 onClick={handleInterviewerPractice}
-                className="px-6 py-3 border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
+                className="relative px-6 py-3 border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
               >
                 <Briefcase size={18} />
                 Interviewer Practice
+                {renderAssignedBadge()}
               </button>
             </div>
           </motion.div>
