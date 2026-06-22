@@ -6,6 +6,7 @@ import * as arctic from 'arctic';
 import { cookies } from 'next/headers';
 import { isHostedMode } from '@/lib/mode';
 import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { getGoogleProfile } from '@/lib/googleOAuth';
 import { getResearcherByOAuth, saveResearcher } from '@/lib/platformDb';
 import { ResearcherAccount } from '@/types';
 import { randomUUID } from 'crypto';
@@ -65,23 +66,7 @@ export async function GET(request: Request) {
     // Exchange code for tokens
     const google = getGoogleClient();
     const tokens = await google.validateAuthorizationCode(code, codeVerifier);
-    const accessToken = tokens.accessToken();
-
-    // Fetch user info from Google
-    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!userResponse.ok) {
-      return NextResponse.redirect(new URL('/login?error=user_fetch_failed', baseUrl));
-    }
-
-    const googleUser = await userResponse.json() as {
-      id: string;
-      email: string;
-      name: string;
-      picture: string;
-    };
+    const googleUser = await getGoogleProfile(tokens);
 
     // Find or create researcher
     let researcher = await getResearcherByOAuth('google', googleUser.id);
@@ -93,7 +78,7 @@ export async function GET(request: Request) {
         id: randomUUID(),
         email: googleUser.email,
         name: googleUser.name,
-        avatarUrl: googleUser.picture || null,
+        avatarUrl: googleUser.picture,
         coverUrl: null,
         oauthProvider: 'google',
         oauthId: googleUser.id,

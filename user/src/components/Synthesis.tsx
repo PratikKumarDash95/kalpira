@@ -200,7 +200,7 @@ const Synthesis: React.FC = () => {
             {saveStatus === 'saved' && (
               <div className="bg-green-900/30 border border-green-700 text-green-300 rounded-xl p-4 flex items-center gap-3">
                 <CheckCircle size={20} />
-                <span>Interview saved successfully. View it in the researcher dashboard.</span>
+                <span>Interview saved successfully. View it in the dashboard.</span>
               </div>
             )}
             {saveStatus === 'failed' && (
