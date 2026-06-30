@@ -4,11 +4,15 @@ import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Lock, Loader2, AlertCircle, User, Mail, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useSessionState } from '@/hooks/useSessionState';
+
+const isSafeAuthRedirect = (path: string) =>
+    path.startsWith('/') && !path.startsWith('//') && !['/login', '/register', '/candidate/dashboard'].includes(path);
 
 const Register: React.FC = () => {
     const router = useRouter();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
+    const [name, setName, clearNameDraft] = useSessionState('kalpira:register:name', '');
+    const [email, setEmail, clearEmailDraft] = useSessionState('kalpira:register:email', '');
     const passwordRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -41,8 +45,10 @@ const Register: React.FC = () => {
             }
 
             // On success, login is auto-handled by API setting cookie, so redirect
+            clearNameDraft();
+            clearEmailDraft();
             const redirect = new URLSearchParams(window.location.search).get('redirect');
-            router.push(redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/candidate/dashboard');
+            router.push(redirect && isSafeAuthRedirect(redirect) ? redirect : '/studies');
         } catch {
             setError('Connection error. Please try again.');
         } finally {

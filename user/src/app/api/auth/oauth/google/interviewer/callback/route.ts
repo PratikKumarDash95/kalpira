@@ -26,6 +26,13 @@ function getBaseUrl(): string {
     : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 }
 
+function getInterviewerLoginUrl(baseUrl: string, error: string) {
+  const url = new URL('/login', baseUrl);
+  url.searchParams.set('role', 'interviewer');
+  url.searchParams.set('error', error);
+  return url;
+}
+
 export async function GET(request: Request) {
   const baseUrl = getBaseUrl();
 
@@ -35,7 +42,7 @@ export async function GET(request: Request) {
     const state = url.searchParams.get('state');
 
     if (!code || !state) {
-      return NextResponse.redirect(new URL('/interviewer/login?error=missing_params', baseUrl));
+      return NextResponse.redirect(getInterviewerLoginUrl(baseUrl, 'missing_params'));
     }
 
     const cookieStore = await cookies();
@@ -43,7 +50,7 @@ export async function GET(request: Request) {
     const codeVerifier = cookieStore.get('google_interviewer_oauth_code_verifier')?.value;
 
     if (!storedState || state !== storedState || !codeVerifier) {
-      return NextResponse.redirect(new URL('/interviewer/login?error=invalid_state', baseUrl));
+      return NextResponse.redirect(getInterviewerLoginUrl(baseUrl, 'invalid_state'));
     }
 
     cookieStore.delete('google_interviewer_oauth_state');
@@ -59,16 +66,21 @@ export async function GET(request: Request) {
     });
 
     if (!user) {
-      // Check if email already belongs to an interviewer account
-      const existing = await supabaseDb.user.findFirst({
-        where: { email: googleUser.email, role: 'interviewer' },
+      // Email is unique across all roles, so link/promote an existing account
+      // instead of inserting a duplicate row.
+      const existing = await supabaseDb.user.findUnique({
+        where: { email: googleUser.email },
       });
 
       if (existing) {
-        // Link Google OAuth to existing interviewer account
         user = await supabaseDb.user.update({
           where: { id: existing.id },
-          data: { oauthProvider: 'google', oauthId: googleUser.id, avatarUrl: existing.avatarUrl || googleUser.picture },
+          data: {
+            oauthProvider: 'google',
+            oauthId: googleUser.id,
+            avatarUrl: existing.avatarUrl || googleUser.picture,
+            role: 'interviewer',
+          },
         });
       } else {
         // Create new interviewer account via Google
@@ -95,6 +107,6 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/interviewer/dashboard', baseUrl));
   } catch (error) {
     console.error('Google interviewer OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/interviewer/login?error=oauth_failed', baseUrl));
+    return NextResponse.redirect(getInterviewerLoginUrl(baseUrl, 'oauth_failed'));
   }
 }

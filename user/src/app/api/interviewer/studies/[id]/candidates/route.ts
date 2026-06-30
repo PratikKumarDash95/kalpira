@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import supabaseDb from '@/lib/supabaseDb';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { isInterviewClosed } from '@/lib/interviewDeadline';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,19 @@ export async function GET(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: 'Study not found' }, { status: 404 });
         }
 
+        const config = JSON.parse(study.configJSON);
+        if (isInterviewClosed(config)) {
+            const pendingAssignments = await db.interviewSession.findMany({
+                where: { studyId: params.id, mode: 'assigned', completedAt: null },
+            });
+            await Promise.all(pendingAssignments.map((session: any) =>
+                db.interviewSession.update({
+                    where: { id: session.id },
+                    data: { mode: 'absent' },
+                })
+            ));
+        }
+
         const sessions = await db.interviewSession.findMany({
             where: {
                 studyId: params.id,
@@ -59,6 +73,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
             sessionId: sess.id,
             candidateName: sess.candidateName || 'Anonymous',
             candidateEmail: sess.candidateEmail || '',
+            status: sess.mode === 'absent' ? 'absent' : sess.completedAt ? 'completed' : 'incomplete',
             startedAt: sess.startedAt,
             completedAt: sess.completedAt,
             averageScore: sess.averageScore,
@@ -86,7 +101,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         }));
 
         return NextResponse.json({
-            study: { id: study.id, config: JSON.parse(study.configJSON) },
+            study: { id: study.id, config },
             candidates,
         });
     } catch (error) {

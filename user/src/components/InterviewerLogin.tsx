@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
+import { useSessionState } from '@/hooks/useSessionState';
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18">
@@ -20,7 +21,7 @@ const InterviewerLogin: React.FC = () => {
     const searchParams = useSearchParams();
     const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
     const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
-    const [email, setEmail] = useState('');
+    const [email, setEmail, clearEmailDraft] = useSessionState('kalpira:interviewer-login:email', '');
     const passwordRef = useRef<HTMLInputElement>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +79,7 @@ const InterviewerLogin: React.FC = () => {
             const redirect = rawRedirect.startsWith(isStandalonePortal ? '/' : '/interviewer/') && !rawRedirect.startsWith('//')
                 ? rawRedirect
                 : defaultRedirect;
+            clearEmailDraft();
             router.push(redirect);
         } catch {
             setError('Network error. Please try again.');

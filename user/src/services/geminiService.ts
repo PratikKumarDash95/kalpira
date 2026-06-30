@@ -43,14 +43,17 @@ export const generateInterviewResponse = async (
     });
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `The AI interviewer is unavailable (${response.status}).`);
     }
 
     return await response.json();
   } catch (error) {
     console.error('Error generating interview response:', error);
     return {
-      message: `(Client Error: ${error instanceof Error ? error.message : String(error)}) I appreciate you sharing that. What else comes to mind?`,
+      message: error instanceof Error
+        ? error.message
+        : 'The AI interviewer is temporarily unavailable. Please try again in a moment.',
       questionAddressed: null,
       phaseTransition: null,
       profileUpdates: [],

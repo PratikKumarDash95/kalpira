@@ -1,17 +1,21 @@
-import { Suspense } from 'react';
-import InterviewerLogin from '@/components/InterviewerLogin';
-import { Loader2 } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
-export default function InterviewerLoginPage() {
-    return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-violet-400" />
-            </div>
-        }>
-            <InterviewerLogin />
-        </Suspense>
-    );
+type PageProps = {
+    searchParams?: Record<string, string | string[] | undefined>;
+};
+
+const firstParam = (value: string | string[] | undefined) =>
+    Array.isArray(value) ? value[0] : value;
+
+export default function InterviewerLoginPage({ searchParams }: PageProps) {
+    const params = new URLSearchParams({ role: 'interviewer' });
+
+    for (const key of ['redirect', 'error', 'detail']) {
+        const value = firstParam(searchParams?.[key]);
+        if (value) params.set(key, value);
+    }
+
+    redirect(`/login?${params.toString()}`);
 }
 
 export const metadata = {

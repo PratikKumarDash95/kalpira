@@ -57,7 +57,7 @@ async function verifySession(token: string): Promise<{ valid: boolean; researche
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authCookie = request.cookies.get(SESSION_COOKIE_NAME);
-  const loginPath = pathname.startsWith('/interviewer') ? '/interviewer/login' : '/login';
+  const isInterviewerPath = pathname.startsWith('/interviewer');
 
   // Check if this is a protected route
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
@@ -72,7 +72,8 @@ export async function middleware(request: NextRequest) {
     }
 
     // No cookie - redirect to login
-    const loginUrl = new URL(loginPath, request.url);
+    const loginUrl = new URL('/login', request.url);
+    if (isInterviewerPath) loginUrl.searchParams.set('role', 'interviewer');
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -86,7 +87,8 @@ export async function middleware(request: NextRequest) {
     }
 
     // Invalid token - clear cookie and redirect to login
-    const loginUrl = new URL(loginPath, request.url);
+    const loginUrl = new URL('/login', request.url);
+    if (isInterviewerPath) loginUrl.searchParams.set('role', 'interviewer');
     loginUrl.searchParams.set('redirect', pathname);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(SESSION_COOKIE_NAME);
@@ -95,9 +97,10 @@ export async function middleware(request: NextRequest) {
 
   if (authRoutes.includes(pathname)) {
     const rawRedirect = request.nextUrl.searchParams.get('redirect');
+    const role = request.nextUrl.searchParams.get('role');
     const redirectTo = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !authRoutes.includes(rawRedirect)
       ? rawRedirect
-      : '/studies';
+      : role === 'interviewer' ? '/interviewer/dashboard' : '/studies';
     return NextResponse.redirect(new URL(redirectTo, request.url));
   }
 

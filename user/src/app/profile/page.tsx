@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ArrowLeft, Camera, ImagePlus, Loader2, LogOut, Save, Settings, Upload, UserCircle } from 'lucide-react';
+import { useSessionState } from '@/hooks/useSessionState';
 
 interface Profile {
   id: string;
@@ -23,15 +24,16 @@ export default function ProfilePage() {
   const isStandaloneInterviewerPortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer';
   const isInterviewerProfile = isStandaloneInterviewerPortal || (pathname?.startsWith('/interviewer') ?? false);
   const profileApi = isInterviewerProfile ? '/api/interviewer/me' : '/api/auth/me';
-  const loginPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/login' : '/interviewer/login') : '/login';
+  const loginPath = isInterviewerProfile ? '/login?role=interviewer' : '/login';
   const dashboardPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/dashboard' : '/interviewer/dashboard') : '/studies';
   const profilePath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/profile' : '/interviewer/profile') : '/profile';
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [name, setName] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [coverUrl, setCoverUrl] = useState('');
+  const draftPrefix = isInterviewerProfile ? 'kalpira:interviewer-profile' : 'kalpira:profile';
+  const [name, setName, clearNameDraft] = useSessionState(`${draftPrefix}:name`, '');
+  const [avatarUrl, setAvatarUrl, clearAvatarUrlDraft] = useSessionState(`${draftPrefix}:avatar-url`, '');
+  const [coverUrl, setCoverUrl, clearCoverUrlDraft] = useSessionState(`${draftPrefix}:cover-url`, '');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<MediaKind | null>(null);
@@ -42,7 +44,8 @@ export default function ProfilePage() {
     fetch(profileApi)
       .then((res) => {
         if (res.status === 401) {
-          router.push(`${loginPath}?redirect=${encodeURIComponent(profilePath)}`);
+          const separator = loginPath.includes('?') ? '&' : '?';
+          router.push(`${loginPath}${separator}redirect=${encodeURIComponent(profilePath)}`);
           return null;
         }
         return res.json();
@@ -109,6 +112,8 @@ export default function ProfilePage() {
         setAvatarUrl(savedProfile.avatarUrl || '');
         setCoverUrl(savedProfile.coverUrl || '');
       }
+      clearAvatarUrlDraft();
+      clearCoverUrlDraft();
       setMessage(`${kind === 'avatar' ? 'Profile photo' : 'Cover image'} uploaded and saved.`);
     } catch {
       setError(`Failed to upload ${kind} image.`);
@@ -141,6 +146,9 @@ export default function ProfilePage() {
         return;
       }
       setProfile(data.profile || data.user);
+      clearNameDraft();
+      clearAvatarUrlDraft();
+      clearCoverUrlDraft();
       setMessage('Profile saved.');
     } catch {
       setError('Failed to save profile.');

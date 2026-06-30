@@ -5,6 +5,7 @@ import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
+import { isInterviewClosed } from '@/lib/interviewDeadline';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,21 +49,41 @@ export async function POST(request: Request) {
 
         const authUser = await getAuthUser();
         const participantAuth = await getParticipantRequestContext(request);
+        let studyConfig: any = null;
         if (studyId) {
             const isCandidateAssigned = Boolean(authUser?.id && authUser.role === 'candidate' && candidateEmail);
             if (!participantAuth.valid && !isCandidateAssigned) {
                 return NextResponse.json({ error: 'Valid participant link required for this study' }, { status: 401 });
             }
 
-            if (participantAuth.valid && participantAuth.studyId === studyId && candidateEmail) {
-                const study = await supabaseDb.study.findFirst({
-                    where: { id: studyId },
-                    select: { configJSON: true },
-                });
+            const study = await supabaseDb.study.findFirst({
+                where: { id: studyId },
+                select: { configJSON: true },
+            });
 
-                if (study?.configJSON) {
-                    const config = JSON.parse(study.configJSON);
-                    const assigned = config.interviewerAssignment;
+            if (study?.configJSON) {
+                studyConfig = JSON.parse(study.configJSON);
+                if (isInterviewClosed(studyConfig)) {
+                    const pendingAssignments = await supabaseDb.interviewSession.findMany({
+                        where: { studyId, mode: 'assigned', completedAt: null },
+                    });
+                    await Promise.all(pendingAssignments.map((session: any) =>
+                        supabaseDb.interviewSession.update({
+                            where: { id: session.id },
+                            data: { mode: 'absent' },
+                        })
+                    ));
+
+                    return NextResponse.json(
+                        { error: 'This interview is closed. Please contact the interviewer.' },
+                        { status: 410 }
+                    );
+                }
+            }
+
+            if (participantAuth.valid && participantAuth.studyId === studyId && candidateEmail) {
+                if (studyConfig) {
+                    const assigned = studyConfig.interviewerAssignment;
                     if (assigned?.candidateEmail) {
                         const nameMatches = normalizeName(candidateName) === normalizeName(assigned.candidateName);
                         const emailMatches = normalizeEmail(candidateEmail) === normalizeEmail(assigned.candidateEmail);

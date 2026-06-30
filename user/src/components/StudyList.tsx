@@ -34,6 +34,7 @@ const StudyList: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [assignedInterviewCount, setAssignedInterviewCount] = useState(0);
+  const hasAssignedInterviews = assignedInterviewCount > 0;
 
   useEffect(() => {
     loadStudies();
@@ -49,7 +50,7 @@ const StudyList: React.FC = () => {
         return r.json();
       })
       .then(data => {
-        const assignedCount = (data?.sessions || []).filter((session: { status?: string }) => session.status === 'assigned').length;
+        const assignedCount = (data?.sessions || []).filter((session: { status?: string }) => session.status === 'assigned' || session.status === 'in_progress').length;
         setAssignedInterviewCount(assignedCount);
       })
       .catch(() => { });
@@ -69,7 +70,11 @@ const StudyList: React.FC = () => {
   };
 
   const handleInterviewerPractice = async () => {
-    router.push('/setup');
+    if (!hasAssignedInterviews) {
+      alert('No interview has been assigned to this account yet.');
+      return;
+    }
+    router.push('/candidate/dashboard');
   };
 
   const handleDelete = async (id: string) => {
@@ -174,10 +179,12 @@ const StudyList: React.FC = () => {
 
               <button
                 onClick={handleInterviewerPractice}
-                className="relative px-3 py-2 text-sm border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
+                disabled={!hasAssignedInterviews}
+                title={hasAssignedInterviews ? 'Open assigned interviews' : 'No assigned interviews yet'}
+                className="relative px-3 py-2 text-sm border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                <Briefcase size={16} />
-                Interviewer Practice
+                {hasAssignedInterviews ? <Briefcase size={16} /> : <Lock size={16} />}
+                Interview Practice
                 {renderAssignedBadge()}
               </button>
 
@@ -219,8 +226,13 @@ const StudyList: React.FC = () => {
                 <button onClick={() => router.push('/setup')} className="px-3 py-2 text-sm bg-stone-600 text-white rounded-xl flex items-center gap-2 justify-center">
                   <Plus size={14} /> Create Study
                 </button>
-                <button onClick={handleInterviewerPractice} className="relative px-3 py-2 text-sm bg-violet-900/50 text-violet-200 rounded-xl flex items-center gap-2 justify-center">
-                  <Briefcase size={14} /> Interviewer Practice
+                <button
+                  onClick={handleInterviewerPractice}
+                  disabled={!hasAssignedInterviews}
+                  title={hasAssignedInterviews ? 'Open assigned interviews' : 'No assigned interviews yet'}
+                  className="relative px-3 py-2 text-sm bg-violet-900/50 text-violet-200 rounded-xl flex items-center gap-2 justify-center disabled:opacity-45 disabled:cursor-not-allowed"
+                >
+                  {hasAssignedInterviews ? <Briefcase size={14} /> : <Lock size={14} />} Interview Practice
                   {renderAssignedBadge()}
                 </button>
                 <button onClick={() => router.push('/dashboard')} className="px-3 py-2 text-sm bg-stone-700 text-stone-300 rounded-xl flex items-center gap-2 justify-center">
@@ -267,7 +279,7 @@ const StudyList: React.FC = () => {
             </div>
             <h2 className="text-xl font-semibold text-white mb-2">No Studies Yet</h2>
             <p className="text-stone-400 mb-6">
-              Create your first study or start interviewer practice to explore the platform.
+              Create your first practice study or open an interview assigned by an interviewer.
             </p>
             <div className="flex items-center justify-center gap-4">
               <button
@@ -280,10 +292,12 @@ const StudyList: React.FC = () => {
 
               <button
                 onClick={handleInterviewerPractice}
-                className="relative px-6 py-3 border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
+                disabled={!hasAssignedInterviews}
+                title={hasAssignedInterviews ? 'Open assigned interviews' : 'No assigned interviews yet'}
+                className="relative px-6 py-3 border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                <Briefcase size={18} />
-                Interviewer Practice
+                {hasAssignedInterviews ? <Briefcase size={18} /> : <Lock size={18} />}
+                Interview Practice
                 {renderAssignedBadge()}
               </button>
             </div>

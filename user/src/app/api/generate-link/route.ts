@@ -10,7 +10,8 @@ import * as jose from 'jose';
 import { StudyConfig, ParticipantToken, LinkExpirationOption, InterviewerAssignment } from '@/types';
 import { getRequestContext } from '@/lib/researcherContext';
 import supabaseDb from '@/lib/supabaseDb';
-import { isHostedMode } from '@/lib/mode';
+import { isInterviewClosed } from '@/lib/interviewDeadline';
+import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 
 // Convert link expiration option to jose expiration string
 const getExpirationTime = (option?: LinkExpirationOption): string | null => {
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { studyConfig, assignment } = body as {
+    let { studyConfig, assignment } = body as {
       studyConfig: StudyConfig;
       assignment?: InterviewerAssignment;
     };
@@ -67,6 +68,10 @@ export async function POST(request: Request) {
         { error: 'Missing required field: studyConfig' },
         { status: 400 }
       );
+    }
+
+    if (assignment || studyConfig.interviewerAssignment || (studyConfig.id && !studyConfig.id.startsWith('study-'))) {
+      studyConfig = withInterviewerAiConfig(studyConfig);
     }
 
     const ownerId = researcherId || context.userId;
@@ -175,10 +180,18 @@ export async function GET(request: Request) {
 
     // Strip internal fields not needed by participants
     const { researcherId: _rid, ...safePayload } = payload as unknown as ParticipantToken & { researcherId?: string };
+    const tokenData = safePayload as ParticipantToken;
+
+    if (isInterviewClosed(tokenData.studyConfig)) {
+      return NextResponse.json(
+        { valid: false, error: 'This interview is closed. Please contact the interviewer.' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       valid: true,
-      data: safePayload as ParticipantToken
+      data: tokenData
     });
   } catch (error) {
     // Handle expired tokens specifically

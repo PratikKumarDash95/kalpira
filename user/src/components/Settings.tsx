@@ -7,6 +7,7 @@ import {
   Database, Key, CheckCircle, XCircle, Loader2,
   AlertCircle, ExternalLink, ArrowLeft, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { useSessionState } from '@/hooks/useSessionState';
 
 interface ResearcherProfile {
   name: string;
@@ -31,7 +32,7 @@ const Settings: React.FC = () => {
   // Form state
   const [geminiKey, setGeminiKey] = useState('');
   const [anthropicKey, setAnthropicKey] = useState('');
-  const [redisUrl, setRedisUrl] = useState('');
+  const [redisUrl, setRedisUrl, clearRedisUrlDraft] = useSessionState('kalpira:settings:redis-url', '');
   const [redisToken, setRedisToken] = useState('');
 
   // Validation state
@@ -128,6 +129,7 @@ const Settings: React.FC = () => {
         setAnthropicKey('');
         setRedisUrl('');
         setRedisToken('');
+        clearRedisUrlDraft();
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         const data = await res.json().catch(() => ({}));

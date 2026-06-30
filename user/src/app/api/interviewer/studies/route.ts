@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import supabaseDb from '@/lib/supabaseDb';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,12 +75,13 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { config } = body;
+        let { config } = body;
 
         if (!config?.name) {
             return NextResponse.json({ error: 'Study config with name is required' }, { status: 400 });
         }
 
+        config = withInterviewerAiConfig(config);
         const now = new Date();
         const study = await db.study.create({
             data: {

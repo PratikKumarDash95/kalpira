@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { getInterviewProvider } from '@/lib/providers';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { StudyConfig } from '@/types';
+import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { studyConfig } = body as { studyConfig: StudyConfig };
+    let { studyConfig } = body as { studyConfig: StudyConfig };
 
     // Validate required fields
     if (!studyConfig) {
@@ -36,6 +37,10 @@ export async function POST(request: Request) {
         { error: 'Token not valid for this study' },
         { status: 403 }
       );
+    }
+
+    if (studyConfig.interviewerAssignment || (studyConfig.id && !studyConfig.id.startsWith('study-'))) {
+      studyConfig = withInterviewerAiConfig(studyConfig);
     }
 
     // Get the configured AI provider with researcher's API keys

@@ -115,6 +115,7 @@ export interface InterviewerAssignment {
 export interface StudyConfig {
   id: string;
   name: string;
+  companyName?: string;
   description: string;
   researchQuestion: string;
   coreQuestions: string[];
@@ -123,6 +124,8 @@ export interface StudyConfig {
   aiBehavior: AIBehavior;
   aiProvider?: AIProviderType;    // Optional, defaults to env or 'gemini'
   aiModel?: string;               // Optional, defaults to provider-specific env or default
+  speechToTextEnabled?: boolean;  // Whether voice input is enabled for the interview UI
+  textToSpeechEnabled?: boolean;  // Whether AI voice playback is enabled for the interview UI
   consentText: string;
   createdAt: number;
   // Follow-up study lineage
@@ -132,6 +135,7 @@ export interface StudyConfig {
   // Link management
   linksEnabled?: boolean;         // Whether participant links are active (default: true)
   linkExpiration?: LinkExpirationOption;  // When links expire (default: 'never')
+  endsAt?: number;                // Interview closes after this timestamp
   // AI Reasoning
   enableReasoning?: boolean;      // undefined=auto, true=force on, false=force off
   // Interviewer publishing

@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import dns from 'dns';
+import https from 'https';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey =
@@ -11,8 +13,142 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn('[supabaseDb] Supabase URL/key is not configured.');
 }
 
+const publicDns = new dns.Resolver();
+publicDns.setServers(['1.1.1.1', '8.8.8.8']);
+
+const supabaseHostname = (() => {
+  try {
+    return supabaseUrl ? new URL(supabaseUrl).hostname : null;
+  } catch {
+    return null;
+  }
+})();
+
+function hasDnsFailure(error: any): boolean {
+  const code = error?.cause?.code || error?.cause?.cause?.code || error?.code;
+  return code === 'ENOTFOUND' || code === 'EAI_AGAIN' || code === 'ETIMEOUT';
+}
+
+function resolveWithPublicDns(
+  hostname: string,
+  options: dns.LookupOneOptions | dns.LookupAllOptions,
+  callback: (error: NodeJS.ErrnoException | null, address: any, family?: number) => void
+) {
+  publicDns.resolve4(hostname, (error, addresses) => {
+    if (error) {
+      callback(error, '' as any, 4);
+      return;
+    }
+
+    if ('all' in options && options.all) {
+      callback(null, addresses.map((address) => ({ address, family: 4 })) as any, 4);
+      return;
+    }
+
+    callback(null, addresses[0], 4);
+  });
+}
+
+function shouldRetryWithPublicDns(input: RequestInfo | URL): boolean {
+  if (!supabaseHostname) return false;
+
+  try {
+    const url = typeof input === 'string' || input instanceof URL
+      ? new URL(input)
+      : new URL(input.url);
+    return url.hostname === supabaseHostname;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchWithPublicDns(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const request = input instanceof Request ? input : null;
+  const url = new URL(request?.url || input.toString());
+  const headers = new Headers(request?.headers);
+
+  if (init?.headers) {
+    new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+  }
+
+  const body = init?.body;
+  const method = init?.method || request?.method || (body ? 'POST' : 'GET');
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      url,
+      {
+        method,
+        headers: Object.fromEntries(headers.entries()),
+        lookup: resolveWithPublicDns,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+
+        res.on('data', (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+
+        res.on('end', () => {
+          const responseHeaders = new Headers();
+          for (const [key, value] of Object.entries(res.headers)) {
+            if (Array.isArray(value)) {
+              value.forEach((item) => responseHeaders.append(key, item));
+            } else if (value !== undefined) {
+              responseHeaders.set(key, String(value));
+            }
+          }
+
+          resolve(new Response(Buffer.concat(chunks), {
+            status: res.statusCode || 500,
+            statusText: res.statusMessage,
+            headers: responseHeaders,
+          }));
+        });
+      }
+    );
+
+    req.on('error', reject);
+
+    init?.signal?.addEventListener('abort', () => {
+      req.destroy(new Error('Request aborted'));
+    }, { once: true });
+
+    if (body) {
+      if (typeof body === 'string' || Buffer.isBuffer(body)) {
+        req.write(body);
+      } else if (body instanceof URLSearchParams) {
+        req.write(body.toString());
+      } else if (body instanceof ArrayBuffer) {
+        req.write(Buffer.from(body));
+      } else if (ArrayBuffer.isView(body)) {
+        req.write(Buffer.from(body.buffer, body.byteOffset, body.byteLength));
+      } else {
+        req.destroy(new Error('Unsupported request body for public DNS Supabase retry'));
+        return;
+      }
+    }
+
+    req.end();
+  });
+}
+
+async function supabaseFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    if (!shouldRetryWithPublicDns(input) || !hasDnsFailure(error)) {
+      throw error;
+    }
+
+    console.warn(`[supabaseDb] Default DNS failed for ${supabaseHostname}; retrying with public DNS.`);
+    return fetchWithPublicDns(input, init);
+  }
+}
+
 const supabase = createClient(supabaseUrl || 'http://localhost', supabaseKey || 'missing-key', {
   auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: supabaseFetch },
 });
 
 const tables = {
@@ -103,6 +239,18 @@ function toDbData(data: Row = {}): Row {
   return out;
 }
 
+function formatSupabaseError(error: any, model: ModelName, action: string): Error {
+  const parts = [
+    `Supabase ${tables[model]} ${action} failed`,
+    error?.message,
+    error?.code ? `code=${error.code}` : null,
+    error?.details,
+    error?.hint ? `hint=${error.hint}` : null,
+  ].filter(Boolean);
+
+  return new Error(parts.join(': '));
+}
+
 function getByPath(row: Row, path: string): any {
   return path.split('.').reduce((value, part) => value?.[part], row);
 }
@@ -120,6 +268,34 @@ function matchesWhere(row: Row, where: Row = {}): boolean {
     }
     return row[key] === expected;
   });
+}
+
+function canQueryWhere(where?: Row): boolean {
+  if (!where || Object.keys(where).length === 0) return true;
+
+  return Object.values(where).every((expected) => {
+    if (expected === null) return true;
+    if (['string', 'number', 'boolean'].includes(typeof expected)) return true;
+
+    return (
+      expected &&
+      typeof expected === 'object' &&
+      !Array.isArray(expected) &&
+      'equals' in expected &&
+      ['string', 'number', 'boolean'].includes(typeof expected.equals)
+    );
+  });
+}
+
+function applyWhereQuery(query: any, where?: Row) {
+  if (!where) return query;
+
+  return Object.entries(where).reduce((current, [key, expected]) => {
+    if (expected && typeof expected === 'object' && !Array.isArray(expected) && 'equals' in expected) {
+      return current.eq(key, expected.equals);
+    }
+    return current.eq(key, expected);
+  }, query);
 }
 
 function applySelect(row: Row, select?: Row): Row {
@@ -146,11 +322,19 @@ function applyOrder(rows: Row[], orderBy?: Row): Row[] {
 
 async function allRows(model: ModelName): Promise<Row[]> {
   const { data, error } = await supabase.from(tables[model]).select('*');
-  if (error) throw error;
+  if (error) throw formatSupabaseError(error, model, 'select');
   return normalizeRows(data || []);
 }
 
 async function rowsWhere(model: ModelName, where?: Row): Promise<Row[]> {
+  if (canQueryWhere(where)) {
+    let query = supabase.from(tables[model]).select('*');
+    query = applyWhereQuery(query, where);
+    const { data, error } = await query;
+    if (error) throw formatSupabaseError(error, model, 'select');
+    return normalizeRows(data || []);
+  }
+
   const rows = await allRows(model);
   if (!where || Object.keys(where).length === 0) return rows;
   return rows.filter((row) => matchesWhere(row, where));
@@ -223,7 +407,7 @@ function delegate(model: ModelName) {
     async create(args: Row) {
       const data = { id: crypto.randomUUID(), ...toDbData(args.data || {}) };
       const { data: row, error } = await supabase.from(tables[model]).insert(data).select('*').single();
-      if (error) throw error;
+      if (error) throw formatSupabaseError(error, model, 'insert');
       return normalizeRow(row);
     },
     async update(args: Row) {
@@ -237,7 +421,7 @@ function delegate(model: ModelName) {
       }
       if ('updatedAt' in existing && !('updatedAt' in patch)) patch.updatedAt = new Date().toISOString();
       const { data: row, error } = await supabase.from(tables[model]).update(patch).eq('id', existing.id).select('*').single();
-      if (error) throw error;
+      if (error) throw formatSupabaseError(error, model, 'update');
       return normalizeRow(row);
     },
     async upsert(args: Row) {
@@ -249,14 +433,14 @@ function delegate(model: ModelName) {
       const existing = await this.findFirst({ where: args.where });
       if (!existing) throw new Error(`${tables[model]} row not found`);
       const { error } = await supabase.from(tables[model]).delete().eq('id', existing.id);
-      if (error) throw error;
+      if (error) throw formatSupabaseError(error, model, 'delete');
       return existing;
     },
     async deleteMany(args: Row = {}) {
       const rows = await rowsWhere(model, args.where);
       for (const row of rows) {
         const { error } = await supabase.from(tables[model]).delete().eq('id', row.id);
-        if (error) throw error;
+        if (error) throw formatSupabaseError(error, model, 'delete');
       }
       return { count: rows.length };
     },
@@ -287,7 +471,7 @@ const db: SupabaseDb = {
   },
   async $queryRaw(..._args: any[]) {
     const { error } = await supabase.from('User').select('id').limit(1);
-    if (error) throw error;
+    if (error) throw formatSupabaseError(error, 'user', 'query');
     return [{ ok: 1 }];
   },
 };

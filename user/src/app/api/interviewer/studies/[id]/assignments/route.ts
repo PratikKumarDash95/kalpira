@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import supabaseDb from '@/lib/supabaseDb';
 import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
+import { isInterviewClosed } from '@/lib/interviewDeadline';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
     candidateEmail: string;
   }[];
   const config = JSON.parse(study.configJSON);
+  if (isInterviewClosed(config)) {
+    const pendingAssignments = await db.interviewSession.findMany({
+      where: { studyId: params.id, mode: 'assigned', completedAt: null },
+    });
+    await Promise.all(pendingAssignments.map((session: any) =>
+      db.interviewSession.update({
+        where: { id: session.id },
+        data: { mode: 'absent' },
+      })
+    ));
+    return NextResponse.json({ error: 'This interview is closed. New candidates cannot be assigned.' }, { status: 410 });
+  }
+
   const assignments = [];
   let reusedCount = 0;
   let createdCount = 0;

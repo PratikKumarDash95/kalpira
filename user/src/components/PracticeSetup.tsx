@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useStore } from '@/store';
 import { generateParticipantLink } from '@/services/geminiService';
 import { StudyConfig } from '@/types';
+import { useSessionState } from '@/hooks/useSessionState';
 import {
     FileText, Plus, X, ArrowRight, Sparkles, Brain, Briefcase, Layers,
     Code, Award, Hash, Zap, Loader2, AlertCircle
@@ -15,12 +16,12 @@ const PracticeSetup: React.FC = () => {
     const router = useRouter();
     const { setParticipantToken, setStudyConfig, resetParticipant } = useStore();
 
-    const [role, setRole] = useState('');
-    const [jobDescription, setJobDescription] = useState('');
-    const [techStack, setTechStack] = useState('');
-    const [topicAreas, setTopicAreas] = useState<string[]>(['']);
-    const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-    const [questionCount, setQuestionCount] = useState<number>(5);
+    const [role, setRole, clearRoleDraft] = useSessionState('kalpira:practice:role', '');
+    const [jobDescription, setJobDescription, clearJobDescriptionDraft] = useSessionState('kalpira:practice:job-description', '');
+    const [techStack, setTechStack, clearTechStackDraft] = useSessionState('kalpira:practice:tech-stack', '');
+    const [topicAreas, setTopicAreas, clearTopicAreasDraft] = useSessionState<string[]>('kalpira:practice:topics', ['']);
+    const [difficulty, setDifficulty, clearDifficultyDraft] = useSessionState<'easy' | 'medium' | 'hard'>('kalpira:practice:difficulty', 'medium');
+    const [questionCount, setQuestionCount, clearQuestionCountDraft] = useSessionState<number>('kalpira:practice:question-count', 5);
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -112,6 +113,13 @@ const PracticeSetup: React.FC = () => {
                 questionCount,
                 isPractice: true,
             }));
+
+            clearRoleDraft();
+            clearJobDescriptionDraft();
+            clearTechStackDraft();
+            clearTopicAreasDraft();
+            clearDifficultyDraft();
+            clearQuestionCountDraft();
 
             // Go directly into the practice flow — skip /p/{token} which is
             // the candidate-invitation page for interviewer-assigned studies.

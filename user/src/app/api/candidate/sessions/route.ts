@@ -13,6 +13,11 @@ function parseConfig(configJSON?: string | null) {
   }
 }
 
+function readCompanyName(config: any): string {
+  const value = config?.companyName || config?.company || config?.organization || config?.organisation || '';
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export async function GET() {
   const authUser = await getAuthUser();
 
@@ -51,6 +56,7 @@ export async function GET() {
         title: config?.name || session.role || 'Interview',
         description: config?.description || '',
         topic: config?.researchQuestion || '',
+        companyName: readCompanyName(config),
         interviewerName: session.study?.user?.name || session.study?.user?.email || 'Interviewer',
         interviewerEmail: session.study?.user?.email || '',
         candidateName: session.candidateName || user.name || 'Candidate',
