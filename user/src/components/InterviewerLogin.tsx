@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase, CheckCircle2 } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
 
 const GoogleIcon = () => (
@@ -27,10 +27,16 @@ const InterviewerLogin: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [resending, setResending] = useState(false);
 
     // Handle OAuth errors from URL params
     React.useEffect(() => {
         const oauthError = searchParams.get('error');
+        const verified = searchParams.get('verified');
+        if (verified === '1') {
+            setSuccess('Email verified. You can sign in now.');
+        }
         if (oauthError) {
             const messages: Record<string, string> = {
                 oauth_init_failed: 'Failed to start Google sign-in. Please try again.',
@@ -38,10 +44,42 @@ const InterviewerLogin: React.FC = () => {
                 missing_params: 'Invalid callback. Please try again.',
                 invalid_state: 'Session expired. Please try again.',
                 user_fetch_failed: 'Failed to get your Google profile. Please try again.',
+                verification_invalid: 'This verification link is invalid or already used.',
             };
             setError(messages[oauthError] || 'Sign-in failed. Please try again.');
         }
     }, [searchParams]);
+
+    const handleResendVerification = async () => {
+        if (!email.trim()) {
+            setError('Enter your email address first.');
+            return;
+        }
+
+        setResending(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim() }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || 'Failed to resend verification email.');
+                return;
+            }
+            setSuccess(data.alreadyVerified
+                ? 'This email is already verified. You can sign in now.'
+                : 'Verification email sent. Check your inbox.');
+        } catch {
+            setError('Failed to resend verification email.');
+        } finally {
+            setResending(false);
+        }
+    };
 
     const handleGoogleSignIn = () => {
         setGoogleLoading(true);
@@ -51,6 +89,7 @@ const InterviewerLogin: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setSuccess(null);
         const password = passwordRef.current?.value ?? '';
         if (!email.trim() || !password) { setError('Email and password are required.'); return; }
 
@@ -150,10 +189,26 @@ const InterviewerLogin: React.FC = () => {
                             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error}</div>
                         )}
 
+                        {success && (
+                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-300 flex items-center gap-2">
+                                <CheckCircle2 size={16} className="flex-shrink-0" />
+                                {success}
+                            </div>
+                        )}
+
                         <button type="submit" disabled={isLoading}
                             className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
                             {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
                             {isLoading ? 'Signing in...' : 'Sign In'}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={resending || isLoading || !email.trim()}
+                            className="w-full py-3.5 border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl transition-colors"
+                        >
+                            {resending ? 'Sending verification...' : 'Resend verification email'}
                         </button>
                     </form>
 

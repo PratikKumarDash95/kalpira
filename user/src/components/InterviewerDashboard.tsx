@@ -366,6 +366,8 @@ const InterviewerDashboard: React.FC = () => {
 
             const createdCount = data.createdCount ?? (data.reused ? 0 : 1);
             const reusedCount = data.reusedCount ?? (data.reused ? 1 : 0);
+            const emailSentCount = data.emailSentCount ?? 0;
+            const emailFailedCount = data.emailFailedCount ?? 0;
 
             if (createdCount > 0) {
                 setStudies(prev => prev.map(study =>
@@ -376,8 +378,8 @@ const InterviewerDashboard: React.FC = () => {
             }
 
             setAssignmentMessage({
-                type: 'success',
-                text: `${createdCount} assigned${reusedCount ? `, ${reusedCount} already existed` : ''}.`,
+                type: emailFailedCount > 0 ? 'error' : 'success',
+                text: `${createdCount} assigned${reusedCount ? `, ${reusedCount} already existed` : ''}${emailSentCount ? `, ${emailSentCount} email${emailSentCount !== 1 ? 's' : ''} sent` : ''}${emailFailedCount ? `, ${emailFailedCount} email${emailFailedCount !== 1 ? 's' : ''} failed` : ''}.`,
             });
             clearAssignmentCandidatesDraft();
             clearImportFileNameDraft();

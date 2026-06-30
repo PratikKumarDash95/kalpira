@@ -10,6 +10,7 @@ import { getGoogleProfile } from '@/lib/googleOAuth';
 import { getResearcherByOAuth, saveResearcher } from '@/lib/platformDb';
 import { ResearcherAccount } from '@/types';
 import { randomUUID } from 'crypto';
+import supabaseDb from '@/lib/supabaseDb';
 
 function getGoogleClient() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -98,6 +99,34 @@ export async function GET(request: Request) {
       const { updateResearcher } = await import('@/lib/platformDb');
       updateResearcher(researcher.id, { lastLoginAt: Date.now() }).catch(() => {});
     }
+
+    await supabaseDb.user.upsert({
+      where: { email: googleUser.email },
+      update: {
+        name: googleUser.name,
+        avatarUrl: googleUser.picture,
+        oauthProvider: 'google',
+        oauthId: googleUser.id,
+        emailVerifiedAt: new Date(),
+        emailVerificationToken: null,
+        emailVerificationSentAt: null,
+      },
+      create: {
+        id: researcher.id,
+        email: googleUser.email,
+        name: googleUser.name,
+        avatarUrl: googleUser.picture,
+        oauthProvider: 'google',
+        oauthId: googleUser.id,
+        role: 'candidate',
+        onboardingComplete: researcher.onboardingComplete,
+        emailVerifiedAt: new Date(),
+        emailVerificationToken: null,
+        emailVerificationSentAt: null,
+        createdAt: new Date(researcher.createdAt),
+        updatedAt: new Date(),
+      },
+    });
 
     // Create session token with researcher ID
     const sessionToken = await createSessionToken(researcher.id);

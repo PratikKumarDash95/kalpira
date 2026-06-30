@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import supabaseDb from '@/lib/supabaseDb';
 import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
 import { isInterviewClosed } from '@/lib/interviewDeadline';
+import { sendInterviewAssignmentEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const assignments = [];
   let reusedCount = 0;
   let createdCount = 0;
+  let emailSentCount = 0;
+  let emailFailedCount = 0;
+
+  const interviewer = await db.user.findUnique({
+    where: { id: interviewerId },
+    select: { name: true, email: true },
+  });
+  const studyName = typeof config?.name === 'string' && config.name.trim() ? config.name.trim() : 'Interview';
+  const companyName = typeof config?.companyName === 'string' ? config.companyName : '';
 
   for (const candidate of uniqueCandidates) {
     const existing = await db.interviewSession.findFirst({
@@ -107,11 +117,29 @@ export async function POST(request: Request, { params }: { params: { id: string 
     assignments.push(assignment);
   }
 
+  for (const candidate of uniqueCandidates) {
+    try {
+      await sendInterviewAssignmentEmail({
+        candidateEmail: candidate.candidateEmail,
+        candidateName: candidate.candidateName,
+        interviewerName: interviewer?.name || interviewer?.email || 'Interviewer',
+        studyName,
+        companyName,
+      });
+      emailSentCount += 1;
+    } catch (error) {
+      emailFailedCount += 1;
+      console.error('Failed to send assignment email:', candidate.candidateEmail, error);
+    }
+  }
+
   return NextResponse.json({
     assignment: assignments[0] || null,
     assignments,
     reused: createdCount === 0,
     reusedCount,
     createdCount,
+    emailSentCount,
+    emailFailedCount,
   });
 }
