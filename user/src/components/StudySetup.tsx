@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store';
 import { generateParticipantLink } from '@/services/geminiService';
 import { StudyConfig, ProfileField, AIBehavior, AIProviderType, LinkExpirationOption, InterviewerAssignment, GEMINI_MODELS, CLAUDE_MODELS, OLLAMA_MODELS, DEFAULT_GEMINI_MODEL, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_MODEL } from '@/types';
+import { dateInputToEndsAt, endsAtToDateInput, formatInterviewEndDate } from '@/lib/interviewDeadline';
+import { INTERVIEWER_AI_MODEL, INTERVIEWER_AI_PROVIDER, withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
+import { useSessionState } from '@/hooks/useSessionState';
 import {
   FileText, Plus, X, ArrowRight, ArrowLeft, Sparkles, Eye,
   Lightbulb, User, ToggleLeft, ToggleRight, Link as LinkIcon,
@@ -39,20 +42,25 @@ const StudySetup: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [parentStudyInfo, setParentStudyInfo] = useState<{ id: string; name: string } | null>(null);
 
-  const [name, setName] = useState(studyConfig?.name || '');
-  const [description, setDescription] = useState(studyConfig?.description || '');
-  const [researchQuestion, setResearchQuestion] = useState(studyConfig?.researchQuestion || '');
-  const [coreQuestions, setCoreQuestions] = useState<string[]>(studyConfig?.coreQuestions || ['']);
-  const [topicAreas, setTopicAreas] = useState<string[]>(studyConfig?.topicAreas || ['']);
-  const [profileSchema, setProfileSchema] = useState<ProfileField[]>(studyConfig?.profileSchema || []);
-  const [aiBehavior, setAiBehavior] = useState<AIBehavior>(studyConfig?.aiBehavior || 'standard');
-  const [aiProvider, setAiProvider] = useState<AIProviderType>(studyConfig?.aiProvider || 'gemini');
-  const [aiModel, setAiModel] = useState<string>(
+  const draftPrefix = isInterviewerFlow ? 'kalpira:interviewer-setup' : 'kalpira:study-setup';
+  const [name, setName, clearNameDraft] = useSessionState(`${draftPrefix}:name`, studyConfig?.name || '');
+  const [companyName, setCompanyName, clearCompanyNameDraft] = useSessionState(`${draftPrefix}:company-name`, studyConfig?.companyName || '');
+  const [description, setDescription, clearDescriptionDraft] = useSessionState(`${draftPrefix}:description`, studyConfig?.description || '');
+  const [researchQuestion, setResearchQuestion, clearResearchQuestionDraft] = useSessionState(`${draftPrefix}:research-question`, studyConfig?.researchQuestion || '');
+  const [coreQuestions, setCoreQuestions, clearCoreQuestionsDraft] = useSessionState<string[]>(`${draftPrefix}:core-questions`, studyConfig?.coreQuestions || ['']);
+  const [topicAreas, setTopicAreas, clearTopicAreasDraft] = useSessionState<string[]>(`${draftPrefix}:topic-areas`, studyConfig?.topicAreas || ['']);
+  const [profileSchema, setProfileSchema, clearProfileSchemaDraft] = useSessionState<ProfileField[]>(`${draftPrefix}:profile-schema`, studyConfig?.profileSchema || []);
+  const [aiBehavior, setAiBehavior, clearAiBehaviorDraft] = useSessionState<AIBehavior>(`${draftPrefix}:ai-behavior`, studyConfig?.aiBehavior || 'standard');
+  const [aiProvider, setAiProvider, clearAiProviderDraft] = useSessionState<AIProviderType>(`${draftPrefix}:ai-provider`, studyConfig?.aiProvider || 'gemini');
+  const [aiModel, setAiModel, clearAiModelDraft] = useSessionState<string>(
+    `${draftPrefix}:ai-model`,
     studyConfig?.aiModel || (studyConfig?.aiProvider === 'claude' ? DEFAULT_CLAUDE_MODEL : studyConfig?.aiProvider === 'ollama' ? DEFAULT_OLLAMA_MODEL : DEFAULT_GEMINI_MODEL)
   );
-  const [enableReasoning, setEnableReasoning] = useState<boolean | undefined>(studyConfig?.enableReasoning);
-  const [linkExpiration, setLinkExpiration] = useState<LinkExpirationOption>(studyConfig?.linkExpiration || 'never');
-  const [consentText, setConsentText] = useState(
+  const [enableReasoning, setEnableReasoning, clearEnableReasoningDraft] = useSessionState<boolean | undefined>(`${draftPrefix}:enable-reasoning`, studyConfig?.enableReasoning);
+  const [linkExpiration, setLinkExpiration, clearLinkExpirationDraft] = useSessionState<LinkExpirationOption>(`${draftPrefix}:link-expiration`, studyConfig?.linkExpiration || 'never');
+  const [endDate, setEndDate, clearEndDateDraft] = useSessionState(`${draftPrefix}:end-date`, endsAtToDateInput(studyConfig?.endsAt));
+  const [consentText, setConsentText, clearConsentTextDraft] = useSessionState(
+    `${draftPrefix}:consent-text`,
     studyConfig?.consentText ||
     'Thank you for participating in this research study. Your responses will be used to understand [research topic]. You may stop at any time. Do you consent to participate?'
   );
@@ -68,9 +76,9 @@ const StudySetup: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-  const [candidateName, setCandidateName] = useState('');
-  const [candidateEmail, setCandidateEmail] = useState('');
-  const [candidatePhone, setCandidatePhone] = useState('');
+  const [candidateName, setCandidateName, clearCandidateNameDraft] = useSessionState(`${draftPrefix}:candidate-name`, '');
+  const [candidateEmail, setCandidateEmail, clearCandidateEmailDraft] = useSessionState(`${draftPrefix}:candidate-email`, '');
+  const [candidatePhone, setCandidatePhone, clearCandidatePhoneDraft] = useSessionState(`${draftPrefix}:candidate-phone`, '');
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -102,6 +110,12 @@ const StudySetup: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isInterviewerFlow) return;
+    setAiProvider(INTERVIEWER_AI_PROVIDER);
+    setAiModel(INTERVIEWER_AI_MODEL);
+  }, [isInterviewerFlow]);
+
+  useEffect(() => {
     const prefillType = searchParams.get('prefill');
     if (prefillType === 'followup' || prefillType === 'edit') {
       const prefillData = sessionStorage.getItem('prefillStudyConfig');
@@ -109,6 +123,7 @@ const StudySetup: React.FC = () => {
         try {
           const config = JSON.parse(prefillData) as Partial<StudyConfig>;
           if (config.name) setName(config.name);
+          if (config.companyName) setCompanyName(config.companyName);
           if (config.description) setDescription(config.description);
           if (config.researchQuestion) setResearchQuestion(config.researchQuestion);
           if (config.coreQuestions?.length) setCoreQuestions(config.coreQuestions);
@@ -119,6 +134,7 @@ const StudySetup: React.FC = () => {
           if (config.aiModel) setAiModel(config.aiModel);
           if (config.enableReasoning !== undefined) setEnableReasoning(config.enableReasoning);
           if (config.linkExpiration) setLinkExpiration(config.linkExpiration);
+          if (config.endsAt) setEndDate(endsAtToDateInput(config.endsAt));
           if (config.consentText) setConsentText(config.consentText);
           if (prefillType === 'followup' && config.parentStudyId && config.parentStudyName) {
             setParentStudyInfo({ id: config.parentStudyId, name: config.parentStudyName });
@@ -136,6 +152,7 @@ const StudySetup: React.FC = () => {
   useEffect(() => {
     if (studyConfig) {
       setName(studyConfig.name);
+      setCompanyName(studyConfig.companyName || '');
       setDescription(studyConfig.description);
       setResearchQuestion(studyConfig.researchQuestion);
       setCoreQuestions(studyConfig.coreQuestions.length > 0 ? studyConfig.coreQuestions : ['']);
@@ -146,6 +163,7 @@ const StudySetup: React.FC = () => {
       setAiModel(studyConfig.aiModel || DEFAULT_GEMINI_MODEL);
       setEnableReasoning(studyConfig.enableReasoning);
       setLinkExpiration(studyConfig.linkExpiration || 'never');
+      setEndDate(endsAtToDateInput(studyConfig.endsAt));
       setConsentText(studyConfig.consentText);
       if (studyConfig.interviewerAssignment) {
         setCandidateName(studyConfig.interviewerAssignment.candidateName || '');
@@ -177,19 +195,47 @@ const StudySetup: React.FC = () => {
   const updateProfileField = (id: string, updates: Partial<ProfileField>) => { setProfileSchema(profileSchema.map(f => f.id === id ? { ...f, ...updates } : f)); setIsDirty(true); };
   const toggleFieldRequired = (id: string) => { setProfileSchema(profileSchema.map(f => f.id === id ? { ...f, required: !f.required } : f)); setIsDirty(true); };
 
-  const buildConfig = (): StudyConfig => ({
-    id: studyConfig?.id || `study-${Date.now()}`,
-    name: name || 'Untitled Study',
-    description, researchQuestion,
-    coreQuestions: coreQuestions.filter(q => q.trim()),
-    topicAreas: topicAreas.filter(t => t.trim()),
-    profileSchema: profileSchema.filter(f => f.label.trim()),
-    aiBehavior, aiProvider, aiModel, enableReasoning, linkExpiration,
-    linksEnabled: true, consentText,
-    createdAt: studyConfig?.createdAt || Date.now(),
-    ...(publishedAssignment && { interviewerAssignment: publishedAssignment }),
-    ...(parentStudyInfo && { parentStudyId: parentStudyInfo.id, parentStudyName: parentStudyInfo.name, generatedFrom: 'synthesis' as const })
-  });
+  const clearSetupDraft = () => {
+    clearNameDraft();
+    clearCompanyNameDraft();
+    clearDescriptionDraft();
+    clearResearchQuestionDraft();
+    clearCoreQuestionsDraft();
+    clearTopicAreasDraft();
+    clearProfileSchemaDraft();
+    clearAiBehaviorDraft();
+    clearAiProviderDraft();
+    clearAiModelDraft();
+    clearEnableReasoningDraft();
+    clearLinkExpirationDraft();
+    clearEndDateDraft();
+    clearConsentTextDraft();
+    clearCandidateNameDraft();
+    clearCandidateEmailDraft();
+    clearCandidatePhoneDraft();
+  };
+
+  const buildConfig = (): StudyConfig => {
+    const endsAt = dateInputToEndsAt(endDate);
+
+    const config: StudyConfig = {
+      id: studyConfig?.id || `study-${Date.now()}`,
+      name: name || 'Untitled Study',
+      ...(companyName.trim() && { companyName: companyName.trim() }),
+      description, researchQuestion,
+      coreQuestions: coreQuestions.filter(q => q.trim()),
+      topicAreas: topicAreas.filter(t => t.trim()),
+      profileSchema: profileSchema.filter(f => f.label.trim()),
+      aiBehavior, aiProvider, aiModel, enableReasoning, linkExpiration,
+      ...(endsAt && { endsAt }),
+      linksEnabled: true, consentText,
+      createdAt: studyConfig?.createdAt || Date.now(),
+      ...(publishedAssignment && { interviewerAssignment: publishedAssignment }),
+      ...(parentStudyInfo && { parentStudyId: parentStudyInfo.id, parentStudyName: parentStudyInfo.name, generatedFrom: 'synthesis' as const })
+    };
+
+    return isInterviewerFlow ? withInterviewerAiConfig(config) : config;
+  };
 
   const handleSubmit = async () => {
     resetParticipant();
@@ -199,6 +245,7 @@ const StudySetup: React.FC = () => {
       const { token } = await generateParticipantLink(config);
       setParticipantToken(token);
     } catch (error) { console.warn('Could not generate token:', error); }
+    clearSetupDraft();
     setStep('consent');
     router.push('/consent');
   };
@@ -246,6 +293,17 @@ const StudySetup: React.FC = () => {
       return;
     }
 
+    const endsAt = dateInputToEndsAt(endDate);
+    if (!endsAt) {
+      setPublishError('Choose the interview ending date before publishing.');
+      return;
+    }
+
+    if (endsAt <= Date.now()) {
+      setPublishError('Ending date must be today or a future date.');
+      return;
+    }
+
     setIsPublishing(true);
     setSaveError(null);
     setPublishError(null);
@@ -259,7 +317,7 @@ const StudySetup: React.FC = () => {
         publishedAt: Date.now(),
       };
 
-      const config = { ...buildConfig(), interviewerAssignment: assignment };
+      const config = { ...buildConfig(), endsAt, interviewerAssignment: assignment };
       const response = await fetch('/api/interviewer/studies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -298,6 +356,7 @@ const StudySetup: React.FC = () => {
 
       const linkData = await linkResponse.json();
       setParticipantLink(linkData.url);
+      clearSetupDraft();
     } catch {
       setSaveError('Network error. Please check your connection.');
     } finally {
@@ -341,6 +400,7 @@ const StudySetup: React.FC = () => {
                 const retryData = await retryResponse.json();
                 setSavedStudyId(retryData.study.id); setStudyConfig(retryData.study.config);
                 setSaveSuccess(true); setIsDirty(false);
+                clearSetupDraft();
                 router.push(`/studies/${retryData.study.id}`);
               }
             }
@@ -353,6 +413,7 @@ const StudySetup: React.FC = () => {
       const data = await response.json();
       setSavedStudyId(data.study.id); setSaveSuccess(true);
       setStudyConfig(data.study.config); setIsDirty(false);
+      clearSetupDraft();
       router.push(isInterviewerFlow ? interviewerPath('/dashboard') : `/studies/${data.study.id}`);
     } catch { setSaveError('Network error. Please check your connection.'); }
     finally { setIsSaving(false); }
@@ -360,6 +421,8 @@ const StudySetup: React.FC = () => {
 
   const isValid = name.trim() && researchQuestion.trim();
   const candidateReady = candidateName.trim() && candidateEmail.trim() && candidateEmail.includes('@');
+  const endDateReady = Boolean(dateInputToEndsAt(endDate));
+  const canPublish = Boolean(isValid && candidateReady && endDateReady);
   const availablePresets = PROFILE_PRESETS.filter(p => !profileSchema.some(f => f.id === p.id));
 
   const behaviorOptions: { id: AIBehavior; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -482,6 +545,19 @@ const StudySetup: React.FC = () => {
                     className={inputCls}
                   />
                 </div>
+
+                {isInterviewerFlow && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Company Name <span className="text-slate-500 font-normal">(optional)</span></label>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={e => { setCompanyName(e.target.value); setIsDirty(true); }}
+                      placeholder="e.g., Kalpira"
+                      className={inputCls}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Research Question <span className="text-violet-400">*</span></label>
@@ -638,25 +714,38 @@ const StudySetup: React.FC = () => {
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                   <Brain size={14} className="text-violet-400" /> AI Provider
                 </h2>
-                <div className="grid grid-cols-3 gap-3">
-                  {providerOptions.map(opt => (
-                    <button
-                      key={opt.id}
-                      onClick={() => {
-                        setAiProvider(opt.id);
-                        setAiModel(opt.id === 'claude' ? DEFAULT_CLAUDE_MODEL : opt.id === 'ollama' ? DEFAULT_OLLAMA_MODEL : DEFAULT_GEMINI_MODEL);
-                        setIsDirty(true);
-                      }}
-                      className={`relative p-4 rounded-xl border-2 text-left transition-all ${aiProvider === opt.id ? 'border-violet-500 bg-violet-500/10' : 'border-slate-700 hover:border-slate-600 bg-slate-800/30'}`}
-                    >
-                      {opt.badge && <span className="absolute top-2 right-2 text-xs bg-violet-600 text-white px-1.5 py-0.5 rounded-full">{opt.badge}</span>}
-                      <p className={`text-sm font-semibold mb-0.5 ${aiProvider === opt.id ? 'text-violet-300' : 'text-slate-300'}`}>{opt.label}</p>
-                      <p className="text-xs text-slate-500">{opt.desc}</p>
-                    </button>
-                  ))}
-                </div>
+                {isInterviewerFlow ? (
+                  <div className="rounded-xl border-2 border-violet-500 bg-violet-500/10 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-violet-300">Gemini 2.5 Flash</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Used for interviewer AI responses with voice input and voice playback enabled.</p>
+                      </div>
+                      <span className="text-xs bg-violet-600 text-white px-2 py-1 rounded-full flex-shrink-0">Locked</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    {providerOptions.map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => {
+                          setAiProvider(opt.id);
+                          setAiModel(opt.id === 'claude' ? DEFAULT_CLAUDE_MODEL : opt.id === 'ollama' ? DEFAULT_OLLAMA_MODEL : DEFAULT_GEMINI_MODEL);
+                          setIsDirty(true);
+                        }}
+                        className={`relative p-4 rounded-xl border-2 text-left transition-all ${aiProvider === opt.id ? 'border-violet-500 bg-violet-500/10' : 'border-slate-700 hover:border-slate-600 bg-slate-800/30'}`}
+                      >
+                        {opt.badge && <span className="absolute top-2 right-2 text-xs bg-violet-600 text-white px-1.5 py-0.5 rounded-full">{opt.badge}</span>}
+                        <p className={`text-sm font-semibold mb-0.5 ${aiProvider === opt.id ? 'text-violet-300' : 'text-slate-300'}`}>{opt.label}</p>
+                        <p className="text-xs text-slate-500">{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Model */}
+                {!isInterviewerFlow && (
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Model</label>
                   <select value={aiModel} onChange={e => { setAiModel(e.target.value); setIsDirty(true); }} className={inputCls}>
@@ -668,6 +757,7 @@ const StudySetup: React.FC = () => {
                     {(aiProvider === 'gemini' ? GEMINI_MODELS : aiProvider === 'claude' ? CLAUDE_MODELS : OLLAMA_MODELS).find(m => m.id === aiModel)?.desc || ''}
                   </p>
                 </div>
+                )}
 
                 {/* Reasoning */}
                 <div>
@@ -683,6 +773,15 @@ const StudySetup: React.FC = () => {
                 </div>
 
                 {/* Warnings */}
+                {aiProvider === 'gemini' && configStatus && !configStatus.hasGeminiKey && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2">
+                    <AlertTriangle size={15} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-amber-300">Gemini API Key Missing</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Add a Gemini API key in Settings before previewing or publishing AI interviews.</p>
+                    </div>
+                  </div>
+                )}
                 {aiProvider === 'claude' && configStatus && !configStatus.hasAnthropicKey && (
                   <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2">
                     <AlertTriangle size={15} className="text-amber-400 flex-shrink-0 mt-0.5" />
@@ -799,6 +898,25 @@ const StudySetup: React.FC = () => {
                   <p className="text-xs text-slate-600 mt-1">Expired links show an error when participants try to access them.</p>
                 </div>
 
+                {isInterviewerFlow && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                      Interview Ending Date <span className="text-violet-400">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      min={endsAtToDateInput(Date.now())}
+                      onChange={e => { setEndDate(e.target.value); setIsDirty(true); }}
+                      className={inputCls}
+                      required
+                    />
+                    <p className="text-xs text-slate-600 mt-1">
+                      After this date, pending candidates are marked absent and nobody can start the interview.
+                    </p>
+                  </div>
+                )}
+
                 {/* Generate Participant Link */}
                 {isValid && !isInterviewerFlow && (
                   <div className="pt-2">
@@ -866,6 +984,9 @@ const StudySetup: React.FC = () => {
                   <div className="text-slate-400"><span className="text-slate-500">Provider:</span> <span className="text-slate-200 capitalize">{aiProvider}</span></div>
                   <div className="text-slate-400"><span className="text-slate-500">Questions:</span> <span className="text-slate-200">{coreQuestions.filter(q => q.trim()).length}</span></div>
                   <div className="text-slate-400"><span className="text-slate-500">Style:</span> <span className="text-slate-200 capitalize">{aiBehavior}</span></div>
+                  {isInterviewerFlow && (
+                    <div className="text-slate-400"><span className="text-slate-500">Ends:</span> <span className="text-slate-200">{formatInterviewEndDate(dateInputToEndsAt(endDate)) || 'Required'}</span></div>
+                  )}
                 </div>
               </div>
 
@@ -873,7 +994,7 @@ const StudySetup: React.FC = () => {
               <div className="space-y-3">
                 <button
                   onClick={isInterviewerFlow ? handlePublishInterview : handleSubmit}
-                  disabled={!isValid || isPublishing || (isInterviewerFlow && !candidateReady)}
+                  disabled={!isValid || isPublishing || (isInterviewerFlow && !canPublish)}
                   className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-900/30"
                 >
                   <Zap size={18} /> {isInterviewerFlow ? (isPublishing ? 'Publishing...' : 'Publish Interview') : 'Start Interview Now'}

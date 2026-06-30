@@ -130,7 +130,7 @@ export default function ParticipantPage() {
         const result = await response.json();
 
         if (!result.valid || !result.data) {
-          setError('Invalid or expired link');
+          setError(result.error || 'Invalid or expired link');
           setLoading(false);
           return;
         }

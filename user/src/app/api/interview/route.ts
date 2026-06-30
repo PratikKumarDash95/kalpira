@@ -9,13 +9,35 @@ import {
   StudyConfig,
   ParticipantProfile,
   InterviewMessage,
-  QuestionProgress
+  QuestionProgress,
+  AIInterviewResponse
 } from '@/types';
+import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 
 // Payload size limits to prevent abuse
 const MAX_HISTORY_MESSAGES = 100;
 const MAX_CONTEXT_LENGTH = 10000;
 const MAX_MESSAGE_LENGTH = 5000;
+
+const unavailableResponse = (message: string): AIInterviewResponse => ({
+  message,
+  questionAddressed: null,
+  phaseTransition: null,
+  profileUpdates: [],
+  shouldConclude: false,
+});
+
+const providerSetupMessage = (studyConfig: StudyConfig): string => {
+  if (studyConfig.aiProvider === 'claude') {
+    return 'The AI interviewer is not configured yet. Please add an Anthropic API key in Settings, then try again.';
+  }
+
+  if (studyConfig.aiProvider === 'ollama') {
+    return 'The AI interviewer is not configured yet. Please make sure Ollama is running and the selected model is available, then try again.';
+  }
+
+  return 'The AI interviewer is not configured yet. Please add a Gemini API key in Settings, then try again.';
+};
 
 export async function POST(request: Request) {
   try {
@@ -73,12 +95,22 @@ export async function POST(request: Request) {
       );
     }
 
+    if (studyConfig.interviewerAssignment || (studyConfig.id && !studyConfig.id.startsWith('study-'))) {
+      studyConfig = withInterviewerAiConfig(studyConfig);
+    }
+
     // Get the configured AI provider with researcher's API keys
-    const provider = getInterviewProvider(studyConfig, {
-      geminiApiKey: context.geminiApiKey,
-      anthropicApiKey: context.anthropicApiKey,
-      ollamaBaseUrl: process.env.OLLAMA_BASE_URL || null,
-    });
+    let provider;
+    try {
+      provider = getInterviewProvider(studyConfig, {
+        geminiApiKey: context.geminiApiKey,
+        anthropicApiKey: context.anthropicApiKey,
+        ollamaBaseUrl: process.env.OLLAMA_BASE_URL || null,
+      });
+    } catch (providerError) {
+      console.error('Interview provider configuration error:', providerError);
+      return NextResponse.json(unavailableResponse(providerSetupMessage(studyConfig)));
+    }
 
     // Generate response using the provider
     const result = await provider.generateInterviewResponse(

@@ -17,6 +17,13 @@ function getGoogleClient() {
   return new arctic.Google(clientId, clientSecret, `${baseUrl}/api/auth/oauth/google/interviewer/callback`);
 }
 
+function getInterviewerLoginUrl(baseUrl: string, error: string) {
+  const url = new URL('/login', baseUrl);
+  url.searchParams.set('role', 'interviewer');
+  url.searchParams.set('error', error);
+  return url;
+}
+
 export async function GET() {
   try {
     const google = getGoogleClient();
@@ -45,6 +52,6 @@ export async function GET() {
   } catch (error) {
     console.error('Google interviewer OAuth initiation error:', error);
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    return NextResponse.redirect(new URL('/interviewer/login?error=oauth_init_failed', baseUrl));
+    return NextResponse.redirect(getInterviewerLoginUrl(baseUrl, 'oauth_init_failed'));
   }
 }

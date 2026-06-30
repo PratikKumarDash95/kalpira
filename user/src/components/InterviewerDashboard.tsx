@@ -4,8 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import JSZip from 'jszip';
+import { useSessionState } from '@/hooks/useSessionState';
 import {
-    Briefcase, Plus, Users, BarChart2, Clock, ChevronRight,
+    Briefcase, Plus, Users, BarChart2, Clock,
     LogOut, Loader2, AlertTriangle, Copy, Check, ExternalLink,
     TrendingUp, FileText, Zap, Send, X, User, Mail, UserCircle,
     FileSpreadsheet, Trash2, UserPlus
@@ -183,8 +184,8 @@ const InterviewerDashboard: React.FC = () => {
     const [studyLinks, setStudyLinks] = useState<Record<string, { url: string; createdAt: number }>>({});
     const [assigningStudyId, setAssigningStudyId] = useState<string | null>(null);
     const [assignmentStudy, setAssignmentStudy] = useState<StudySummary | null>(null);
-    const [assignmentCandidates, setAssignmentCandidates] = useState<AssignmentCandidate[]>([createCandidate()]);
-    const [importFileName, setImportFileName] = useState('');
+    const [assignmentCandidates, setAssignmentCandidates, clearAssignmentCandidatesDraft] = useSessionState<AssignmentCandidate[]>('kalpira:interviewer-dashboard:assignment-candidates', [createCandidate()]);
+    const [importFileName, setImportFileName, clearImportFileNameDraft] = useSessionState('kalpira:interviewer-dashboard:import-file-name', '');
     const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
@@ -378,8 +379,8 @@ const InterviewerDashboard: React.FC = () => {
                 type: 'success',
                 text: `${createdCount} assigned${reusedCount ? `, ${reusedCount} already existed` : ''}.`,
             });
-            setAssignmentCandidates([createCandidate()]);
-            setImportFileName('');
+            clearAssignmentCandidatesDraft();
+            clearImportFileNameDraft();
         } catch {
             setAssignmentMessage({ type: 'error', text: 'Failed to assign interview.' });
         } finally {
@@ -408,7 +409,7 @@ const InterviewerDashboard: React.FC = () => {
                 <div className="absolute top-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
             </div>
 
-            <div className="relative max-w-5xl mx-auto px-4 py-8">
+            <div className="relative max-w-7xl mx-auto px-4 py-8">
                 {/* ── Top Bar ── */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
@@ -493,74 +494,76 @@ const InterviewerDashboard: React.FC = () => {
                             </button>
                         </motion.div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                             {studies.map((study, i) => (
                                 <motion.div key={study.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-colors">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-semibold text-white truncate">{study.config.name}</h3>
-                                                <span className="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full capitalize flex-shrink-0">
-                                                    {study.config.aiBehavior}
+                                    className="flex min-h-[250px] flex-col bg-slate-900/60 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-colors">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="mb-2 flex items-start justify-between gap-2">
+                                            <h3 className="min-w-0 text-sm font-semibold leading-5 text-white line-clamp-2" title={study.config.name}>
+                                                {study.config.name}
+                                            </h3>
+                                            <span className="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full capitalize flex-shrink-0">
+                                                {study.config.aiBehavior}
+                                            </span>
+                                        </div>
+                                        <p className="min-h-[2rem] text-xs leading-4 text-slate-500 line-clamp-2" title={study.config.researchQuestion}>
+                                            {study.config.researchQuestion}
+                                        </p>
+
+                                        <div className="mt-4 grid gap-2">
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                <Users size={13} />
+                                                <span>{study.candidateCount} candidate{study.candidateCount !== 1 ? 's' : ''}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                <BarChart2 size={13} />
+                                                <span className={study.averageScore > 0 ? scoreColor(study.averageScore) : 'text-slate-600'}>
+                                                    {study.averageScore > 0 ? `${study.averageScore}% avg` : 'No scores yet'}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-slate-500 truncate">{study.config.researchQuestion}</p>
-
-                                            <div className="flex items-center gap-4 mt-3">
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                                    <Users size={13} />
-                                                    <span>{study.candidateCount} candidate{study.candidateCount !== 1 ? 's' : ''}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                                    <BarChart2 size={13} />
-                                                    <span className={study.averageScore > 0 ? scoreColor(study.averageScore) : 'text-slate-600'}>
-                                                        {study.averageScore > 0 ? `${study.averageScore}% avg` : 'No scores yet'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                                    <Clock size={13} />
-                                                    <span>{new Date(study.createdAt).toLocaleDateString()}</span>
-                                                </div>
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                <Clock size={13} />
+                                                <span>{new Date(study.createdAt).toLocaleDateString()}</span>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                            <button
-                                                onClick={() => openAssignmentModal(study)}
-                                                disabled={assigningStudyId === study.id}
-                                                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl text-xs transition-colors disabled:opacity-50"
-                                            >
-                                                {assigningStudyId === study.id ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-                                                Assign
-                                            </button>
+                                    <div className="mt-4 grid grid-cols-3 gap-2">
+                                        <button
+                                            onClick={() => openAssignmentModal(study)}
+                                            disabled={assigningStudyId === study.id}
+                                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-slate-300 transition-colors hover:bg-slate-700 disabled:opacity-50"
+                                        >
+                                            {assigningStudyId === study.id ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                                            <span className="truncate">Assign</span>
+                                        </button>
 
-                                            {/* Copy link */}
-                                            <button
-                                                onClick={() => handleGenerateLink(study)}
-                                                disabled={generatingLink === study.id}
-                                                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl text-xs transition-colors disabled:opacity-50">
-                                                {generatingLink === study.id ? (
-                                                    <Loader2 size={13} className="animate-spin" />
-                                                ) : copiedId === study.id ? (
-                                                    <Check size={13} className="text-emerald-400" />
-                                                ) : (
-                                                    <Copy size={13} />
-                                                )}
-                                                {copiedId === study.id ? 'Copied!' : 'Copy Link'}
-                                            </button>
+                                        {/* Copy link */}
+                                        <button
+                                            onClick={() => handleGenerateLink(study)}
+                                            disabled={generatingLink === study.id}
+                                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-slate-300 transition-colors hover:bg-slate-700 disabled:opacity-50">
+                                            {generatingLink === study.id ? (
+                                                <Loader2 size={13} className="animate-spin" />
+                                            ) : copiedId === study.id ? (
+                                                <Check size={13} className="text-emerald-400" />
+                                            ) : (
+                                                <Copy size={13} />
+                                            )}
+                                            <span className="truncate">{copiedId === study.id ? 'Copied!' : 'Copy'}</span>
+                                        </button>
 
-                                            {/* View candidates */}
-                                            <button
-                                                onClick={() => router.push(portalPath(`/studies/${study.id}`))}
-                                                className="flex items-center gap-1.5 px-3 py-2 bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-300 rounded-xl text-xs transition-colors">
-                                                <ExternalLink size={13} /> Results
-                                                <ChevronRight size={13} />
-                                            </button>
-                                        </div>
+                                        {/* View candidates */}
+                                        <button
+                                            onClick={() => router.push(portalPath(`/studies/${study.id}`))}
+                                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-600/20 px-2 py-2 text-xs text-violet-300 transition-colors hover:bg-violet-600/30">
+                                            <ExternalLink size={13} />
+                                            <span className="truncate">Results</span>
+                                        </button>
                                     </div>
 
                                     {/* Link preview */}

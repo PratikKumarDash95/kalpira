@@ -7,6 +7,7 @@ import {
     Menu, X, Shield, LogOut, ChevronRight, Clock, CheckCircle,
     AlertCircle, TrendingUp, Database, Zap
 } from 'lucide-react';
+import { useSessionState } from '@/hooks/useSessionState';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Stats {
@@ -87,13 +88,13 @@ type Tab = 'overview' | 'users' | 'sessions';
 
 export default function AdminPanel() {
     const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'http://localhost:3000';
-    const [activeTab, setActiveTab] = useState<Tab>('overview');
+    const [activeTab, setActiveTab] = useSessionState<Tab>('kalpira:admin:active-tab', 'overview');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [stats, setStats] = useState<Stats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useSessionState('kalpira:admin:search', '');
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 

@@ -64,7 +64,7 @@ export default function Home() {
 
           <nav className="hidden md:flex items-center gap-2 text-sm">
             <button onClick={() => router.push('/studies')} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Studies</button>
-            <button onClick={() => router.push('/interviewer/login')} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Interviewer</button>
+            <button onClick={() => router.push('/login?role=interviewer')} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Interviewer</button>
             <button onClick={() => { window.location.href = adminUrl; }} className="px-3 py-2 rounded-xl text-slate-600 hover:bg-white hover:text-slate-950 transition-colors">Admin</button>
           </nav>
 

@@ -7,6 +7,7 @@ import {
   Database, Key, CheckCircle, ArrowRight, ArrowLeft,
   Loader2, AlertCircle, ExternalLink, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { useSessionState } from '@/hooks/useSessionState';
 
 type Step = 'welcome' | 'ai-keys' | 'redis' | 'done';
 const STEPS: Step[] = ['welcome', 'ai-keys', 'redis', 'done'];
@@ -19,7 +20,7 @@ interface ValidationState {
 
 const Onboarding: React.FC = () => {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep, clearCurrentStepDraft] = useSessionState('kalpira:onboarding:step', 0);
   const [profile, setProfile] = useState<{ name?: string } | null>(null);
 
   // AI keys state
@@ -29,7 +30,7 @@ const Onboarding: React.FC = () => {
   const [anthropicValidation, setAnthropicValidation] = useState<ValidationState>({ loading: false, valid: null, error: null });
 
   // Redis state
-  const [redisUrl, setRedisUrl] = useState('');
+  const [redisUrl, setRedisUrl, clearRedisUrlDraft] = useSessionState('kalpira:onboarding:redis-url', '');
   const [redisToken, setRedisToken] = useState('');
   const [redisValidation, setRedisValidation] = useState<ValidationState>({ loading: false, valid: null, error: null });
 
@@ -118,6 +119,8 @@ const Onboarding: React.FC = () => {
         return;
       }
 
+      clearCurrentStepDraft();
+      clearRedisUrlDraft();
       router.push('/studies');
     } catch {
       setSaveError('Connection error. Please try again.');

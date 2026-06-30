@@ -4,14 +4,15 @@ import React, { useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
+import { useSessionState } from '@/hooks/useSessionState';
 
 const InterviewerRegister: React.FC = () => {
     const router = useRouter();
     const pathname = usePathname();
     const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
     const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
+    const [name, setName, clearNameDraft] = useSessionState('kalpira:interviewer-register:name', '');
+    const [email, setEmail, clearEmailDraft] = useSessionState('kalpira:interviewer-register:email', '');
     const passwordRef = useRef<HTMLInputElement>(null);
     const confirmPasswordRef = useRef<HTMLInputElement>(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -49,6 +50,8 @@ const InterviewerRegister: React.FC = () => {
                 setError(data.error || 'Registration failed.');
                 return;
             }
+            clearNameDraft();
+            clearEmailDraft();
             router.push(portalPath('/dashboard'));
         } catch {
             setError('Network error. Please try again.');

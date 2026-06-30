@@ -59,7 +59,7 @@ const VideoInterview: React.FC = () => {
     const [showFinishOption, setShowFinishOption] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
-    const [isTTSEnabled, setIsTTSEnabled] = useState(true);
+    const [isTTSEnabled, setIsTTSEnabled] = useState(studyConfig?.textToSpeechEnabled !== false);
     const [isListening, setIsListening] = useState(false);
     const [interimText, setInterimText] = useState('');
     const [sessionId, setSessionId] = useState<string | null>(null);
@@ -68,6 +68,7 @@ const VideoInterview: React.FC = () => {
     const [aiSpeaking, setAiSpeaking] = useState(false);
     const [lastAiQuestion, setLastAiQuestion] = useState('');
     const [showChat, setShowChat] = useState(true);
+    const speechToTextEnabled = studyConfig?.speechToTextEnabled !== false;
 
     // ── Refs ──────────────────────────────────────────────────────────────────────
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -257,6 +258,7 @@ const VideoInterview: React.FC = () => {
     const handleSendRef = useRef<((text: string) => void) | null>(null);
 
     const toggleListening = () => {
+        if (!speechToTextEnabled) return;
         if (isListening) {
             recognitionRef.current?.stop();
         } else {
@@ -632,7 +634,11 @@ const VideoInterview: React.FC = () => {
                             <button onClick={toggleCamera} className={`p-3 rounded-full transition-all ${isCameraOff ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}>
                                 {isCameraOff ? <VideoOff size={20} /> : <Video size={20} />}
                             </button>
-                            <button onClick={toggleListening} className={`p-3 rounded-full transition-all ${isListening ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}>
+                            <button
+                                onClick={toggleListening}
+                                disabled={!speechToTextEnabled}
+                                className={`p-3 rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isListening ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}
+                            >
                                 <Activity size={20} />
                             </button>
                             <button
@@ -738,7 +744,11 @@ const VideoInterview: React.FC = () => {
                                 </div>
                             )}
                             <div className="flex gap-2">
-                                <button onClick={toggleListening} className={`p-2.5 rounded-xl transition-all flex-shrink-0 ${isListening ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700'}`}>
+                                <button
+                                    onClick={toggleListening}
+                                    disabled={!speechToTextEnabled}
+                                    className={`p-2.5 rounded-xl transition-all flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${isListening ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700'}`}
+                                >
                                     {isListening ? <Mic size={18} className="animate-pulse" /> : <Mic size={18} />}
                                 </button>
                                 <input

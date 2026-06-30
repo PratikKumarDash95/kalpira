@@ -29,6 +29,7 @@ interface Candidate {
     sessionId: string;
     candidateName: string;
     candidateEmail: string;
+    status: 'completed' | 'incomplete' | 'absent';
     startedAt: string;
     completedAt: string | null;
     averageScore: number;
@@ -39,7 +40,7 @@ interface Candidate {
 
 interface StudyInfo {
     id: string;
-    config: { name: string; researchQuestion: string };
+    config: { name: string; researchQuestion: string; endsAt?: number };
 }
 
 const ScoreBar: React.FC<{ label: string; value: number; icon: React.ReactNode }> = ({ label, value, icon }) => {
@@ -114,6 +115,7 @@ const InterviewerStudyDetail: React.FC = () => {
     }
 
     const completed = candidates.filter(c => c.completedAt);
+    const absent = candidates.filter(c => c.status === 'absent');
     const avgScore = completed.length > 0
         ? Math.round(completed.reduce((s, c) => s + c.averageScore, 0) / completed.length)
         : 0;
@@ -141,10 +143,11 @@ const InterviewerStudyDetail: React.FC = () => {
                 )}
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     {[
                         { label: 'Total Candidates', value: candidates.length, icon: Users, color: 'text-violet-400' },
                         { label: 'Completed', value: completed.length, icon: CheckCircle, color: 'text-emerald-400' },
+                        { label: 'Absent', value: absent.length, icon: XCircle, color: 'text-red-400' },
                         { label: 'Avg Score', value: avgScore > 0 ? `${avgScore}%` : '—', icon: TrendingUp, color: 'text-blue-400' },
                     ].map(stat => (
                         <div key={stat.label} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
@@ -204,7 +207,11 @@ const InterviewerStudyDetail: React.FC = () => {
 
                                     <div className="flex items-center gap-4 flex-shrink-0">
                                         {/* Status */}
-                                        {candidate.completedAt ? (
+                                        {candidate.status === 'absent' ? (
+                                            <span className="flex items-center gap-1 text-xs text-red-400">
+                                                <XCircle size={13} /> Absent
+                                            </span>
+                                        ) : candidate.completedAt ? (
                                             <span className="flex items-center gap-1 text-xs text-emerald-400">
                                                 <CheckCircle size={13} /> Done
                                             </span>
