@@ -54,6 +54,13 @@ export async function POST(request: Request) {
         );
       }
 
+      if (!user.emailVerifiedAt) {
+        return NextResponse.json(
+          { error: 'Verify your email before signing in.', requiresVerification: true },
+          { status: 403 }
+        );
+      }
+
       // Create session for this specific user
       const sessionToken = await createSessionToken(user.id);
 

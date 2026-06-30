@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Lock, Loader2, AlertCircle, User, Mail, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Lock, Loader2, AlertCircle, User, Mail, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
 
 const isSafeAuthRedirect = (path: string) =>
@@ -16,11 +16,13 @@ const Register: React.FC = () => {
     const passwordRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setSuccess(null);
 
         const password = passwordRef.current?.value ?? '';
 
@@ -44,11 +46,10 @@ const Register: React.FC = () => {
                 return;
             }
 
-            // On success, login is auto-handled by API setting cookie, so redirect
             clearNameDraft();
             clearEmailDraft();
-            const redirect = new URLSearchParams(window.location.search).get('redirect');
-            router.push(redirect && isSafeAuthRedirect(redirect) ? redirect : '/studies');
+            setSuccess(data.message || 'Check your email for a verification link before signing in.');
+            if (passwordRef.current) passwordRef.current.value = '';
         } catch {
             setError('Connection error. Please try again.');
         } finally {
@@ -78,6 +79,13 @@ const Register: React.FC = () => {
                         <div className="flex items-center gap-2 p-3 mb-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
                             <AlertCircle size={16} className="flex-shrink-0" />
                             {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="flex items-center gap-2 p-3 mb-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-300 text-sm">
+                            <CheckCircle2 size={16} className="flex-shrink-0" />
+                            {success}
                         </div>
                     )}
 

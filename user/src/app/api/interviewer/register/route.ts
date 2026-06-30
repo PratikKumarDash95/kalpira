@@ -1,8 +1,8 @@
 // POST /api/interviewer/register — Register a new interviewer account
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import supabaseDb, { hasServiceRoleKey } from '@/lib/supabaseDb';
-import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME, hashPassword } from '@/lib/auth';
+import { hashPassword } from '@/lib/auth';
+import { createEmailVerificationToken, sendVerificationEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,18 +32,39 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
         }
 
+        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedName = name.trim();
         const passwordHash = await hashPassword(password);
+        const { rawToken, hashedToken } = createEmailVerificationToken();
         const now = new Date();
 
         const user = await supabaseDb.user.create({
-            data: { email, password: passwordHash, name, role: 'interviewer', createdAt: now, updatedAt: now },
+            data: {
+                email: trimmedEmail,
+                password: passwordHash,
+                name: trimmedName,
+                role: 'interviewer',
+                emailVerifiedAt: null,
+                emailVerificationToken: hashedToken,
+                emailVerificationSentAt: now,
+                createdAt: now,
+                updatedAt: now,
+            },
         });
 
-        const sessionToken = await createSessionToken(user.id);
-        const cookieStore = await cookies();
-        cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
+        await sendVerificationEmail({
+            email: user.email,
+            name: user.name,
+            role: 'interviewer',
+            token: rawToken,
+        });
 
-        return NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+        return NextResponse.json({
+            success: true,
+            requiresVerification: true,
+            message: 'Check your email for a verification link before signing in.',
+            user: { id: user.id, email: user.email, name: user.name, role: user.role }
+        });
     } catch (error) {
         console.error('Interviewer registration error:', error);
         return NextResponse.json({ error: 'Registration failed. Please try again.' }, { status: 500 });

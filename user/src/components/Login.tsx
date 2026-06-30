@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, Briefcase, Loader2, Lock, Mail, ShieldCheck, UserPlus, UserRound } from 'lucide-react';
+import { AlertCircle, Briefcase, CheckCircle2, Loader2, Lock, Mail, ShieldCheck, UserPlus, UserRound } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
 
 type LoginRole = 'user' | 'interviewer' | 'admin';
@@ -38,6 +38,8 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
   const [mode, setMode] = useState<'standalone' | 'hosted' | null>(null);
   const [selectedRole, setSelectedRole, clearRoleDraft] = useSessionState<LoginRole>('kalpira:login:role', 'user');
 
@@ -55,6 +57,10 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     const oauthError = searchParams.get('error');
+    const verified = searchParams.get('verified');
+    if (verified === '1') {
+      setSuccess('Email verified. You can sign in now.');
+    }
     if (!oauthError) return;
 
     const oauthDetail = searchParams.get('detail');
@@ -65,11 +71,43 @@ const Login: React.FC = () => {
       invalid_state: 'Session expired. Please try again.',
       user_fetch_failed: 'Failed to get your profile. Please try again.',
       no_email: 'Could not get your email. Make sure your GitHub email is verified.',
+      verification_invalid: 'This verification link is invalid or already used.',
     };
 
     const message = messages[oauthError] || 'Sign-in failed. Please try again.';
     setError(process.env.NODE_ENV === 'development' && oauthDetail ? `${message} (${oauthDetail})` : message);
   }, [searchParams]);
+
+  const handleResendVerification = async () => {
+    if (!email.trim()) {
+      setError('Enter your email address first.');
+      return;
+    }
+
+    setResending(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Failed to resend verification email.');
+        return;
+      }
+      setSuccess(data.alreadyVerified
+        ? 'This email is already verified. You can sign in now.'
+        : 'Verification email sent. Check your inbox.');
+    } catch {
+      setError('Failed to resend verification email.');
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleGoogleSignIn = () => {
     setGoogleLoading(true);
@@ -82,6 +120,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     const password = passwordRef.current?.value ?? '';
     const trimmedEmail = email.trim();
@@ -186,6 +225,13 @@ const Login: React.FC = () => {
             <div className="flex items-center gap-2 p-3 mb-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
               <AlertCircle size={16} className="flex-shrink-0" />
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="flex items-center gap-2 p-3 mb-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-300 text-sm">
+              <CheckCircle2 size={16} className="flex-shrink-0" />
+              {success}
             </div>
           )}
 
@@ -310,6 +356,15 @@ const Login: React.FC = () => {
                 className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : 'Login'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resending || loading || !email.trim()}
+                className="w-full py-3 border border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl transition-colors"
+              >
+                {resending ? 'Sending verification...' : 'Resend verification email'}
               </button>
             </form>
           )}

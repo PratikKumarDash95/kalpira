@@ -80,6 +80,9 @@ export async function GET(request: Request) {
             oauthId: googleUser.id,
             avatarUrl: existing.avatarUrl || googleUser.picture,
             role: 'interviewer',
+            emailVerifiedAt: existing.emailVerifiedAt || new Date(),
+            emailVerificationToken: null,
+            emailVerificationSentAt: null,
           },
         });
       } else {
@@ -93,6 +96,9 @@ export async function GET(request: Request) {
             oauthProvider: 'google',
             oauthId: googleUser.id,
             role: 'interviewer',
+            emailVerifiedAt: now,
+            emailVerificationToken: null,
+            emailVerificationSentAt: null,
             onboardingComplete: false,
             createdAt: now,
             updatedAt: now,

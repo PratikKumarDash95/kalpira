@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase, CheckCircle2 } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
 
 const InterviewerRegister: React.FC = () => {
@@ -18,10 +18,12 @@ const InterviewerRegister: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setSuccess(null);
         const password = passwordRef.current?.value ?? '';
         const confirmPassword = confirmPasswordRef.current?.value ?? '';
 
@@ -52,7 +54,9 @@ const InterviewerRegister: React.FC = () => {
             }
             clearNameDraft();
             clearEmailDraft();
-            router.push(portalPath('/dashboard'));
+            setSuccess(data.message || 'Check your email for a verification link before signing in.');
+            if (passwordRef.current) passwordRef.current.value = '';
+            if (confirmPasswordRef.current) confirmPasswordRef.current.value = '';
         } catch {
             setError('Network error. Please try again.');
         } finally {
@@ -124,6 +128,13 @@ const InterviewerRegister: React.FC = () => {
                         {error && (
                             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
                                 {error}
+                            </div>
+                        )}
+
+                        {success && (
+                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-300 flex items-center gap-2">
+                                <CheckCircle2 size={16} className="flex-shrink-0" />
+                                {success}
                             </div>
                         )}
 

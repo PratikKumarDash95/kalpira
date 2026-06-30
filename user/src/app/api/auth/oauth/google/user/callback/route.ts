@@ -73,7 +73,14 @@ export async function GET(request: Request) {
         step = 'linking Google OAuth to existing user';
         user = await supabaseDb.user.update({
           where: { id: existing.id },
-          data: { oauthProvider: 'google', oauthId: googleUser.id, avatarUrl: existing.avatarUrl || googleUser.picture },
+          data: {
+            oauthProvider: 'google',
+            oauthId: googleUser.id,
+            avatarUrl: existing.avatarUrl || googleUser.picture,
+            emailVerifiedAt: existing.emailVerifiedAt || new Date(),
+            emailVerificationToken: null,
+            emailVerificationSentAt: null,
+          },
         });
       } else {
         // Create new candidate account
@@ -87,6 +94,9 @@ export async function GET(request: Request) {
             oauthProvider: 'google',
             oauthId: googleUser.id,
             role: 'candidate',
+            emailVerifiedAt: now,
+            emailVerificationToken: null,
+            emailVerificationSentAt: null,
             onboardingComplete: false,
             createdAt: now,
             updatedAt: now,
