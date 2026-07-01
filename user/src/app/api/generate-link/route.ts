@@ -7,23 +7,12 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import * as jose from 'jose';
-import { StudyConfig, ParticipantToken, LinkExpirationOption, InterviewerAssignment } from '@/types';
+import { StudyConfig, ParticipantToken, InterviewerAssignment } from '@/types';
 import { getRequestContext } from '@/lib/researcherContext';
 import supabaseDb from '@/lib/supabaseDb';
 import { isInterviewClosed } from '@/lib/interviewDeadline';
 import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
-
-// Convert link expiration option to jose expiration string
-const getExpirationTime = (option?: LinkExpirationOption): string | null => {
-  switch (option) {
-    case '7days': return '7d';
-    case '30days': return '30d';
-    case '90days': return '90d';
-    case 'never':
-    default:
-      return null; // No expiration
-  }
-};
+import { TOKEN_DURATION_DAYS, TOKEN_DURATION_SECONDS } from '@/lib/auth';
 
 // Get signing secret from environment
 // Uses dedicated PARTICIPANT_TOKEN_SECRET if available, falls back to ADMIN_PASSWORD
@@ -102,32 +91,23 @@ export async function POST(request: Request) {
       }
     }
 
-    // Get expiration time from study config
-    const expirationTime = getExpirationTime(studyConfig.linkExpiration);
-
     // Create token payload
     const tokenData: ParticipantToken = {
       studyId: studyConfig.id,
       studyConfig,
       createdAt: Date.now(),
-      // Store expiration info for display purposes
-      ...(expirationTime && { expiresAt: Date.now() + (expirationTime === '7d' ? 7 : expirationTime === '30d' ? 30 : 90) * 24 * 60 * 60 * 1000 }),
+      expiresAt: Date.now() + TOKEN_DURATION_SECONDS * 1000,
       // In hosted mode, embed researcherId so participant requests can resolve the correct researcher
       researcherId: ownerId,
       ...(assignment && { assignment }),
     };
 
-    // Sign the token (with or without expiration)
-    let jwtBuilder = new jose.SignJWT(tokenData as unknown as jose.JWTPayload)
+    // Sign every participant token with the same 2-day expiration as sessions.
+    const token = await new jose.SignJWT(tokenData as unknown as jose.JWTPayload)
       .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt();
-
-    // Only set expiration if configured
-    if (expirationTime) {
-      jwtBuilder = jwtBuilder.setExpirationTime(expirationTime);
-    }
-
-    const token = await jwtBuilder.sign(secret);
+      .setIssuedAt()
+      .setExpirationTime(`${TOKEN_DURATION_SECONDS}s`)
+      .sign(secret);
 
     // Build the full URL
     const baseUrl = process.env.VERCEL_URL
@@ -138,7 +118,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       token,
-      url: participantUrl
+      url: participantUrl,
+      expiresInDays: TOKEN_DURATION_DAYS,
     });
   } catch (error) {
     console.error('Generate link API error:', error);

@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
+import { validatePasswordPolicy, PASSWORD_RULE_MESSAGE } from '@/lib/passwordPolicy';
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18">
@@ -135,6 +136,17 @@ const InterviewerLogin: React.FC = () => {
         e.preventDefault();
         const password = newPasswordRef.current?.value ?? '';
         const confirmPassword = confirmPasswordRef.current?.value ?? '';
+        const passwordError = validatePasswordPolicy(password);
+
+        if (passwordError) {
+            setError(passwordError);
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
+            return;
+        }
 
         setResetLoading(true);
         setError(null);
@@ -248,7 +260,11 @@ const InterviewerLogin: React.FC = () => {
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type={showPassword ? 'text' : 'password'} ref={newPasswordRef}
                                 autoComplete="new-password"
-                                placeholder="New password" className={`${inputCls} pr-10`} required />
+                                placeholder="6-10 chars, A1#" className={`${inputCls} pr-10`} required
+                                minLength={6}
+                                maxLength={10}
+                                pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,10}"
+                                title={PASSWORD_RULE_MESSAGE} />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -258,7 +274,11 @@ const InterviewerLogin: React.FC = () => {
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type={showPassword ? 'text' : 'password'} ref={confirmPasswordRef}
                                 autoComplete="new-password"
-                                placeholder="Confirm password" className={inputCls} required />
+                                placeholder="Confirm password" className={inputCls} required
+                                minLength={6}
+                                maxLength={10}
+                                pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,10}"
+                                title={PASSWORD_RULE_MESSAGE} />
                         </div>
 
                         {error && (

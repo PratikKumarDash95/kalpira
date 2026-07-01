@@ -83,7 +83,9 @@ export async function middleware(request: NextRequest) {
 
   if (!session.valid) {
     if (authRoutes.includes(pathname)) {
-      return NextResponse.next();
+      const response = NextResponse.next();
+      response.cookies.delete(SESSION_COOKIE_NAME);
+      return response;
     }
 
     // Invalid token - clear cookie and redirect to login

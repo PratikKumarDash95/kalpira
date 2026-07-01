@@ -6,7 +6,8 @@ import * as jose from 'jose';
 import { isHostedMode } from './mode';
 
 const SESSION_COOKIE_NAME = 'research-auth';
-const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days in seconds
+const TOKEN_DURATION_DAYS = 2;
+const TOKEN_DURATION_SECONDS = 60 * 60 * 24 * TOKEN_DURATION_DAYS;
 
 // Get the signing secret from environment
 // Uses SESSION_SECRET if available, falls back to ADMIN_PASSWORD
@@ -46,7 +47,7 @@ export async function createSessionToken(researcherId?: string): Promise<string>
   const token = await new jose.SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION}s`)
+    .setExpirationTime(`${TOKEN_DURATION_SECONDS}s`)
     .sign(secret);
 
   return token;
@@ -101,12 +102,12 @@ export function getSessionCookieOptions() {
     // callback redirects), which is required for OAuth flows. Strict blocks
     // them and breaks the callback round-trip.
     sameSite: 'lax' as const,
-    maxAge: SESSION_DURATION,
+    maxAge: TOKEN_DURATION_SECONDS,
     path: '/',
   };
 }
 
-export { SESSION_COOKIE_NAME };
+export { SESSION_COOKIE_NAME, TOKEN_DURATION_DAYS, TOKEN_DURATION_SECONDS };
 
 // === Participant Token Verification ===
 

@@ -17,7 +17,9 @@ export async function middleware(request: NextRequest) {
   if (!session.valid) {
     const loginUrl = new URL('/login', mainAppUrl);
     loginUrl.searchParams.set('redirect', request.nextUrl.href);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
   }
 
   return NextResponse.next();

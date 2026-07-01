@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase, CheckCircle2 } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
+import { validatePasswordPolicy, PASSWORD_RULE_MESSAGE } from '@/lib/passwordPolicy';
 
 const InterviewerRegister: React.FC = () => {
     const router = useRouter();
@@ -36,8 +37,9 @@ const InterviewerRegister: React.FC = () => {
             setError('Passwords do not match.');
             return;
         }
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters.');
+        const passwordError = validatePasswordPolicy(password);
+        if (passwordError) {
+            setError(passwordError);
             return;
         }
 
@@ -140,7 +142,11 @@ const InterviewerRegister: React.FC = () => {
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type={showPassword ? 'text' : 'password'} ref={passwordRef}
                                 autoComplete="new-password"
-                                placeholder="Password (min 6 chars)" className={`${inputCls} pr-10`} required />
+                                placeholder="6-10 chars, A1#" className={`${inputCls} pr-10`} required
+                                minLength={6}
+                                maxLength={10}
+                                pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,10}"
+                                title={PASSWORD_RULE_MESSAGE} />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -152,7 +158,11 @@ const InterviewerRegister: React.FC = () => {
                             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input type={showPassword ? 'text' : 'password'} ref={confirmPasswordRef}
                                 autoComplete="new-password"
-                                placeholder="Confirm password" className={inputCls} required />
+                                placeholder="Confirm password" className={inputCls} required
+                                minLength={6}
+                                maxLength={10}
+                                pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,10}"
+                                title={PASSWORD_RULE_MESSAGE} />
                         </div>
 
                         {/* Error */}
