@@ -12,11 +12,12 @@ const InterviewerRegister: React.FC = () => {
     const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
     const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
     const [name, setName, clearNameDraft] = useSessionState('kalpira:interviewer-register:name', '');
-    const [email, setEmail, clearEmailDraft] = useSessionState('kalpira:interviewer-register:email', '');
+    const [email, setEmail] = useSessionState('kalpira:interviewer-register:email', '');
     const passwordRef = useRef<HTMLInputElement>(null);
     const confirmPasswordRef = useRef<HTMLInputElement>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [resending, setResending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -53,7 +54,6 @@ const InterviewerRegister: React.FC = () => {
                 return;
             }
             clearNameDraft();
-            clearEmailDraft();
             setSuccess(data.message || 'Check your email for a verification link before signing in.');
             if (passwordRef.current) passwordRef.current.value = '';
             if (confirmPasswordRef.current) confirmPasswordRef.current.value = '';
@@ -61,6 +61,37 @@ const InterviewerRegister: React.FC = () => {
             setError('Network error. Please try again.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        if (!email.trim()) {
+            setError('Enter your email address first.');
+            return;
+        }
+
+        setResending(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim() }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || 'Failed to resend verification email.');
+                return;
+            }
+            setSuccess(data.alreadyVerified
+                ? 'This email is already verified. You can sign in now.'
+                : 'Verification email sent. Check your inbox.');
+        } catch {
+            setError('Failed to resend verification email.');
+        } finally {
+            setResending(false);
         }
     };
 
@@ -146,12 +177,22 @@ const InterviewerRegister: React.FC = () => {
                         </button>
                     </form>
 
-                    <p className="text-center text-sm text-slate-500 mt-6">
+                    <div className="mt-6 space-y-4 text-center">
+                        <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={resending || isLoading || !email.trim()}
+                            className="w-full py-3.5 border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl transition-colors"
+                        >
+                            {resending ? 'Sending verification...' : 'Resend verification email'}
+                        </button>
+                    <p className="text-sm text-slate-500">
                         Already have an account?{' '}
                         <button onClick={() => router.push(portalPath('/login'))} className="text-violet-400 hover:text-violet-300 transition-colors">
                             Sign in
                         </button>
                     </p>
+                    </div>
                 </div>
             </motion.div>
         </div>

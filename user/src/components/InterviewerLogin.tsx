@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Briefcase, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
 
 const GoogleIcon = () => (
@@ -28,7 +28,11 @@ const InterviewerLogin: React.FC = () => {
     const [googleLoading, setGoogleLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [resending, setResending] = useState(false);
+    const [authView, setAuthView] = useState<'login' | 'forgot' | 'reset'>('login');
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetOtp, setResetOtp] = useState('');
+    const newPasswordRef = useRef<HTMLInputElement>(null);
+    const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
     // Handle OAuth errors from URL params
     React.useEffect(() => {
@@ -49,37 +53,6 @@ const InterviewerLogin: React.FC = () => {
             setError(messages[oauthError] || 'Sign-in failed. Please try again.');
         }
     }, [searchParams]);
-
-    const handleResendVerification = async () => {
-        if (!email.trim()) {
-            setError('Enter your email address first.');
-            return;
-        }
-
-        setResending(true);
-        setError(null);
-        setSuccess(null);
-
-        try {
-            const response = await fetch('/api/auth/resend-verification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.trim() }),
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                setError(data.error || 'Failed to resend verification email.');
-                return;
-            }
-            setSuccess(data.alreadyVerified
-                ? 'This email is already verified. You can sign in now.'
-                : 'Verification email sent. Check your inbox.');
-        } catch {
-            setError('Failed to resend verification email.');
-        } finally {
-            setResending(false);
-        }
-    };
 
     const handleGoogleSignIn = () => {
         setGoogleLoading(true);
@@ -127,6 +100,74 @@ const InterviewerLogin: React.FC = () => {
         }
     };
 
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email.trim()) {
+            setError('Email is required.');
+            return;
+        }
+
+        setResetLoading(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim() }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || 'Failed to send password reset OTP.');
+                return;
+            }
+            setSuccess('OTP sent. Check your email and enter the code below.');
+            setAuthView('reset');
+        } catch {
+            setError('Network error. Please try again.');
+        } finally {
+            setResetLoading(false);
+        }
+    };
+
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const password = newPasswordRef.current?.value ?? '';
+        const confirmPassword = confirmPasswordRef.current?.value ?? '';
+
+        setResetLoading(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    otp: resetOtp,
+                    password,
+                    confirmPassword,
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || 'Failed to update password.');
+                return;
+            }
+            setSuccess(data.message || 'Password updated. You can sign in now.');
+            setAuthView('login');
+            setResetOtp('');
+            if (newPasswordRef.current) newPasswordRef.current.value = '';
+            if (confirmPasswordRef.current) confirmPasswordRef.current.value = '';
+        } catch {
+            setError('Network error. Please try again.');
+        } finally {
+            setResetLoading(false);
+        }
+    };
+
     const inputCls = "w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
 
     return (
@@ -141,12 +182,13 @@ const InterviewerLogin: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-900/40">
                         <Briefcase size={26} className="text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">Interviewer Sign In</h1>
-                    <p className="text-slate-400 text-sm mt-1">Access your interview dashboard</p>
+                    <h1 className="text-2xl font-bold text-white">{authView === 'login' ? 'Interviewer Sign In' : 'Reset Password'}</h1>
+                    <p className="text-slate-400 text-sm mt-1">{authView === 'login' ? 'Access your interview dashboard' : 'Use your email OTP to choose a new password'}</p>
                 </div>
 
                 <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm">
-                    {/* Google Sign In */}
+                    {authView === 'login' && (
+                    <>
                     <button
                         type="button"
                         onClick={handleGoogleSignIn}
@@ -165,7 +207,81 @@ const InterviewerLogin: React.FC = () => {
                             <span className="bg-slate-900/60 px-2 text-slate-500">Or continue with email</span>
                         </div>
                     </div>
+                    </>
+                    )}
 
+                    {authView === 'forgot' ? (
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                        <div className="relative">
+                            <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                                autoComplete="email"
+                                placeholder="Work email" className={inputCls} required />
+                        </div>
+
+                        {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error}</div>
+                        )}
+
+                        <button type="submit" disabled={resetLoading || !email.trim()}
+                            className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
+                            {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Send OTP'}
+                        </button>
+                        <button type="button" onClick={() => { setAuthView('login'); setError(null); setSuccess(null); }}
+                            className="w-full text-sm text-slate-500 hover:text-slate-300 transition-colors flex items-center justify-center gap-2">
+                            <ArrowLeft size={16} /> Back to sign in
+                        </button>
+                    </form>
+                    ) : authView === 'reset' ? (
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            value={resetOtp}
+                            onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            autoComplete="one-time-code"
+                            placeholder="Enter 6-digit OTP"
+                            className={inputCls.replace('pl-10', 'pl-4')}
+                            required
+                        />
+                        <div className="relative">
+                            <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input type={showPassword ? 'text' : 'password'} ref={newPasswordRef}
+                                autoComplete="new-password"
+                                placeholder="New password" className={`${inputCls} pr-10`} required />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                        </div>
+                        <div className="relative">
+                            <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input type={showPassword ? 'text' : 'password'} ref={confirmPasswordRef}
+                                autoComplete="new-password"
+                                placeholder="Confirm password" className={inputCls} required />
+                        </div>
+
+                        {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error}</div>
+                        )}
+
+                        {success && (
+                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-300 flex items-center gap-2">
+                                <CheckCircle2 size={16} className="flex-shrink-0" />
+                                {success}
+                            </div>
+                        )}
+
+                        <button type="submit" disabled={resetLoading || resetOtp.length !== 6}
+                            className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
+                            {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Save Password'}
+                        </button>
+                        <button type="button" onClick={() => { setAuthView('forgot'); setError(null); setSuccess(null); }}
+                            className="w-full text-sm text-slate-500 hover:text-slate-300 transition-colors">
+                            Send a new OTP
+                        </button>
+                    </form>
+                    ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="relative">
                             <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -185,6 +301,13 @@ const InterviewerLogin: React.FC = () => {
                             </button>
                         </div>
 
+                        <div className="text-right">
+                            <button type="button" onClick={() => { setAuthView('forgot'); setError(null); setSuccess(null); }}
+                                className="text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors">
+                                Forgot password?
+                            </button>
+                        </div>
+
                         {error && (
                             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error}</div>
                         )}
@@ -201,23 +324,17 @@ const InterviewerLogin: React.FC = () => {
                             {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
                             {isLoading ? 'Signing in...' : 'Sign In'}
                         </button>
-
-                        <button
-                            type="button"
-                            onClick={handleResendVerification}
-                            disabled={resending || isLoading || !email.trim()}
-                            className="w-full py-3.5 border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl transition-colors"
-                        >
-                            {resending ? 'Sending verification...' : 'Resend verification email'}
-                        </button>
                     </form>
+                    )}
 
+                    {authView === 'login' && (
                     <p className="text-center text-sm text-slate-500 mt-6">
                         New interviewer?{' '}
                         <button onClick={() => router.push(portalPath('/register'))} className="text-violet-400 hover:text-violet-300 transition-colors">
                             Create account
                         </button>
                     </p>
+                    )}
                 </div>
             </motion.div>
         </div>

@@ -68,6 +68,8 @@ const VideoInterview: React.FC = () => {
     const [aiSpeaking, setAiSpeaking] = useState(false);
     const [lastAiQuestion, setLastAiQuestion] = useState('');
     const [showChat, setShowChat] = useState(true);
+    const [interviewError, setInterviewError] = useState<string | null>(null);
+    const [hasValidAiExchange, setHasValidAiExchange] = useState(false);
     const speechToTextEnabled = studyConfig?.speechToTextEnabled !== false;
 
     // ── Refs ──────────────────────────────────────────────────────────────────────
@@ -369,11 +371,17 @@ const VideoInterview: React.FC = () => {
         setInput('');
         appendContext(text, 'text');
         setAiThinking(true);
+        setInterviewError(null);
 
         try {
             const currentContext = contextEntries.map(e => e.text).join('\n');
             const updatedHistory = [...interviewHistory, userMsg];
             const response = await generateInterviewResponse(updatedHistory, studyConfig, participantProfile, questionProgress, currentContext, participantToken);
+
+            if (response.errorCode === 'provider_unavailable') {
+                setInterviewError(response.message);
+                return;
+            }
 
             if (response.profileUpdates?.length) {
                 response.profileUpdates.forEach(u => updateProfileField(u.fieldId, u.value, u.status));
@@ -387,6 +395,7 @@ const VideoInterview: React.FC = () => {
             const aiMsg: InterviewMessage = { id: `msg-${Date.now()}`, role: 'ai', content: response.message, timestamp: Date.now() };
             addMessage(aiMsg);
             setLastAiQuestion(response.message);
+            setHasValidAiExchange(true);
             speak(response.message);
 
             // Save to DB (fire-and-forget, non-blocking)
@@ -430,8 +439,7 @@ const VideoInterview: React.FC = () => {
                 }
             }
         } catch {
-            const errMsg: InterviewMessage = { id: `msg-${Date.now()}`, role: 'ai', content: "Could you elaborate on that?", timestamp: Date.now() };
-            addMessage(errMsg);
+            setInterviewError('The AI interviewer is temporarily unavailable. Please try again once the provider is configured.');
         } finally {
             setAiThinking(false);
             isSendingRef.current = false;
@@ -445,6 +453,12 @@ const VideoInterview: React.FC = () => {
 
     const handleFinish = useCallback(async () => {
         if (isFinishing) return;
+
+        if (!hasValidAiExchange) {
+            setInterviewError('The interview cannot be completed because the AI interviewer did not run. Configure the provider and try again.');
+            return;
+        }
+
         setIsFinishing(true);
 
         // Stop timer immediately
@@ -480,7 +494,7 @@ const VideoInterview: React.FC = () => {
                 window.location.href = targetUrl;
             }, 3000);
         }
-    }, [isFinishing, sessionId, participantToken, router, completeInterview]);
+    }, [isFinishing, sessionId, participantToken, router, completeInterview, hasValidAiExchange]);
 
     const isComplete = questionProgress.isComplete;
     const totalQuestions = studyConfig?.coreQuestions?.length || 0;
@@ -669,6 +683,11 @@ const VideoInterview: React.FC = () => {
 
                         {/* Messages */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                            {interviewError && (
+                                <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                                    {interviewError}
+                                </div>
+                            )}
                             <AnimatePresence initial={false}>
                                 {interviewHistory.map((msg) => (
                                     <motion.div

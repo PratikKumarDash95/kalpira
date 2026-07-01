@@ -95,6 +95,13 @@ const Synthesis: React.FC = () => {
     const analyzeAndSave = async () => {
       if (!studyConfig || interviewHistory.length === 0) return;
 
+      const aiMessages = interviewHistory.filter(message => message.role === 'ai');
+      const hasRealInterviewExchange = aiMessages.length > 1;
+      if (!hasRealInterviewExchange) {
+        setAnalysisError(true);
+        return;
+      }
+
       // Synchronously claim the run BEFORE any await so a re-entrant effect
       // triggered by setSynthesis/setSaveStatus inside the same microtask
       // can't double-fire the analysis.

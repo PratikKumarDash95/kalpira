@@ -25,6 +25,7 @@ const unavailableResponse = (message: string): AIInterviewResponse => ({
   phaseTransition: null,
   profileUpdates: [],
   shouldConclude: false,
+  errorCode: 'provider_unavailable',
 });
 
 const providerSetupMessage = (studyConfig: StudyConfig): string => {

@@ -57,7 +57,8 @@ export const generateInterviewResponse = async (
       questionAddressed: null,
       phaseTransition: null,
       profileUpdates: [],
-      shouldConclude: false
+      shouldConclude: false,
+      errorCode: 'provider_unavailable',
     };
   }
 };
@@ -107,20 +108,16 @@ export const synthesizeInterview = async (
     });
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `API error: ${response.status}`);
     }
 
     return await response.json();
   } catch (error) {
     console.error('Error synthesizing interview:', error);
-    return {
-      statedPreferences: [],
-      revealedPreferences: [],
-      themes: [],
-      contradictions: [],
-      keyInsights: ['Analysis pending...'],
-      bottomLine: 'Interview synthesis in progress.'
-    };
+    throw error instanceof Error
+      ? error
+      : new Error('Interview analysis is unavailable right now.');
   }
 };
 

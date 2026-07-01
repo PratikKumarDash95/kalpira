@@ -24,6 +24,9 @@ create table if not exists public."User" (
   "emailVerifiedAt" timestamptz,
   "emailVerificationToken" text,
   "emailVerificationSentAt" timestamptz,
+  "passwordResetOtp" text,
+  "passwordResetOtpSentAt" timestamptz,
+  "passwordResetOtpExpiresAt" timestamptz,
   "encryptedGeminiApiKey" text,
   "encryptedAnthropicApiKey" text,
   "role" text not null default 'candidate',
@@ -182,6 +185,7 @@ create table if not exists public."MediaAsset" (
 );
 
 create index if not exists "User_email_idx" on public."User"("email");
+create index if not exists "User_passwordResetOtpExpiresAt_idx" on public."User"("passwordResetOtpExpiresAt");
 create index if not exists "UserSkill_userId_idx" on public."UserSkill"("userId");
 create index if not exists "UserSkill_skillId_idx" on public."UserSkill"("skillId");
 create index if not exists "Study_userId_idx" on public."Study"("userId");

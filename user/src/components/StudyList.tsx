@@ -41,15 +41,23 @@ const StudyList: React.FC = () => {
     // Check if logged in as admin (admin password login has no researcherId)
     fetch('/api/auth')
       .then(r => r.json())
-      .then(d => setIsAdmin(d.authenticated && !d.researcherId))
-      .catch(() => { });
+      .then(async d => {
+        setIsAdmin(d.authenticated && !d.researcherId);
 
-    fetch('/api/candidate/sessions')
-      .then(async r => {
-        if (!r.ok) return null;
-        return r.json();
+        if (!d.authenticated || !d.researcherId) return null;
+
+        const meRes = await fetch('/api/auth/me');
+        if (!meRes.ok) return null;
+        return meRes.json();
       })
-      .then(data => {
+      .then(async meData => {
+        if (!meData?.profile || meData.profile.role === 'interviewer' || meData.profile.role === 'admin') {
+          return;
+        }
+
+        const sessionsRes = await fetch('/api/candidate/sessions');
+        if (!sessionsRes.ok) return;
+        const data = await sessionsRes.json();
         const assignedCount = (data?.sessions || []).filter((session: { status?: string }) => session.status === 'assigned' || session.status === 'in_progress').length;
         setAssignedInterviewCount(assignedCount);
       })

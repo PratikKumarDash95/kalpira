@@ -1,18 +1,11 @@
 // POST /api/onboarding/validate-ai-key - Test if an AI API key works
 // Makes a small test call to verify the key is valid
-// Only available in hosted mode
-
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { getRequestContext } from '@/lib/researcherContext';
-import { isHostedMode } from '@/lib/mode';
 
 export async function POST(request: Request) {
-  if (!isHostedMode()) {
-    return NextResponse.json({ error: 'Only available in hosted mode' }, { status: 404 });
-  }
-
   const { authorized, error } = await getRequestContext();
   if (!authorized) {
     return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });

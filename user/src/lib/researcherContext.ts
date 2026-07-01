@@ -54,8 +54,12 @@ async function getStandaloneContext(userId?: string): Promise<ResearcherContext>
   return {
     researcherId: null,
     userId: user?.id || null,
-    geminiApiKey: process.env.GEMINI_API_KEY || null,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
+    geminiApiKey: user?.encryptedGeminiApiKey
+      ? decrypt(user.encryptedGeminiApiKey)
+      : process.env.GEMINI_API_KEY || null,
+    anthropicApiKey: user?.encryptedAnthropicApiKey
+      ? decrypt(user.encryptedAnthropicApiKey)
+      : process.env.ANTHROPIC_API_KEY || null,
     onboardingComplete: true,
   };
 }

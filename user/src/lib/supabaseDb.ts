@@ -204,6 +204,10 @@ type SupabaseDb = {
 const dateFields = new Set([
   'createdAt',
   'updatedAt',
+  'emailVerifiedAt',
+  'emailVerificationSentAt',
+  'passwordResetOtpSentAt',
+  'passwordResetOtpExpiresAt',
   'startedAt',
   'completedAt',
   'lastUpdated',

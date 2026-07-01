@@ -214,6 +214,7 @@ export interface AIInterviewResponse {
     logic: number;
     depth: number;
   };
+  errorCode?: 'provider_unavailable';
 }
 
 // ============================================
