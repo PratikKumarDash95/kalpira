@@ -4,6 +4,16 @@ const brevoApiKey = process.env.BREVO_API_KEY;
 const defaultSenderEmail = process.env.BREVO_SENDER_EMAIL;
 const defaultSenderName = process.env.BREVO_SENDER_NAME || 'Kalpira';
 
+export class EmailDeliveryError extends Error {
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = 'EmailDeliveryError';
+    this.status = status;
+  }
+}
+
 type Recipient = {
   email: string;
   name?: string | null;
@@ -17,7 +27,10 @@ function getBaseUrl(): string {
 
 function requireBrevoConfig() {
   if (!brevoApiKey || !defaultSenderEmail) {
-    throw new Error('Brevo is not configured. Set BREVO_API_KEY and BREVO_SENDER_EMAIL.');
+    throw new EmailDeliveryError(
+      'Brevo is not configured. Set BREVO_API_KEY and BREVO_SENDER_EMAIL.',
+      503,
+    );
   }
 }
 
@@ -70,7 +83,10 @@ async function sendBrevoEmail(params: {
 
   if (!response.ok) {
     const data = await response.text().catch(() => '');
-    throw new Error(`Brevo email send failed (${response.status}): ${data || 'Unknown error'}`);
+    throw new EmailDeliveryError(
+      `Brevo email send failed (${response.status}): ${data || 'Unknown error'}`,
+      response.status,
+    );
   }
 }
 

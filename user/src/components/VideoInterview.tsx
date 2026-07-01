@@ -12,7 +12,6 @@ import {
     Loader2, CheckCircle, MessageSquare, Volume2, VolumeX,
     Activity, Clock, ChevronRight
 } from 'lucide-react';
-import { VideoProctorGuard } from '../security';
 
 // ─── Phase Labels ──────────────────────────────────────────────────────────────
 const phaseLabels: Record<InterviewPhase, string> = {
@@ -509,8 +508,7 @@ const VideoInterview: React.FC = () => {
     }
 
     return (
-        <VideoProctorGuard sessionId={sessionId} strictMode={true} mediaStream={activeStream}>
-            <div className="flex flex-col h-screen bg-slate-950 overflow-hidden">
+        <div className="flex flex-col h-screen bg-slate-950 overflow-hidden">
                 {/* ── Top Bar ── */}
                 <div className="h-14 flex items-center justify-between px-3 sm:px-6 bg-slate-900/80 border-b border-slate-800 backdrop-blur-md flex-shrink-0 gap-2">
                     <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -788,8 +786,7 @@ const VideoInterview: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            </div>
-        </VideoProctorGuard>
+        </div>
     );
 };
 
