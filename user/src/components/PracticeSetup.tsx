@@ -73,7 +73,7 @@ const PracticeSetup: React.FC = () => {
             // FREEMODEL_API_KEY are in the env, else Gemini).
             enableReasoning: false,
             linksEnabled: true,
-            linkExpiration: 'never',
+            linkExpiration: '7days',
             consentText: 'This is a practice session. Your responses are analyzed by AI to provide feedback.',
             createdAt: Date.now(),
         };

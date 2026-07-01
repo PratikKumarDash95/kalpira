@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { hashPassword } from '@/lib/auth';
 import { hashPasswordResetOtp } from '@/lib/email';
+import { validatePasswordPolicy } from '@/lib/passwordPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,12 +25,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Enter the 6-digit OTP code.' }, { status: 400 });
     }
 
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
-    }
-
-    if (password.length > 256) {
-      return NextResponse.json({ error: 'Password is too long.' }, { status: 400 });
+    const passwordError = validatePasswordPolicy(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     if (password !== confirmPassword) {

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, ArrowLeft, Briefcase, CheckCircle2, Loader2, Lock, Mail, ShieldCheck, UserPlus, UserRound } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
+import { validatePasswordPolicy, PASSWORD_RULE_MESSAGE } from '@/lib/passwordPolicy';
 
 type LoginRole = 'user' | 'interviewer' | 'admin';
 
@@ -205,6 +206,17 @@ const Login: React.FC = () => {
     const password = newPasswordRef.current?.value ?? '';
     const confirmPassword = confirmPasswordRef.current?.value ?? '';
     const trimmedEmail = email.trim();
+    const passwordError = validatePasswordPolicy(password);
+
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
 
     setResetLoading(true);
     setError(null);
@@ -404,8 +416,12 @@ const Login: React.FC = () => {
                     id="new-password"
                     type="password"
                     ref={newPasswordRef}
-                    placeholder="Enter new password"
+                    placeholder="6-10 chars, A1#"
                     autoComplete="new-password"
+                    minLength={6}
+                    maxLength={10}
+                    pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,10}"
+                    title={PASSWORD_RULE_MESSAGE}
                     className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                   />
                 </div>
@@ -422,6 +438,10 @@ const Login: React.FC = () => {
                     ref={confirmPasswordRef}
                     placeholder="Confirm new password"
                     autoComplete="new-password"
+                    minLength={6}
+                    maxLength={10}
+                    pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,10}"
+                    title={PASSWORD_RULE_MESSAGE}
                     className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                   />
                 </div>

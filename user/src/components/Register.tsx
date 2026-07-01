@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Lock, Loader2, AlertCircle, User, Mail, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
+import { validatePasswordPolicy, PASSWORD_RULE_MESSAGE } from '@/lib/passwordPolicy';
 
 const isSafeAuthRedirect = (path: string) =>
     path.startsWith('/') && !path.startsWith('//') && !['/login', '/register', '/candidate/dashboard'].includes(path);
@@ -29,6 +30,13 @@ const Register: React.FC = () => {
 
         if (!password) {
             setError('Password is required');
+            setLoading(false);
+            return;
+        }
+
+        const passwordError = validatePasswordPolicy(password);
+        if (passwordError) {
+            setError(passwordError);
             setLoading(false);
             return;
         }
@@ -168,11 +176,14 @@ const Register: React.FC = () => {
                                     id="password"
                                     type="password"
                                     ref={passwordRef}
-                                    placeholder="Create a password"
+                                    placeholder="6-10 chars, A1#"
                                     autoComplete="new-password"
                                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
                                     required
                                     minLength={6}
+                                    maxLength={10}
+                                    pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,10}"
+                                    title={PASSWORD_RULE_MESSAGE}
                                 />
                             </div>
                         </div>

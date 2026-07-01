@@ -127,6 +127,9 @@ export async function GET() {
 
     // Verify the token is valid (not just that it exists)
     const session = await verifySessionToken(authCookie.value);
+    if (!session.valid) {
+      cookieStore.delete(SESSION_COOKIE_NAME);
+    }
 
     return NextResponse.json({
       authenticated: session.valid,

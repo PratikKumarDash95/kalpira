@@ -623,10 +623,10 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
                   </button>
                 </div>
 
-                {study.config.linkExpiration && study.config.linkExpiration !== 'never' && (
+                {(
                   <div className="flex items-center gap-2 text-sm text-stone-400">
                     <Clock size={14} />
-                    <span>Links expire: {study.config.linkExpiration === '7days' ? '7 days' : study.config.linkExpiration === '30days' ? '30 days' : '90 days'} after generation</span>
+                    <span>Links expire: 2 days after generation</span>
                   </div>
                 )}
 

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import supabaseDb, { hasServiceRoleKey } from '@/lib/supabaseDb';
 import { hashPassword } from '@/lib/auth';
 import { createEmailVerificationToken, sendVerificationEmail } from '@/lib/email';
+import { validatePasswordPolicy } from '@/lib/passwordPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Name, email, and password are required' }, { status: 400 });
         }
 
-        if (password.length < 6) {
-            return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+        const passwordError = validatePasswordPolicy(password);
+        if (passwordError) {
+            return NextResponse.json({ error: passwordError }, { status: 400 });
         }
 
         const existingUser = await supabaseDb.user.findUnique({ where: { email } });

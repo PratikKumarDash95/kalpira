@@ -57,7 +57,7 @@ const StudySetup: React.FC = () => {
     studyConfig?.aiModel || (studyConfig?.aiProvider === 'claude' ? DEFAULT_CLAUDE_MODEL : studyConfig?.aiProvider === 'ollama' ? DEFAULT_OLLAMA_MODEL : DEFAULT_GEMINI_MODEL)
   );
   const [enableReasoning, setEnableReasoning, clearEnableReasoningDraft] = useSessionState<boolean | undefined>(`${draftPrefix}:enable-reasoning`, studyConfig?.enableReasoning);
-  const [linkExpiration, setLinkExpiration, clearLinkExpirationDraft] = useSessionState<LinkExpirationOption>(`${draftPrefix}:link-expiration`, studyConfig?.linkExpiration || 'never');
+  const [linkExpiration, setLinkExpiration, clearLinkExpirationDraft] = useSessionState<LinkExpirationOption>(`${draftPrefix}:link-expiration`, '7days');
   const [endDate, setEndDate, clearEndDateDraft] = useSessionState(`${draftPrefix}:end-date`, endsAtToDateInput(studyConfig?.endsAt));
   const [consentText, setConsentText, clearConsentTextDraft] = useSessionState(
     `${draftPrefix}:consent-text`,
@@ -133,7 +133,7 @@ const StudySetup: React.FC = () => {
           if (config.aiProvider) setAiProvider(config.aiProvider);
           if (config.aiModel) setAiModel(config.aiModel);
           if (config.enableReasoning !== undefined) setEnableReasoning(config.enableReasoning);
-          if (config.linkExpiration) setLinkExpiration(config.linkExpiration);
+          setLinkExpiration('7days');
           if (config.endsAt) setEndDate(endsAtToDateInput(config.endsAt));
           if (config.consentText) setConsentText(config.consentText);
           if (prefillType === 'followup' && config.parentStudyId && config.parentStudyName) {
@@ -162,7 +162,7 @@ const StudySetup: React.FC = () => {
       setAiProvider(studyConfig.aiProvider || 'gemini');
       setAiModel(studyConfig.aiModel || DEFAULT_GEMINI_MODEL);
       setEnableReasoning(studyConfig.enableReasoning);
-      setLinkExpiration(studyConfig.linkExpiration || 'never');
+      setLinkExpiration('7days');
       setEndDate(endsAtToDateInput(studyConfig.endsAt));
       setConsentText(studyConfig.consentText);
       if (studyConfig.interviewerAssignment) {
@@ -889,13 +889,10 @@ const StudySetup: React.FC = () => {
                 </h2>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Link Expiration</label>
-                  <select value={linkExpiration} onChange={e => { setLinkExpiration(e.target.value as LinkExpirationOption); setIsDirty(true); }} className={inputCls}>
-                    <option value="never">Never expire</option>
-                    <option value="7days">Expire after 7 days</option>
-                    <option value="30days">Expire after 30 days</option>
-                    <option value="90days">Expire after 90 days</option>
-                  </select>
-                  <p className="text-xs text-slate-600 mt-1">Expired links show an error when participants try to access them.</p>
+                  <div className="px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 text-sm">
+                    Expire after 2 days
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1">All JWT links expire automatically after 2 days.</p>
                 </div>
 
                 {isInterviewerFlow && (
