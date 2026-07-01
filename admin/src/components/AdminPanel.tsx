@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -99,12 +100,12 @@ export default function AdminPanel() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const fetchStats = useCallback(async () => {
-        const res = await fetch('/api/admin/stats');
+        const res = await apiFetch('/api/admin/stats');
         if (res.ok) setStats(await res.json());
     }, []);
 
     const fetchUsers = useCallback(async () => {
-        const res = await fetch('/api/admin/users');
+        const res = await apiFetch('/api/admin/users');
         if (res.ok) {
             const data = await res.json();
             setUsers(data.users || []);
@@ -112,7 +113,7 @@ export default function AdminPanel() {
     }, []);
 
     const fetchSessions = useCallback(async () => {
-        const res = await fetch('/api/admin/sessions');
+        const res = await apiFetch('/api/admin/sessions');
         if (res.ok) {
             const data = await res.json();
             setSessions(data.sessions || []);
@@ -130,7 +131,7 @@ export default function AdminPanel() {
         setDeletingId(userId);
         setErrorMsg(null);
         try {
-            const res = await fetch('/api/admin/users', {
+            const res = await apiFetch('/api/admin/users', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId }),
@@ -150,7 +151,7 @@ export default function AdminPanel() {
     };
 
     const handleLogout = async () => {
-        await fetch('/api/auth', { method: 'DELETE' });
+        await apiFetch('/api/auth', { method: 'DELETE' });
         window.location.href = `${mainAppUrl}/login`;
     };
 

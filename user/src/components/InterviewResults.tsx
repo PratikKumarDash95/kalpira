@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -321,7 +322,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
     useEffect(() => {
         const fetchResults = async () => {
             try {
-                const res = await fetch(`/api/sessions/${sessionId}/results`);
+                const res = await apiFetch(`/api/sessions/${sessionId}/results`);
                 if (res.ok) {
                     const json = await res.json();
                     setData(json);

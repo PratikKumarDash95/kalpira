@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
@@ -9,7 +10,7 @@ interface OAuthLoginProps {
 
 const OAuthLogin: React.FC<OAuthLoginProps> = ({ loading }) => {
   const handleOAuth = (provider: 'google' | 'github') => {
-    window.location.href = `/api/auth/oauth/${provider}`;
+    window.location.href = apiUrl(`/api/auth/oauth/${provider}`);
   };
 
   return (

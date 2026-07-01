@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,7 +44,7 @@ const Onboarding: React.FC = () => {
 
   // Fetch profile on mount
   useEffect(() => {
-    fetch('/api/auth/me')
+    apiFetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
         if (data.profile) setProfile(data.profile);
@@ -58,7 +59,7 @@ const Onboarding: React.FC = () => {
     setValidation({ loading: true, valid: null, error: null });
 
     try {
-      const res = await fetch('/api/onboarding/validate-ai-key', {
+      const res = await apiFetch('/api/onboarding/validate-ai-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, apiKey }),
@@ -74,7 +75,7 @@ const Onboarding: React.FC = () => {
     setRedisValidation({ loading: true, valid: null, error: null });
 
     try {
-      const res = await fetch('/api/onboarding/validate-redis', {
+      const res = await apiFetch('/api/onboarding/validate-redis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ redisUrl, redisToken }),
@@ -93,7 +94,7 @@ const Onboarding: React.FC = () => {
     setSaveError(null);
     try {
       // Save credentials
-      const saveRes = await fetch('/api/onboarding/save-credentials', {
+      const saveRes = await apiFetch('/api/onboarding/save-credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -112,7 +113,7 @@ const Onboarding: React.FC = () => {
       }
 
       // Mark onboarding complete
-      const completeRes = await fetch('/api/onboarding/complete', { method: 'POST' });
+      const completeRes = await apiFetch('/api/onboarding/complete', { method: 'POST' });
       if (!completeRes.ok) {
         setSaveError('Failed to complete onboarding. Please try again.');
         setSaving(false);

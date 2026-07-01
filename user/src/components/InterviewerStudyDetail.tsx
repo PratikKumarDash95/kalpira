@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
@@ -76,7 +77,7 @@ const InterviewerStudyDetail: React.FC = () => {
     useEffect(() => {
         const load = async () => {
             try {
-                const res = await fetch(`/api/interviewer/studies/${studyId}/candidates`);
+                const res = await apiFetch(`/api/interviewer/studies/${studyId}/candidates`);
                 if (!res.ok) {
                     if (res.status === 401) { router.push(portalPath('/login')); return; }
                     setError('Failed to load candidates.');

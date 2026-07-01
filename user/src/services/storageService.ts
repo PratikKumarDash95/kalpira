@@ -1,3 +1,4 @@
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 // Storage Service - Client-side interface for interview storage
 // Calls API routes which persist through Supabase to Supabase Postgres.
 
@@ -25,7 +26,7 @@ export async function saveCompletedInterview(
       headers['Authorization'] = `Bearer ${participantToken}`;
     }
 
-    const response = await fetch('/api/interviews/save', {
+    const response = await apiFetch('/api/interviews/save', {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -55,7 +56,7 @@ export async function getAllInterviews(options?: { summary?: boolean; limit?: nu
     if (options?.offset) params.set('offset', String(options.offset));
     if (options?.summary && !options?.limit) params.set('limit', '50');
 
-    const response = await fetch(`/api/interviews${params.size ? `?${params.toString()}` : ''}`);
+    const response = await apiFetch(`/api/interviews${params.size ? `?${params.toString()}` : ''}`);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -76,7 +77,7 @@ export async function getAllInterviewsPage(options?: { summary?: boolean; limit?
     if (options?.limit) params.set('limit', String(options.limit));
     if (options?.offset) params.set('offset', String(options.offset));
 
-    const response = await fetch(`/api/interviews${params.size ? `?${params.toString()}` : ''}`);
+    const response = await apiFetch(`/api/interviews${params.size ? `?${params.toString()}` : ''}`);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -112,7 +113,7 @@ export async function getAllInterviewsPage(options?: { summary?: boolean; limit?
 // Get single interview by ID
 export async function getInterview(id: string): Promise<StoredInterview | null> {
   try {
-    const response = await fetch(`/api/interviews/${id}`);
+    const response = await apiFetch(`/api/interviews/${id}`);
 
     if (!response.ok) {
       return null;
@@ -129,7 +130,7 @@ export async function getInterview(id: string): Promise<StoredInterview | null> 
 // Export all interviews as ZIP
 export async function exportAllInterviews(): Promise<Blob | null> {
   try {
-    const response = await fetch('/api/interviews/export');
+    const response = await apiFetch('/api/interviews/export');
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -148,7 +149,7 @@ export async function getStudyInterviews(studyId: string, options?: { summary?: 
     const params = new URLSearchParams({ studyId });
     if (options?.summary) params.set('summary', '1');
     if (options?.summary) params.set('limit', '50');
-    const response = await fetch(`/api/interviews?${params.toString()}`);
+    const response = await apiFetch(`/api/interviews?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -165,7 +166,7 @@ export async function getStudyInterviews(studyId: string, options?: { summary?: 
 // Get all studies (researcher only)
 export async function getAllStudies(): Promise<{ studies: StoredStudy[]; warning?: string }> {
   try {
-    const response = await fetch('/api/studies');
+    const response = await apiFetch('/api/studies');
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -185,7 +186,7 @@ export async function getAllStudies(): Promise<{ studies: StoredStudy[]; warning
 // Get single study by ID
 export async function getStudy(id: string): Promise<StoredStudy | null> {
   try {
-    const response = await fetch(`/api/studies/${id}`);
+    const response = await apiFetch(`/api/studies/${id}`);
 
     if (!response.ok) {
       return null;
@@ -202,7 +203,7 @@ export async function getStudy(id: string): Promise<StoredStudy | null> {
 // Delete study
 export async function deleteStudy(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/studies/${id}`, {
+    const response = await apiFetch(`/api/studies/${id}`, {
       method: 'DELETE'
     });
 
@@ -221,7 +222,7 @@ export async function deleteStudy(id: string): Promise<{ success: boolean; error
 // Delete interview
 export async function deleteInterview(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/interviews/${id}`, {
+    const response = await apiFetch(`/api/interviews/${id}`, {
       method: 'DELETE'
     });
 

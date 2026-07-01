@@ -1,3 +1,4 @@
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 "use client";
 
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
@@ -73,7 +74,7 @@ export default function ProfilePage() {
       formData.append('kind', kind);
       formData.append('file', file);
 
-      const res = await fetch('/api/profile/media', {
+      const res = await apiFetch('/api/profile/media', {
         method: 'POST',
         body: formData,
       });
@@ -343,7 +344,7 @@ export default function ProfilePage() {
                   <button
                     onClick={async () => {
                       try {
-                        const res = await fetch('/api/auth', { method: 'DELETE' });
+                        const res = await apiFetch('/api/auth', { method: 'DELETE' });
                         if (!res.ok) {
                           setError('Logout failed. Please try again.');
                           return;

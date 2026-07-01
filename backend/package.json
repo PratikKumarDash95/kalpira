@@ -3,25 +3,33 @@
   "version": "1.0.0",
   "description": "Backend API for Interview Coach",
   "private": true,
-  "main": "server/server.js",
+  "main": "server/server.ts",
   "type": "commonjs",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "node server/server.js",
+    "start": "tsx server/server.ts",
+    "dev": "tsx watch server/server.ts",
+    "type-check": "tsc --noEmit",
     "test": "echo \"No backend database test script. Supabase is the database layer.\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
     "@google/genai": "^1.0.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.110.0",
     "arctic": "^3.7.0",
     "axios": "^1.13.5",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "kalpira": "file:.."
+    "jose": "^5.10.0",
+    "kalpira": "file:..",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^20"
+    "@types/express": "^5.0.6",
+    "@types/node": "^20",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20.0.0"

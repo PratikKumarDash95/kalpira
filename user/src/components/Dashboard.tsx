@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,7 +38,7 @@ const Dashboard: React.FC = () => {
 
   // Check admin status on mount
   useEffect(() => {
-    fetch('/api/auth')
+    apiFetch('/api/auth')
       .then(r => r.json())
       .then(d => setIsAdmin(d.authenticated && !d.researcherId))
       .catch(() => { });

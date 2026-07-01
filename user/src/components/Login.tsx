@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -49,7 +50,7 @@ const Login: React.FC = () => {
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch('/api/config/mode')
+    apiFetch('/api/config/mode')
       .then((res) => res.json())
       .then((data) => setMode(data.mode))
       .catch(() => setMode('standalone'));
@@ -113,7 +114,7 @@ const Login: React.FC = () => {
 
     try {
       if (selectedRole === 'admin') {
-        const response = await fetch('/api/auth', {
+        const response = await apiFetch('/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password }),
@@ -131,7 +132,7 @@ const Login: React.FC = () => {
         return;
       }
 
-      const response = await fetch('/api/auth', {
+      const response = await apiFetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmedEmail, password }),
@@ -144,11 +145,11 @@ const Login: React.FC = () => {
       }
 
       if (selectedRole === 'interviewer') {
-        const meRes = await fetch('/api/interviewer/me');
+        const meRes = await apiFetch('/api/interviewer/me');
         if (!meRes.ok) {
           const meData = await meRes.json().catch(() => ({}));
           setError(meData.error || 'This account is not an interviewer account.');
-          await fetch('/api/auth', { method: 'DELETE' });
+          await apiFetch('/api/auth', { method: 'DELETE' });
           return;
         }
       }
@@ -180,7 +181,7 @@ const Login: React.FC = () => {
     setSuccess(null);
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmedEmail }),
@@ -223,7 +224,7 @@ const Login: React.FC = () => {
     setSuccess(null);
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await apiFetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

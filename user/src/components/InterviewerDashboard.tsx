@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -192,8 +193,8 @@ const InterviewerDashboard: React.FC = () => {
         const load = async () => {
             try {
                 const [meRes, studiesRes] = await Promise.all([
-                    fetch('/api/interviewer/me'),
-                    fetch('/api/interviewer/studies'),
+                    apiFetch('/api/interviewer/me'),
+                    apiFetch('/api/interviewer/studies'),
                 ]);
 
                 if (!meRes.ok) { router.push(portalPath('/login')); return; }
@@ -217,7 +218,7 @@ const InterviewerDashboard: React.FC = () => {
 
     const handleLogout = async () => {
         try {
-            const res = await fetch('/api/auth', { method: 'DELETE' });
+            const res = await apiFetch('/api/auth', { method: 'DELETE' });
             if (!res.ok) {
                 setError('Logout failed. Please try again.');
                 return;
@@ -241,7 +242,7 @@ const InterviewerDashboard: React.FC = () => {
         }
         setGeneratingLink(study.id);
         try {
-            const res = await fetch('/api/generate-link', {
+            const res = await apiFetch('/api/generate-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studyConfig: { ...study.config, id: study.id } }),
@@ -352,7 +353,7 @@ const InterviewerDashboard: React.FC = () => {
         setAssigningStudyId(assignmentStudy.id);
         setAssignmentMessage(null);
         try {
-            const res = await fetch(`/api/interviewer/studies/${assignmentStudy.id}/assignments`, {
+            const res = await apiFetch(`/api/interviewer/studies/${assignmentStudy.id}/assignments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ candidates: preparedCandidates }),

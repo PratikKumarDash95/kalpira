@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -64,8 +65,8 @@ const CandidateDashboard: React.FC = () => {
     const load = async () => {
       try {
         const [meRes, sessionsRes] = await Promise.all([
-          fetch('/api/candidate/me'),
-          fetch('/api/candidate/sessions'),
+          apiFetch('/api/candidate/me'),
+          apiFetch('/api/candidate/sessions'),
         ]);
 
         if (!meRes.ok) {

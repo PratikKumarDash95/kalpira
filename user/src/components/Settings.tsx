@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -50,7 +51,7 @@ const Settings: React.FC = () => {
   const [redisGuideOpen, setRedisGuideOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    apiFetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
         if (data.profile) setProfile(data.profile);
@@ -64,7 +65,7 @@ const Settings: React.FC = () => {
     setValidation({ loading: true, valid: null, error: null });
 
     try {
-      const res = await fetch('/api/onboarding/validate-ai-key', {
+      const res = await apiFetch('/api/onboarding/validate-ai-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, apiKey }),
@@ -79,7 +80,7 @@ const Settings: React.FC = () => {
   const validateRedis = async () => {
     setRedisValidation({ loading: true, valid: null, error: null });
     try {
-      const res = await fetch('/api/onboarding/validate-redis', {
+      const res = await apiFetch('/api/onboarding/validate-redis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ redisUrl, redisToken }),
@@ -112,7 +113,7 @@ const Settings: React.FC = () => {
         return;
       }
 
-      const res = await fetch('/api/onboarding/save-credentials', {
+      const res = await apiFetch('/api/onboarding/save-credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -121,7 +122,7 @@ const Settings: React.FC = () => {
       if (res.ok) {
         setSaveSuccess(true);
         // Refresh profile
-        const meRes = await fetch('/api/auth/me');
+        const meRes = await apiFetch('/api/auth/me');
         const meData = await meRes.json();
         if (meData.profile) setProfile(meData.profile);
         // Clear form fields
