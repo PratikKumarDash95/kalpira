@@ -12,9 +12,10 @@ const isSafeAuthRedirect = (path: string) =>
 const Register: React.FC = () => {
     const router = useRouter();
     const [name, setName, clearNameDraft] = useSessionState('kalpira:register:name', '');
-    const [email, setEmail, clearEmailDraft] = useSessionState('kalpira:register:email', '');
+    const [email, setEmail] = useSessionState('kalpira:register:email', '');
     const passwordRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -47,13 +48,43 @@ const Register: React.FC = () => {
             }
 
             clearNameDraft();
-            clearEmailDraft();
             setSuccess(data.message || 'Check your email for a verification link before signing in.');
             if (passwordRef.current) passwordRef.current.value = '';
         } catch {
             setError('Connection error. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        if (!email.trim()) {
+            setError('Enter your email address first.');
+            return;
+        }
+
+        setResending(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim() }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                setError(data.error || 'Failed to resend verification email.');
+                return;
+            }
+            setSuccess(data.alreadyVerified
+                ? 'This email is already verified. You can sign in now.'
+                : 'Verification email sent. Check your inbox.');
+        } catch {
+            setError('Failed to resend verification email.');
+        } finally {
+            setResending(false);
         }
     };
 
@@ -164,7 +195,15 @@ const Register: React.FC = () => {
                         </button>
                     </form>
 
-                    <div className="mt-6 pt-6 border-t border-stone-700 text-center">
+                    <div className="mt-6 pt-6 border-t border-stone-700 text-center space-y-3">
+                        <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={resending || loading || !email.trim()}
+                            className="w-full py-3 border border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl transition-colors"
+                        >
+                            {resending ? 'Sending verification...' : 'Resend verification email'}
+                        </button>
                         <button
                             onClick={() => router.push('/login')}
                             className="text-sm text-stone-400 hover:text-stone-300 transition-colors flex items-center justify-center gap-2 mx-auto"

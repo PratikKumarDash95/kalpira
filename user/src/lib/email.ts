@@ -1,4 +1,4 @@
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, randomInt } from 'crypto';
 
 const brevoApiKey = process.env.BREVO_API_KEY;
 const defaultSenderEmail = process.env.BREVO_SENDER_EMAIL;
@@ -29,6 +29,17 @@ export function createEmailVerificationToken(): { rawToken: string; hashedToken:
 
 export function hashEmailVerificationToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
+}
+
+export function createPasswordResetOtp(): { otp: string; hashedOtp: string; expiresAt: Date } {
+  const otp = String(randomInt(100000, 1000000));
+  const hashedOtp = createHash('sha256').update(otp).digest('hex');
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  return { otp, hashedOtp, expiresAt };
+}
+
+export function hashPasswordResetOtp(otp: string): string {
+  return createHash('sha256').update(otp).digest('hex');
 }
 
 async function sendBrevoEmail(params: {
@@ -92,10 +103,48 @@ Verify email: ${verifyUrl.toString()}
 
 If you did not create this account, you can ignore this email.`,
     htmlContent: `
-      <p>${greeting}</p>
-      <p>Please verify your email address to finish setting up your ${roleLabel}.</p>
-      <p><a href="${verifyUrl.toString()}">Verify email</a></p>
-      <p>If you did not create this account, you can ignore this email.</p>
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
+        <p style="margin: 0 0 16px;">${greeting}</p>
+        <p style="margin: 0 0 24px;">Please verify your email address to finish setting up your ${roleLabel}.</p>
+        <p style="margin: 0 0 24px;">
+          <a
+            href="${verifyUrl.toString()}"
+            style="display: inline-block; background-color: #111111; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 600;"
+          >
+            Verify email
+          </a>
+        </p>
+        <p style="margin: 0; color: #4b5563;">If you did not create this account, you can ignore this email.</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendPasswordResetEmail(params: {
+  email: string;
+  name?: string | null;
+  otp: string;
+}) {
+  const subject = 'Reset your Kalpira password';
+  const greeting = params.name?.trim() ? `Hi ${params.name.trim()},` : 'Hi,';
+
+  await sendBrevoEmail({
+    to: [{ email: params.email, name: params.name }],
+    subject,
+    textContent: `${greeting}
+
+Use this OTP code to reset your Kalpira password:
+
+${params.otp}
+
+This code expires in 15 minutes. If you did not request a password reset, you can ignore this email.`,
+    htmlContent: `
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
+        <p style="margin: 0 0 16px;">${greeting}</p>
+        <p style="margin: 0 0 16px;">Use this OTP code to reset your Kalpira password:</p>
+        <p style="margin: 0 0 24px; font-size: 28px; letter-spacing: 6px; font-weight: 700;">${params.otp}</p>
+        <p style="margin: 0; color: #4b5563;">This code expires in 15 minutes. If you did not request a password reset, you can ignore this email.</p>
+      </div>
     `,
   });
 }

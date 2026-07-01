@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, Briefcase, CheckCircle2, Loader2, Lock, Mail, ShieldCheck, UserPlus, UserRound } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Briefcase, CheckCircle2, Loader2, Lock, Mail, ShieldCheck, UserPlus, UserRound } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
 
 type LoginRole = 'user' | 'interviewer' | 'admin';
@@ -39,9 +39,13 @@ const Login: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [resending, setResending] = useState(false);
   const [mode, setMode] = useState<'standalone' | 'hosted' | null>(null);
   const [selectedRole, setSelectedRole, clearRoleDraft] = useSessionState<LoginRole>('kalpira:login:role', 'user');
+  const [authView, setAuthView] = useState<'login' | 'forgot' | 'reset'>('login');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetOtp, setResetOtp] = useState('');
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/config/mode')
@@ -77,37 +81,6 @@ const Login: React.FC = () => {
     const message = messages[oauthError] || 'Sign-in failed. Please try again.';
     setError(process.env.NODE_ENV === 'development' && oauthDetail ? `${message} (${oauthDetail})` : message);
   }, [searchParams]);
-
-  const handleResendVerification = async () => {
-    if (!email.trim()) {
-      setError('Enter your email address first.');
-      return;
-    }
-
-    setResending(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const response = await fetch('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.error || 'Failed to resend verification email.');
-        return;
-      }
-      setSuccess(data.alreadyVerified
-        ? 'This email is already verified. You can sign in now.'
-        : 'Verification email sent. Check your inbox.');
-    } catch {
-      setError('Failed to resend verification email.');
-    } finally {
-      setResending(false);
-    }
-  };
 
   const handleGoogleSignIn = () => {
     setGoogleLoading(true);
@@ -192,6 +165,81 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      setError('Email is required');
+      return;
+    }
+
+    setResetLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to send password reset OTP.');
+        return;
+      }
+
+      setSuccess('OTP sent. Check your email and enter the code below.');
+      setAuthView('reset');
+    } catch {
+      setError('Connection error. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const password = newPasswordRef.current?.value ?? '';
+    const confirmPassword = confirmPasswordRef.current?.value ?? '';
+    const trimmedEmail = email.trim();
+
+    setResetLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          otp: resetOtp,
+          password,
+          confirmPassword,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to update password.');
+        return;
+      }
+
+      setSuccess(data.message || 'Password updated. You can sign in now.');
+      setAuthView('login');
+      setResetOtp('');
+      if (newPasswordRef.current) newPasswordRef.current.value = '';
+      if (confirmPasswordRef.current) confirmPasswordRef.current.value = '';
+    } catch {
+      setError('Connection error. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   if (mode === null) {
     return (
       <div className="min-h-screen bg-stone-900 flex items-center justify-center">
@@ -202,6 +250,7 @@ const Login: React.FC = () => {
 
   const isInterviewer = selectedRole === 'interviewer';
   const isAdmin = selectedRole === 'admin';
+  const isResetFlow = authView !== 'login';
 
   return (
     <div className="min-h-screen bg-stone-900 flex items-center justify-center p-4 sm:p-8">
@@ -215,9 +264,11 @@ const Login: React.FC = () => {
             <div className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center mx-auto mb-4">
               <Lock size={24} className="text-stone-300" />
             </div>
-            <h1 className="text-xl font-bold text-white">Login</h1>
+            <h1 className="text-xl font-bold text-white">{isResetFlow ? 'Reset Password' : 'Login'}</h1>
             <p className="text-stone-400 text-sm mt-1">
-              {mode === 'hosted' ? 'Sign in to access your research dashboard' : 'Enter your credentials to access the dashboard'}
+              {isResetFlow
+                ? 'Use your email OTP to choose a new password'
+                : mode === 'hosted' ? 'Sign in to access your research dashboard' : 'Enter your credentials to access the dashboard'}
             </p>
           </div>
 
@@ -235,6 +286,7 @@ const Login: React.FC = () => {
             </div>
           )}
 
+          {!isResetFlow && (
           <div className="mb-4">
             <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-700 bg-stone-800 p-1">
               {roleOptions.map(({ id, label, Icon }) => {
@@ -255,8 +307,9 @@ const Login: React.FC = () => {
               })}
             </div>
           </div>
+          )}
 
-          {selectedRole !== 'admin' && (
+          {selectedRole !== 'admin' && !isResetFlow && (
             <div className="mb-4 space-y-3">
               <button
                 onClick={handleGoogleSignIn}
@@ -284,7 +337,115 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          {selectedRole === 'admin' ? (
+          {authView === 'forgot' ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <label htmlFor="reset-email" className="block text-sm font-medium text-stone-300 mb-1">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
+                  <input
+                    id="reset-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="john@example.com"
+                    autoComplete="email"
+                    autoFocus
+                    className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={resetLoading || !email.trim()}
+                className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Send OTP'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthView('login');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="w-full text-sm text-stone-400 hover:text-stone-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={16} /> Back to login
+              </button>
+            </form>
+          ) : authView === 'reset' ? (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label htmlFor="reset-otp" className="block text-sm font-medium text-stone-300 mb-1">
+                  OTP Code
+                </label>
+                <input
+                  id="reset-otp"
+                  type="text"
+                  inputMode="numeric"
+                  value={resetOtp}
+                  onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Enter 6-digit OTP"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  className="w-full px-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="new-password" className="block text-sm font-medium text-stone-300 mb-1">
+                  New Password
+                </label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
+                  <input
+                    id="new-password"
+                    type="password"
+                    ref={newPasswordRef}
+                    placeholder="Enter new password"
+                    autoComplete="new-password"
+                    className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-stone-300 mb-1">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    ref={confirmPasswordRef}
+                    placeholder="Confirm new password"
+                    autoComplete="new-password"
+                    className="w-full pl-9 pr-4 py-3 rounded-xl bg-stone-800 border border-stone-600 text-stone-100 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-stone-500"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={resetLoading || resetOtp.length !== 6}
+                className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Save Password'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthView('forgot');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="w-full text-sm text-stone-400 hover:text-stone-300 transition-colors"
+              >
+                Send a new OTP
+              </button>
+            </form>
+          ) : selectedRole === 'admin' ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-stone-300 mb-1">
@@ -333,9 +494,22 @@ const Login: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-stone-300 mb-1">
-                  Password
-                </label>
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <label htmlFor="password" className="block text-sm font-medium text-stone-300">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthView('forgot');
+                      setError(null);
+                      setSuccess(null);
+                    }}
+                    className="text-xs font-medium text-stone-400 hover:text-stone-200 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
                   <input
@@ -358,18 +532,10 @@ const Login: React.FC = () => {
                 {loading ? <Loader2 size={18} className="animate-spin" /> : 'Login'}
               </button>
 
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={resending || loading || !email.trim()}
-                className="w-full py-3 border border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl transition-colors"
-              >
-                {resending ? 'Sending verification...' : 'Resend verification email'}
-              </button>
             </form>
           )}
 
-          {!isAdmin && (
+          {!isAdmin && !isResetFlow && (
             <div className="mt-6 pt-6 border-t border-stone-700 text-center space-y-3">
               <button
                 onClick={() => router.push(isInterviewer ? '/interviewer/register' : '/register')}
