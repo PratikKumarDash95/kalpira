@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -45,7 +46,7 @@ const InterviewerRegister: React.FC = () => {
 
         setIsLoading(true);
         try {
-            const res = await fetch('/api/interviewer/register', {
+            const res = await apiFetch('/api/interviewer/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password }),
@@ -77,7 +78,7 @@ const InterviewerRegister: React.FC = () => {
         setSuccess(null);
 
         try {
-            const response = await fetch('/api/auth/resend-verification', {
+            const response = await apiFetch('/api/auth/resend-verification', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.trim() }),

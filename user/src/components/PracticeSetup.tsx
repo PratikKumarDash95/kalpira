@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -82,7 +83,7 @@ const PracticeSetup: React.FC = () => {
             // Persist the study to the user's account so it survives and the
             // /api/interview route can verify ownership via session cookie.
             // The server assigns a real UUID and ties the study to userId.
-            const saveRes = await fetch('/api/studies', {
+            const saveRes = await apiFetch('/api/studies', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ config }),

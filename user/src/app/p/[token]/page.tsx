@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -126,7 +127,7 @@ export default function ParticipantPage() {
       if (!token) { setError('No token provided'); setLoading(false); return; }
 
       try {
-        const response = await fetch(`/api/generate-link?token=${encodeURIComponent(token)}`);
+        const response = await apiFetch(`/api/generate-link?token=${encodeURIComponent(token)}`);
         const result = await response.json();
 
         if (!result.valid || !result.data) {

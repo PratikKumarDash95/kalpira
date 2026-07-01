@@ -1,3 +1,4 @@
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 // Client-side service that calls API routes
 // API keys are kept server-side - this file runs in the browser
 
@@ -30,7 +31,7 @@ export const generateInterviewResponse = async (
   participantToken?: string | null
 ): Promise<AIInterviewResponse> => {
   try {
-    const response = await fetch('/api/interview', {
+    const response = await apiFetch('/api/interview', {
       method: 'POST',
       headers: buildHeaders(participantToken),
       body: JSON.stringify({
@@ -69,7 +70,7 @@ export const getInterviewGreeting = async (
   participantToken?: string | null
 ): Promise<string> => {
   try {
-    const response = await fetch('/api/greeting', {
+    const response = await apiFetch('/api/greeting', {
       method: 'POST',
       headers: buildHeaders(participantToken),
       body: JSON.stringify({ studyConfig })
@@ -96,7 +97,7 @@ export const synthesizeInterview = async (
   participantToken?: string | null
 ): Promise<SynthesisResult> => {
   try {
-    const response = await fetch('/api/synthesis', {
+    const response = await apiFetch('/api/synthesis', {
       method: 'POST',
       headers: buildHeaders(participantToken),
       body: JSON.stringify({
@@ -126,7 +127,7 @@ export const generateParticipantLink = async (
   studyConfig: StudyConfig
 ): Promise<{ token: string; url: string }> => {
   try {
-    const response = await fetch('/api/generate-link', {
+    const response = await apiFetch('/api/generate-link', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studyConfig })
@@ -148,7 +149,7 @@ export const verifyParticipantToken = async (
   token: string
 ): Promise<{ valid: boolean; data?: StudyConfig }> => {
   try {
-    const response = await fetch(`/api/generate-link?token=${encodeURIComponent(token)}`);
+    const response = await apiFetch(`/api/generate-link?token=${encodeURIComponent(token)}`);
     return await response.json();
   } catch (error) {
     console.error('Error verifying token:', error);

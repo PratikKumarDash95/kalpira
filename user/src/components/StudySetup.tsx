@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -96,7 +97,7 @@ const StudySetup: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth', { method: 'GET' });
+        const res = await apiFetch('/api/auth', { method: 'GET' });
         setIsAuthenticated(res.ok);
       } catch { setIsAuthenticated(false); }
     };
@@ -105,7 +106,7 @@ const StudySetup: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetch('/api/config/status').then(r => r.ok ? r.json() : null).then(d => d && setConfigStatus(d)).catch(() => { });
+      apiFetch('/api/config/status').then(r => r.ok ? r.json() : null).then(d => d && setConfigStatus(d)).catch(() => { });
     }
   }, [isAuthenticated]);
 
@@ -272,7 +273,7 @@ const StudySetup: React.FC = () => {
       const config = buildConfig();
       setStudyConfig(config);
       const studyConfig = savedStudyId ? { ...config, id: savedStudyId } : config;
-      const response = await fetch('/api/generate-link', {
+      const response = await apiFetch('/api/generate-link', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studyConfig })
       });
@@ -318,7 +319,7 @@ const StudySetup: React.FC = () => {
       };
 
       const config = { ...buildConfig(), endsAt, interviewerAssignment: assignment };
-      const response = await fetch('/api/interviewer/studies', {
+      const response = await apiFetch('/api/interviewer/studies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config })
@@ -339,7 +340,7 @@ const StudySetup: React.FC = () => {
       setSaveSuccess(true);
       setIsDirty(false);
 
-      const linkResponse = await fetch('/api/generate-link', {
+      const linkResponse = await apiFetch('/api/generate-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -392,7 +393,7 @@ const StudySetup: React.FC = () => {
           if (data.requiresConfirmation) {
             const confirmed = window.confirm(`${data.warning}\n\nDo you want to continue?`);
             if (confirmed) {
-              const retryResponse = await fetch(`/api/studies/${savedStudyId}`, {
+              const retryResponse = await apiFetch(`/api/studies/${savedStudyId}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ config, confirmed: true })
               });

@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -29,7 +30,7 @@ export default function CandidateInterviewPage() {
   useEffect(() => {
     const prepare = async () => {
       try {
-        const response = await fetch(`/api/candidate/sessions/${sessionId}/start`, { method: 'POST' });
+        const response = await apiFetch(`/api/candidate/sessions/${sessionId}/start`, { method: 'POST' });
         const data = await response.json();
 
         if (!response.ok) {

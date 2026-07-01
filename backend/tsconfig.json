@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
+    "esModuleInterop": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "strict": false,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./server/app/*"],
+      "next/server": ["./server/next-compat/next-server.ts"],
+      "next/headers": ["./server/next-compat/next-headers.ts"]
+    }
+  },
+  "include": ["server/**/*.ts"],
+  "exclude": ["node_modules"]
+}

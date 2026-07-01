@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,14 +40,14 @@ const StudyList: React.FC = () => {
   useEffect(() => {
     loadStudies();
     // Check if logged in as admin (admin password login has no researcherId)
-    fetch('/api/auth')
+    apiFetch('/api/auth')
       .then(r => r.json())
       .then(async d => {
         setIsAdmin(d.authenticated && !d.researcherId);
 
         if (!d.authenticated || !d.researcherId) return null;
 
-        const meRes = await fetch('/api/auth/me');
+        const meRes = await apiFetch('/api/auth/me');
         if (!meRes.ok) return null;
         return meRes.json();
       })
@@ -55,7 +56,7 @@ const StudyList: React.FC = () => {
           return;
         }
 
-        const sessionsRes = await fetch('/api/candidate/sessions');
+        const sessionsRes = await apiFetch('/api/candidate/sessions');
         if (!sessionsRes.ok) return;
         const data = await sessionsRes.json();
         const assignedCount = (data?.sessions || []).filter((session: { status?: string }) => session.status === 'assigned' || session.status === 'in_progress').length;

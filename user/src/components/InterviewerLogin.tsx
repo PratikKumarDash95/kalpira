@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -57,7 +58,7 @@ const InterviewerLogin: React.FC = () => {
 
     const handleGoogleSignIn = () => {
         setGoogleLoading(true);
-        window.location.href = '/api/auth/oauth/google/interviewer';
+        window.location.href = apiUrl('/api/auth/oauth/google/interviewer');
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -69,7 +70,7 @@ const InterviewerLogin: React.FC = () => {
 
         setIsLoading(true);
         try {
-            const res = await fetch('/api/auth', {
+            const res = await apiFetch('/api/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
@@ -78,12 +79,12 @@ const InterviewerLogin: React.FC = () => {
             if (!res.ok) { setError(data.error || 'Login failed.'); return; }
 
             // Verify the logged-in user is actually an interviewer via dedicated endpoint
-            const meRes = await fetch('/api/interviewer/me');
+            const meRes = await apiFetch('/api/interviewer/me');
             if (!meRes.ok) {
                 // 403 = wrong role, 401 = session issue
                 const meData = await meRes.json();
                 setError(meData.error || 'This account is not an interviewer account.');
-                await fetch('/api/auth', { method: 'DELETE' }); // logout
+                await apiFetch('/api/auth', { method: 'DELETE' }); // logout
                 return;
             }
 
@@ -113,7 +114,7 @@ const InterviewerLogin: React.FC = () => {
         setSuccess(null);
 
         try {
-            const response = await fetch('/api/auth/forgot-password', {
+            const response = await apiFetch('/api/auth/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.trim() }),
@@ -153,7 +154,7 @@ const InterviewerLogin: React.FC = () => {
         setSuccess(null);
 
         try {
-            const response = await fetch('/api/auth/reset-password', {
+            const response = await apiFetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

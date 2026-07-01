@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiClient';
 // ============================================
 // AI API Client — Frontend → Express Backend
 // ============================================
@@ -7,8 +8,6 @@
 //   const result = await aiClient.askInterview({ role, difficulty });
 //   const health = await aiClient.checkHealth();
 // ============================================
-
-const AI_BACKEND_URL = process.env.NEXT_PUBLIC_AI_BACKEND_URL || 'http://localhost:3001';
 
 interface AIResponse {
     success: boolean;
@@ -59,9 +58,7 @@ interface EvaluateParams {
 }
 
 async function _fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-    const url = `${AI_BACKEND_URL}${path}`;
-
-    const response = await fetch(url, {
+    const response = await apiFetch(path, {
         headers: { 'Content-Type': 'application/json' },
         ...options,
     });
@@ -112,6 +109,7 @@ export const aiClient = {
      * Simple ping to check if the backend is running.
      */
     async ping(): Promise<{ status: string; uptime: number; timestamp: string }> {
-        return _fetch('/api/ping');
+        const response = await apiFetch('/api/ping');
+        return response.json() as Promise<{ status: string; uptime: number; timestamp: string }>;
     },
 };

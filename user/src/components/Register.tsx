@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -42,7 +43,7 @@ const Register: React.FC = () => {
         }
 
         try {
-            const response = await fetch('/api/auth/register', {
+            const response = await apiFetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password })
@@ -76,7 +77,7 @@ const Register: React.FC = () => {
         setSuccess(null);
 
         try {
-            const response = await fetch('/api/auth/resend-verification', {
+            const response = await apiFetch('/api/auth/resend-verification', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.trim() }),

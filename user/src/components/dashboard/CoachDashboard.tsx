@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
@@ -61,7 +62,7 @@ interface CoachDashboardData {
 // ============================================
 
 async function fetchDashboardData(): Promise<CoachDashboardData> {
-    const response = await fetch('/api/coach/dashboard');
+    const response = await apiFetch('/api/coach/dashboard');
     if (!response.ok) {
         throw new Error(`Dashboard API returned ${response.status}`);
     }
@@ -99,7 +100,7 @@ const CoachDashboard: React.FC = () => {
 
     const handleLogout = useCallback(async () => {
         try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            await apiFetch('/api/auth/logout', { method: 'POST' });
             router.push('/login');
         } catch {
             router.push('/login');

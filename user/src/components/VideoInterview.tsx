@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -293,7 +294,7 @@ const VideoInterview: React.FC = () => {
                     return;
                 }
 
-                const res = await fetch('/api/sessions/start', {
+                const res = await apiFetch('/api/sessions/start', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -408,7 +409,7 @@ const VideoInterview: React.FC = () => {
                     depthScore: response.scores.depth
                 } : extractScoresFromAIResponse(response.message, text);
 
-                fetch(`/api/sessions/${sessionId}/save-response`, {
+                apiFetch(`/api/sessions/${sessionId}/save-response`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -431,7 +432,7 @@ const VideoInterview: React.FC = () => {
                 completeInterview();
                 // Complete session in DB
                 if (sessionId) {
-                    fetch(`/api/sessions/${sessionId}/complete`, {
+                    apiFetch(`/api/sessions/${sessionId}/complete`, {
                         method: 'POST',
                         headers: participantToken ? { Authorization: `Bearer ${participantToken}` } : undefined,
                     }).catch(() => { });
@@ -467,7 +468,7 @@ const VideoInterview: React.FC = () => {
             completeInterview();
             // BACKGROUND FETCH (Keepalive)
             if (sessionId) {
-                fetch(`/api/sessions/${sessionId}/complete`, {
+                apiFetch(`/api/sessions/${sessionId}/complete`, {
                     method: 'POST',
                     headers: participantToken ? { Authorization: `Bearer ${participantToken}` } : undefined,
                     keepalive: true,

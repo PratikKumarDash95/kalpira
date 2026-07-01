@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -76,7 +77,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
     setIsTogglingLinks(true);
 
     try {
-      const response = await fetch(`/api/studies/${studyId}`, {
+      const response = await apiFetch(`/api/studies/${studyId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -112,7 +113,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
 
     setGeneratingLink(true);
     try {
-      const response = await fetch('/api/generate-link', {
+      const response = await apiFetch('/api/generate-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studyConfig: study.config })
@@ -151,7 +152,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
 
     setIsGeneratingAggregate(true);
     try {
-      const response = await fetch('/api/synthesis/aggregate', {
+      const response = await apiFetch('/api/synthesis/aggregate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studyId })
@@ -180,7 +181,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
 
     setIsGeneratingFollowup(true);
     try {
-      const response = await fetch(`/api/studies/${studyId}/generate-followup`, {
+      const response = await apiFetch(`/api/studies/${studyId}/generate-followup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ synthesis: aggregateSynthesis })

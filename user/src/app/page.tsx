@@ -1,3 +1,4 @@
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -27,7 +28,7 @@ export default function Home() {
   const [profile, setProfile] = useState<HeaderProfile | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    apiFetch('/api/auth/me')
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data?.profile) setProfile(data.profile);
