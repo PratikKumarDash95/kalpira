@@ -86,9 +86,9 @@ const Login: React.FC = () => {
 
   const handleGoogleSignIn = () => {
     setGoogleLoading(true);
-    window.location.href = selectedRole === 'interviewer'
+    window.location.href = apiUrl(selectedRole === 'interviewer'
       ? '/api/auth/oauth/google/interviewer'
-      : '/api/auth/oauth/google/user';
+      : '/api/auth/oauth/google/user');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import * as arctic from 'arctic';
 import { cookies } from 'next/headers';
+import { OAUTH_ORIGIN_COOKIE, getOauthOriginCookieOptions, resolveReturnOrigin } from '@/lib/oauthOrigin';
 
 // The OAuth callback route lives on this backend (it's where these route.ts
 // files are actually served from), NOT on the frontend app. This must match
@@ -25,7 +26,7 @@ function getGoogleClient() {
   return new arctic.Google(clientId, clientSecret, `${getCallbackBaseUrl()}/api/auth/oauth/google/user/callback`);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const google = getGoogleClient();
     const state = arctic.generateState();
@@ -48,6 +49,11 @@ export async function GET() {
       maxAge: 600,
       path: '/',
     });
+
+    const returnOrigin = resolveReturnOrigin(request);
+    if (returnOrigin) {
+      cookieStore.set(OAUTH_ORIGIN_COOKIE, returnOrigin, getOauthOriginCookieOptions());
+    }
 
     return NextResponse.redirect(url);
   } catch (error) {

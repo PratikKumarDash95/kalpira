@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import * as arctic from 'arctic';
 import { cookies } from 'next/headers';
 import { isHostedMode } from '@/lib/mode';
+import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin, getOauthOriginCookieOptions, resolveReturnOrigin } from '@/lib/oauthOrigin';
 
 // The OAuth callback route lives on this backend (it's where these route.ts
 // files are actually served from), NOT on the frontend app. This must match
@@ -29,7 +30,7 @@ function getGitHubClient() {
   return new arctic.GitHub(clientId, clientSecret, `${getCallbackBaseUrl()}/api/auth/oauth/github/callback`);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!isHostedMode()) {
     return NextResponse.json(
       { error: 'OAuth is only available in hosted mode' },
@@ -53,11 +54,16 @@ export async function GET() {
       path: '/',
     });
 
+    const returnOrigin = resolveReturnOrigin(request);
+    if (returnOrigin) {
+      cookieStore.set(OAUTH_ORIGIN_COOKIE, returnOrigin, getOauthOriginCookieOptions());
+    }
+
     return NextResponse.redirect(url);
   } catch (error) {
     console.error('GitHub OAuth initiation error:', error);
     return NextResponse.redirect(
-      new URL('/login?error=oauth_init_failed', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000')
+      new URL('/login?error=oauth_init_failed', getDefaultFrontendOrigin())
     );
   }
 }
