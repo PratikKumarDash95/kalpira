@@ -21,10 +21,11 @@
     "build:user": "cd user && npm run build",
     "build:admin": "cd admin && npm run build",
     "build:interviewer": "cd interviewer && npm run build",
-    "type-check": "npm run type-check:user && npm run type-check:admin && npm run type-check:interviewer",
+    "type-check": "npm run type-check:user && npm run type-check:admin && npm run type-check:interviewer && npm run type-check:backend",
     "type-check:user": "cd user && npm run type-check",
     "type-check:admin": "cd admin && npm run type-check",
     "type-check:interviewer": "cd interviewer && npm run type-check",
+    "type-check:backend": "cd backend && npm run type-check",
     "install:apps": "npm install --prefix user && npm install --prefix admin && npm install --prefix interviewer && npm install --prefix backend"
   },
   "dependencies": {
