@@ -1,5 +1,5 @@
-import { apiFetch, apiUrl } from '@/lib/apiClient';
 "use client";
+import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';

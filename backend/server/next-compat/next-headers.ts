@@ -2,7 +2,12 @@
 // Shim for `next/headers` (cookies() / headers()).
 // Reads from the active request and buffers writes into the request store;
 // the adapter flushes buffered writes onto the Express response as Set-Cookie.
-// cookies() is async to match Next 15's awaited API.
+//
+// The codebase mixes Next 14 (sync `cookies()`) and Next 15 (`await cookies()`)
+// styles. Returning a PLAIN object satisfies both: sync callers use it directly,
+// and `await <non-thenable>` simply resolves to the same object. (Do NOT make it
+// a self-returning thenable — that causes infinite promise-assimilation and the
+// await never settles.)
 // ============================================
 
 import { getStore } from './context';
@@ -16,11 +21,15 @@ export interface CompatCookieStore {
   get(name: string): CookieValue | undefined;
   getAll(): CookieValue[];
   has(name: string): boolean;
-  set(name: string, value: string, options?: Record<string, unknown>): void;
+  set(
+    name: string | { name: string; value: string; [k: string]: unknown },
+    value?: string,
+    options?: Record<string, unknown>,
+  ): void;
   delete(name: string): void;
 }
 
-export async function cookies(): Promise<CompatCookieStore> {
+export function cookies(): CompatCookieStore {
   const store = getStore();
   return {
     get(name: string) {
@@ -33,7 +42,7 @@ export async function cookies(): Promise<CompatCookieStore> {
     has(name: string) {
       return store.reqCookies.has(name);
     },
-    set(name: string | { name: string; value: string; [k: string]: unknown }, value?: string, options?: Record<string, unknown>) {
+    set(name, value, options) {
       if (typeof name === 'object') {
         const { name: n, value: v, ...opts } = name;
         store.setCookies.push({ name: n, value: v, options: opts });
@@ -47,7 +56,7 @@ export async function cookies(): Promise<CompatCookieStore> {
   };
 }
 
-export async function headers(): Promise<Headers> {
+export function headers(): Headers {
   const store = getStore();
   const h = new Headers();
   for (const [key, val] of Object.entries(store.reqHeaders)) {
