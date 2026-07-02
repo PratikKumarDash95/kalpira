@@ -47,6 +47,48 @@
       "next/*": [
         "./node_modules/next/*"
       ],
+      "lucide-react": [
+        "./node_modules/lucide-react"
+      ],
+      "lucide-react/*": [
+        "./node_modules/lucide-react/*"
+      ],
+      "framer-motion": [
+        "./node_modules/framer-motion"
+      ],
+      "framer-motion/*": [
+        "./node_modules/framer-motion/*"
+      ],
+      "jszip": [
+        "./node_modules/jszip"
+      ],
+      "axios": [
+        "./node_modules/axios"
+      ],
+      "jose": [
+        "./node_modules/jose"
+      ],
+      "react-markdown": [
+        "./node_modules/react-markdown"
+      ],
+      "recharts": [
+        "./node_modules/recharts"
+      ],
+      "zod": [
+        "./node_modules/zod"
+      ],
+      "zustand": [
+        "./node_modules/zustand"
+      ],
+      "zustand/*": [
+        "./node_modules/zustand/*"
+      ],
+      "@supabase/ssr": [
+        "./node_modules/@supabase/ssr"
+      ],
+      "@supabase/supabase-js": [
+        "./node_modules/@supabase/supabase-js"
+      ],
       "@/*": [
         "../user/src/*"
       ],
