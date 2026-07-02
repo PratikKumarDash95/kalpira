@@ -13,6 +13,12 @@ const nextConfig = {
     NEXT_PUBLIC_PORTAL: 'interviewer',
   },
   webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      'framer-motion': require.resolve('framer-motion'),
+      jszip: require.resolve('jszip'),
+    };
+
     config.resolve.modules = [
       path.resolve(__dirname, 'node_modules'),
       path.resolve(__dirname, '..', 'node_modules'),
