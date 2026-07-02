@@ -12,24 +12,32 @@ import { ResearcherAccount } from '@/types';
 import { randomUUID } from 'crypto';
 import supabaseDb from '@/lib/supabaseDb';
 
+// The OAuth callback route lives on this backend (it's where these route.ts
+// files are actually served from), NOT on the frontend app. This must match
+// a redirect URI registered in Google Cloud Console.
+function getCallbackBaseUrl(): string {
+  return (
+    process.env.OAUTH_CALLBACK_BASE_URL ||
+    (process.env.RENDER_EXTERNAL_URL ? process.env.RENDER_EXTERNAL_URL : '') ||
+    'http://localhost:3003'
+  );
+}
+
 function getGoogleClient() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   if (!clientId || !clientSecret) {
     throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET required');
   }
 
-  return new arctic.Google(clientId, clientSecret, `${baseUrl}/api/auth/oauth/google/callback`);
+  return new arctic.Google(clientId, clientSecret, `${getCallbackBaseUrl()}/api/auth/oauth/google/callback`);
 }
 
+// Where the browser ends up after login — this IS the frontend app, unlike
+// the callback URL above.
 function getBaseUrl(): string {
-  return process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 }
 
 export async function GET(request: Request) {

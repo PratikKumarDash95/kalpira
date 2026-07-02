@@ -6,6 +6,7 @@ import { StoredInterview } from '@/types';
 import { getAllInterviewsPage, deleteInterview } from '@/services/storageService';
 import { throttle } from '@/lib/rateControl';
 import { motion } from 'framer-motion';
+import RequireAuth from '@/components/RequireAuth';
 import {
     FileText,
     Search,
@@ -26,6 +27,14 @@ const LOAD_DELAY_MS = 20;
 const BOTTOM_THRESHOLD_PX = 500;
 
 export default function AllInterviewsPage() {
+    return (
+        <RequireAuth>
+            <AllInterviewsContent />
+        </RequireAuth>
+    );
+}
+
+function AllInterviewsContent() {
     const router = useRouter();
     const [interviews, setInterviews] = useState<StoredInterview[]>([]);
     const [loading, setLoading] = useState(true);

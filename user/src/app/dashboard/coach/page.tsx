@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import CoachDashboard from '@/components/dashboard/CoachDashboard';
+import RequireAuth from '@/components/RequireAuth';
 
 export const metadata: Metadata = {
     title: 'Interview Coach Dashboard | AI Interview Intelligence',
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function CoachDashboardPage() {
-    return <CoachDashboard />;
+    return (
+        <RequireAuth>
+            <CoachDashboard />
+        </RequireAuth>
+    );
 }

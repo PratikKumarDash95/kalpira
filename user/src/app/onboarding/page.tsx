@@ -1,5 +1,10 @@
 import Onboarding from '@/components/Onboarding';
+import RequireAuth from '@/components/RequireAuth';
 
 export default function OnboardingPage() {
-  return <Onboarding />;
+  return (
+    <RequireAuth>
+      <Onboarding />
+    </RequireAuth>
+  );
 }

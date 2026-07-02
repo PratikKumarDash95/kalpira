@@ -1,5 +1,10 @@
 import Dashboard from '@/components/Dashboard';
+import RequireAuth from '@/components/RequireAuth';
 
 export default function DashboardPage() {
-  return <div className="kalpira-light min-h-screen"><Dashboard /></div>;
+  return (
+    <RequireAuth>
+      <div className="kalpira-light min-h-screen"><Dashboard /></div>
+    </RequireAuth>
+  );
 }

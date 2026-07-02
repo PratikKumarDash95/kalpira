@@ -7,18 +7,26 @@ import * as arctic from 'arctic';
 import { cookies } from 'next/headers';
 import { isHostedMode } from '@/lib/mode';
 
+// The OAuth callback route lives on this backend (it's where these route.ts
+// files are actually served from), NOT on the frontend app. This must match
+// a redirect URI registered in the GitHub OAuth app.
+function getCallbackBaseUrl(): string {
+  return (
+    process.env.OAUTH_CALLBACK_BASE_URL ||
+    (process.env.RENDER_EXTERNAL_URL ? process.env.RENDER_EXTERNAL_URL : '') ||
+    'http://localhost:3003'
+  );
+}
+
 function getGitHubClient() {
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   if (!clientId || !clientSecret) {
     throw new Error('GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET required');
   }
 
-  return new arctic.GitHub(clientId, clientSecret, `${baseUrl}/api/auth/oauth/github/callback`);
+  return new arctic.GitHub(clientId, clientSecret, `${getCallbackBaseUrl()}/api/auth/oauth/github/callback`);
 }
 
 export async function GET() {

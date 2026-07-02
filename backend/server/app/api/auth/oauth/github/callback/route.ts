@@ -13,19 +13,28 @@ import { randomUUID } from 'crypto';
 export const runtime = "nodejs";
 
 /**
- * Safely resolve base URL
+ * Where the browser ends up after login — this IS the frontend app.
  */
 function getBaseUrl(): string {
-  return process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+}
+
+// The OAuth callback route lives on this backend (it's where these route.ts
+// files are actually served from), NOT on the frontend app. This must match
+// a redirect URI registered in the GitHub OAuth app.
+function getCallbackBaseUrl(): string {
+  return (
+    process.env.OAUTH_CALLBACK_BASE_URL ||
+    (process.env.RENDER_EXTERNAL_URL ? process.env.RENDER_EXTERNAL_URL : '') ||
+    'http://localhost:3003'
+  );
 }
 
 /**
  * Safely create GitHub OAuth client
  * Never throw errors (prevents build crash)
  */
-function getGitHubClient(baseUrl: string) {
+function getGitHubClient() {
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
@@ -37,7 +46,7 @@ function getGitHubClient(baseUrl: string) {
   return new arctic.GitHub(
     clientId,
     clientSecret,
-    `${baseUrl}/api/auth/oauth/github/callback`
+    `${getCallbackBaseUrl()}/api/auth/oauth/github/callback`
   );
 }
 
@@ -71,7 +80,7 @@ export async function GET(request: Request) {
     cookieStore.delete('github_oauth_state');
 
     // Create GitHub client safely
-    const github = getGitHubClient(baseUrl);
+    const github = getGitHubClient();
     if (!github) {
       return NextResponse.redirect(new URL('/login?error=config', baseUrl));
     }
