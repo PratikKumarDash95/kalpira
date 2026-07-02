@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { getGoogleProfile } from '@/lib/googleOAuth';
 import supabaseDb from '@/lib/supabaseDb';
+import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin } from '@/lib/oauthOrigin';
 
 // The OAuth callback route lives on this backend (it's where these route.ts
 // files are actually served from), NOT on the frontend app. This must match
@@ -28,12 +29,6 @@ function getGoogleClient() {
   return new arctic.Google(clientId, clientSecret, `${getCallbackBaseUrl()}/api/auth/oauth/google/interviewer/callback`);
 }
 
-// Where the browser ends up after login — this IS the frontend app, unlike
-// the callback URL above.
-function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-}
-
 function getInterviewerLoginUrl(baseUrl: string, error: string) {
   const url = new URL('/login', baseUrl);
   url.searchParams.set('role', 'interviewer');
@@ -42,7 +37,12 @@ function getInterviewerLoginUrl(baseUrl: string, error: string) {
 }
 
 export async function GET(request: Request) {
-  const baseUrl = getBaseUrl();
+  const cookieStore = await cookies();
+  // Return the browser to whichever frontend origin it started from (there
+  // can be more than one live in parallel, e.g. a custom domain + Vercel
+  // alias), falling back to the configured default if unset/stale.
+  const baseUrl = cookieStore.get(OAUTH_ORIGIN_COOKIE)?.value || getDefaultFrontendOrigin();
+  cookieStore.delete(OAUTH_ORIGIN_COOKIE);
 
   try {
     const url = new URL(request.url);
@@ -53,7 +53,6 @@ export async function GET(request: Request) {
       return NextResponse.redirect(getInterviewerLoginUrl(baseUrl, 'missing_params'));
     }
 
-    const cookieStore = await cookies();
     const storedState = cookieStore.get('google_interviewer_oauth_state')?.value;
     const codeVerifier = cookieStore.get('google_interviewer_oauth_code_verifier')?.value;
 

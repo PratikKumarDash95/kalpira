@@ -9,15 +9,9 @@ import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME } from
 import { getResearcherByOAuth, saveResearcher } from '@/lib/platformDb';
 import { ResearcherAccount } from '@/types';
 import { randomUUID } from 'crypto';
+import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin } from '@/lib/oauthOrigin';
 
 export const runtime = "nodejs";
-
-/**
- * Where the browser ends up after login — this IS the frontend app.
- */
-function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-}
 
 // The OAuth callback route lives on this backend (it's where these route.ts
 // files are actually served from), NOT on the frontend app. This must match
@@ -58,7 +52,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const baseUrl = getBaseUrl();
+  const cookieStore = await cookies();
+  // Return the browser to whichever frontend origin it started from (there
+  // can be more than one live in parallel, e.g. a custom domain + Vercel
+  // alias), falling back to the configured default if unset/stale.
+  const baseUrl = cookieStore.get(OAUTH_ORIGIN_COOKIE)?.value || getDefaultFrontendOrigin();
+  cookieStore.delete(OAUTH_ORIGIN_COOKIE);
 
   try {
     const url = new URL(request.url);
@@ -70,7 +69,6 @@ export async function GET(request: Request) {
     }
 
     // Verify state cookie
-    const cookieStore = cookies();
     const storedState = cookieStore.get('github_oauth_state')?.value;
 
     if (!storedState || state !== storedState) {
