@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { StoredInterview } from '@/types';
 import { getAllInterviewsPage, deleteInterview } from '@/services/storageService';
+import { throttle } from '@/lib/rateControl';
 import { motion } from 'framer-motion';
 import {
     FileText,
@@ -20,6 +21,7 @@ import {
 const INITIAL_BATCH_SIZE = 6;
 const SCROLL_BATCH_SIZE = 3;
 const SCROLL_IDLE_MS = 120;
+const SCROLL_THROTTLE_MS = 100;
 const LOAD_DELAY_MS = 20;
 const BOTTOM_THRESHOLD_PX = 500;
 
@@ -60,7 +62,9 @@ export default function AllInterviewsPage() {
     }, []);
 
     useEffect(() => {
-        const onScroll = () => {
+        // Throttled: scroll fires far more often than the near-bottom check
+        // (a layout read) or the idle-timer reset needs to run.
+        const onScroll = throttle(() => {
             isScrollingRef.current = true;
 
             if (scrollIdleTimerRef.current !== null) {
@@ -78,7 +82,7 @@ export default function AllInterviewsPage() {
             if (isNearBottom()) {
                 void ensureScrollLoading();
             }
-        };
+        }, SCROLL_THROTTLE_MS);
 
         window.addEventListener('scroll', onScroll, { passive: true });
         return () => {

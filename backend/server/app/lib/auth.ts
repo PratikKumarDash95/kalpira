@@ -94,14 +94,19 @@ export async function verifySessionToken(token: string): Promise<SessionVerifyRe
 }
 
 // Cookie configuration for session token
+//
+// In production the backend (Render) and frontends (Vercel) live on different
+// domains, so this cookie is attached to cross-site fetch() calls. Browsers
+// only send cross-site cookies when SameSite=None, and SameSite=None requires
+// Secure. Locally everything is same-site localhost across ports, so Lax
+// (without Secure, since local dev is plain http) still works and is kept as
+// the safer default there.
 export function getSessionCookieOptions() {
+  const crossSite = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    // Lax allows the cookie on top-level cross-site navigations (e.g. OAuth
-    // callback redirects), which is required for OAuth flows. Strict blocks
-    // them and breaks the callback round-trip.
-    sameSite: 'lax' as const,
+    secure: crossSite,
+    sameSite: crossSite ? ('none' as const) : ('lax' as const),
     maxAge: TOKEN_DURATION_SECONDS,
     path: '/',
   };
