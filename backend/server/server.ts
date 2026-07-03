@@ -18,17 +18,23 @@ const app = express();
 const PORT = Number(process.env.SERVER_PORT || process.env.PORT || 3001);
 
 // ---- Middleware ----
-// CORS: validate origin against allow-list (comma-separated env var). Include
-// all three frontend origins so cookies flow across the static apps.
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+// CORS: validate origin against allow-list. Known production frontends are
+// ALWAYS allowed (baseline) so a stale/misconfigured CORS_ORIGIN env var on the
+// host can't lock out the live apps; CORS_ORIGIN adds any extra origins on top.
+import { getAllowedOrigins } from './app/lib/oauthOrigin';
+
+const allowedOrigins = getAllowedOrigins();
+console.log('[Server] CORS allow-list:', allowedOrigins.join(', '));
 
 app.use(cors({
   origin(origin, cb) {
+    // Allow same-origin / curl (no Origin) and explicit allow-list matches.
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(new Error(`CORS: origin ${origin} not allowed`));
+    // Disallowed: respond WITHOUT CORS headers instead of throwing. Throwing
+    // surfaces as a 500 with no Access-Control-Allow-Origin, which breaks
+    // preflight and masks the real cause; cb(null, false) is the clean reject.
+    console.warn(`[Server] CORS: origin not allowed: ${origin}`);
+    return cb(null, false);
   },
   credentials: true,
 }));

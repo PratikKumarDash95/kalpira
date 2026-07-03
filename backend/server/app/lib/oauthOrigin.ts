@@ -7,11 +7,28 @@
 
 const OAUTH_ORIGIN_COOKIE = 'oauth_return_origin';
 
-function getAllowedOrigins(): string[] {
-  return (process.env.CORS_ORIGIN || '')
+// Known production frontends. These are ALWAYS allowed regardless of the
+// CORS_ORIGIN env var, so a stale/misconfigured deploy env can't lock out the
+// live apps or break the post-login redirect back to the custom domain.
+const BASELINE_ORIGINS = [
+  'https://kalpira.in',
+  'https://www.kalpira.in',
+  'https://kalpira.vercel.app',
+  'https://kalpira-admin.vercel.app',
+  'https://kalpira-interviewer.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:3003',
+];
+
+/** Merged allow-list: baseline production origins + any from CORS_ORIGIN env. */
+export function getAllowedOrigins(): string[] {
+  const fromEnv = (process.env.CORS_ORIGIN || '')
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  return Array.from(new Set([...BASELINE_ORIGINS, ...fromEnv]));
 }
 
 /** Fallback origin when no valid Referer is available (e.g. direct API hit). */

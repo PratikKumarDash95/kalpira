@@ -14,16 +14,28 @@ const PORT = process.env.SERVER_PORT || process.env.PORT || 3001;
 
 // ---- Middleware ----
 // CORS: validate origin against allow-list (comma-separated env var)
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+const BASELINE_ORIGINS = [
+  'https://kalpira.in',
+  'https://www.kalpira.in',
+  'https://kalpira.vercel.app',
+  'https://kalpira-admin.vercel.app',
+  'https://kalpira-interviewer.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:3003',
+];
+const allowedOrigins = Array.from(new Set([
+  ...BASELINE_ORIGINS,
+  ...(process.env.CORS_ORIGIN || '').split(',').map((o) => o.trim()).filter(Boolean),
+]));
 
 app.use(cors({
   origin(origin, cb) {
-    // Allow same-origin / curl (no origin) and explicit allow-list matches
+    // Allow same-origin / curl (no origin) and explicit allow-list matches.
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(new Error(`CORS: origin ${origin} not allowed`));
+    // Disallowed: reject cleanly (no CORS headers) instead of throwing a 500.
+    return cb(null, false);
   },
   credentials: true,
 }));
