@@ -112,20 +112,29 @@ export function isCrossSiteDeployment(): boolean {
 
 // Cookie configuration for session token
 //
-// In production the backend (Render) and frontends (Vercel) live on different
-// domains, so this cookie is attached to cross-site fetch() calls. Browsers
-// only send cross-site cookies when SameSite=None, and SameSite=None requires
-// Secure. Locally everything is same-site localhost across ports, so Lax
-// (without Secure, since local dev is plain http) still works and is kept as
-// the safer default there.
+// PREFERRED SETUP: serve the backend from a subdomain of the frontend's
+// registrable domain (e.g. api.kalpira.in for www.kalpira.in) and set
+// COOKIE_DOMAIN=.kalpira.in. The cookie is then FIRST-PARTY and shared across
+// all subdomains, so browsers that block third-party cookies still send it.
+//
+// FALLBACK: if the backend lives on an unrelated domain (onrender.com) the
+// cookie is cross-site and must be SameSite=None; Secure — but note browsers
+// increasingly BLOCK such third-party cookies entirely, so the subdomain setup
+// above is strongly recommended. Locally everything is same-site localhost, so
+// Lax (without Secure, since local dev is plain http) is kept as the default.
 export function getSessionCookieOptions() {
   const crossSite = isCrossSiteDeployment();
+  // Optional: scope the cookie to a shared parent domain (leading dot), e.g.
+  // ".kalpira.in", so api.kalpira.in and www.kalpira.in share one first-party
+  // session cookie. Leave unset for same-origin / onrender.com deployments.
+  const domain = process.env.COOKIE_DOMAIN?.trim() || undefined;
   return {
     httpOnly: true,
     secure: crossSite,
     sameSite: crossSite ? ('none' as const) : ('lax' as const),
     maxAge: TOKEN_DURATION_SECONDS,
     path: '/',
+    ...(domain ? { domain } : {}),
   };
 }
 
