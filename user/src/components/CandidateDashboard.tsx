@@ -70,7 +70,13 @@ const CandidateDashboard: React.FC = () => {
         ]);
 
         if (!meRes.ok) {
-          router.push('/login?redirect=/candidate/dashboard');
+          // Not a candidate. Could be an interviewer/admin who landed here —
+          // route them to their real dashboard instead of bouncing to /login.
+          const profileRes = await apiFetch('/api/auth/me');
+          const role = profileRes.ok ? (await profileRes.json())?.profile?.role : null;
+          if (role === 'interviewer') router.push('/interviewer/dashboard');
+          else if (role === 'admin') router.push('/admin');
+          else router.push('/login?redirect=/candidate/dashboard');
           return;
         }
 
