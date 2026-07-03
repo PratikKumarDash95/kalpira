@@ -93,6 +93,23 @@ export async function verifySessionToken(token: string): Promise<SessionVerifyRe
   }
 }
 
+// True when this backend is deployed on a host separate from the frontends
+// (Render/Vercel/etc.), i.e. cookies ride cross-site fetch() calls and must be
+// SameSite=None; Secure. Detect this from MULTIPLE signals, not just NODE_ENV —
+// relying on NODE_ENV=production alone is fragile because hosts don't always
+// set it, and a missing value silently downgrades the cookie to SameSite=Lax,
+// which browsers refuse to send cross-site (the session then never sticks).
+export function isCrossSiteDeployment(): boolean {
+  return (
+    process.env.NODE_ENV === 'production' ||
+    // Render sets these on every service.
+    !!process.env.RENDER ||
+    !!process.env.RENDER_EXTERNAL_URL ||
+    // Explicit opt-in / opt-out escape hatch.
+    process.env.CROSS_SITE_COOKIES === 'true'
+  );
+}
+
 // Cookie configuration for session token
 //
 // In production the backend (Render) and frontends (Vercel) live on different
@@ -102,7 +119,7 @@ export async function verifySessionToken(token: string): Promise<SessionVerifyRe
 // (without Secure, since local dev is plain http) still works and is kept as
 // the safer default there.
 export function getSessionCookieOptions() {
-  const crossSite = process.env.NODE_ENV === 'production';
+  const crossSite = isCrossSiteDeployment();
   return {
     httpOnly: true,
     secure: crossSite,
