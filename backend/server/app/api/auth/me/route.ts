@@ -31,6 +31,10 @@ export async function GET() {
           id: user.id,
           email: user.email || '',
           name: user.name || user.email || 'Kalpira User',
+          // role drives client-side dashboard routing (candidate vs interviewer
+          // vs admin). Omitting it made the frontend treat every account as a
+          // candidate and hit candidate-only endpoints, which 401 for others.
+          role: user.role || 'candidate',
           avatarUrl: user.avatarUrl,
           coverUrl: user.coverUrl,
           onboardingComplete: user.onboardingComplete,
@@ -131,6 +135,7 @@ export async function PATCH(request: Request) {
         id: user.id,
         email: user.email || '',
         name: user.name || user.email || 'Kalpira User',
+        role: user.role || 'candidate',
         avatarUrl: user.avatarUrl,
         coverUrl: user.coverUrl,
         onboardingComplete: user.onboardingComplete,

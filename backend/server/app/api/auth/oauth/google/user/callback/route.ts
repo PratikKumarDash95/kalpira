@@ -117,7 +117,14 @@ export async function GET(request: Request) {
     const sessionToken = await createSessionToken(user.id);
     cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
 
-    const redirectTo = '/studies';
+    // Land the account on the dashboard that matches its ACTUAL role. Someone
+    // may sign in via the "user" button with an account that is actually an
+    // interviewer/admin — send them to the right place instead of the candidate
+    // landing (which would 401 on candidate-only endpoints).
+    const redirectTo =
+      user.role === 'interviewer' ? '/interviewer/dashboard'
+      : user.role === 'admin' ? '/admin'
+      : '/studies';
     return NextResponse.redirect(new URL(redirectTo, baseUrl));
   } catch (error: any) {
     const msg = error?.message || String(error);
