@@ -8,6 +8,22 @@ export function apiUrl(path: string): string {
   return apiBaseUrl ? `${apiBaseUrl}${path}` : path;
 }
 
+// Clear cached UI drafts (profile name/avatar, login email, admin tab, etc.)
+// on logout so a NEXT visitor / role never sees the previous session's data.
+export function clearSessionDrafts() {
+  if (typeof window === 'undefined') return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i);
+      if (key && key.startsWith('kalpira:')) keys.push(key);
+    }
+    keys.forEach((k) => window.sessionStorage.removeItem(k));
+  } catch {
+    // Storage may be unavailable (private mode); nothing to clear then.
+  }
+}
+
 export function apiFetch(input: string, init: RequestInit = {}) {
   return fetch(apiUrl(input), {
     credentials: 'include',

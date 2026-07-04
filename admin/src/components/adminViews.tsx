@@ -1,27 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// Presentational admin views, extracted from the former single-page AdminPanel
+// so each route segment (/candidates, /sessions, …) can render just its own
+// table. These are pure/props-driven — data fetching lives in the route pages.
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
     Users, Activity, BookOpen, BarChart3, Trash2, Search, UserCog,
-    Menu, X, Shield, LogOut, ChevronRight, Database, Zap, Star,
-    Eye, Pencil, UserPlus, GraduationCap, MessageSquare, RefreshCw, CheckCircle, AlertCircle,
+    ChevronRight, Zap, Star, Eye, Pencil, UserPlus, MessageSquare,
+    CheckCircle, AlertCircle,
 } from 'lucide-react';
-import { useSessionState } from '@/hooks/useSessionState';
 import {
-    AdminApi, type Stats, type AdminUser, type Interviewer,
-    type AdminStudy, type AdminSession, type FeedbackItem, type Role,
+    type Stats, type AdminUser, type Interviewer,
+    type AdminStudy, type AdminSession, type FeedbackItem,
 } from '@/lib/adminApi';
-import { apiFetch } from '@/lib/apiClient';
-import {
-    RoleBadge, ConfirmDialog, formatDate, formatDateTime,
-} from '@/components/adminShared';
-import { CreateUserModal, EditUserModal, UserDetailModal } from '@/components/adminModals';
-
-type Tab = 'overview' | 'candidates' | 'interviewers' | 'studies' | 'sessions' | 'feedback';
+import { RoleBadge, formatDate, formatDateTime } from '@/components/adminShared';
 
 // ─── Animated counter ─────────────────────────────────────────────────────
-function AnimatedNumber({ value }: { value: number }) {
+export function AnimatedNumber({ value }: { value: number }) {
     const [display, setDisplay] = useState(0);
     useEffect(() => {
         let start = 0;
@@ -38,7 +36,7 @@ function AnimatedNumber({ value }: { value: number }) {
     return <span>{display.toLocaleString()}</span>;
 }
 
-function StatCard({ icon: Icon, label, value, sub, color, delay }: {
+export function StatCard({ icon: Icon, label, value, sub, color, delay }: {
     icon: React.ElementType; label: string; value: number; sub?: string; color: string; delay: number;
 }) {
     return (
@@ -58,7 +56,7 @@ function StatCard({ icon: Icon, label, value, sub, color, delay }: {
     );
 }
 
-function Avatar({ name, email }: { name: string | null; email: string | null }) {
+export function Avatar({ name, email }: { name: string | null; email: string | null }) {
     return (
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
             {(name?.[0] || email?.[0] || '?').toUpperCase()}
@@ -66,7 +64,7 @@ function Avatar({ name, email }: { name: string | null; email: string | null }) 
     );
 }
 
-function Stars({ n }: { n: number }) {
+export function Stars({ n }: { n: number }) {
     return (
         <span className="inline-flex items-center gap-0.5">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -76,229 +74,41 @@ function Stars({ n }: { n: number }) {
     );
 }
 
-const tableWrap = 'rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden';
-const th = 'text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider';
+export const tableWrap = 'rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden';
+export const th = 'text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider';
 
-// ─── Main ─────────────────────────────────────────────────────────────────
-export default function AdminPanel() {
-    const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'http://localhost:3000';
-    const [activeTab, setActiveTab] = useSessionState<Tab>('kalpira:admin:active-tab', 'overview');
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-
-    const [stats, setStats] = useState<Stats | null>(null);
-    const [candidates, setCandidates] = useState<AdminUser[]>([]);
-    const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
-    const [studies, setStudies] = useState<AdminStudy[]>([]);
-    const [sessions, setSessions] = useState<AdminSession[]>([]);
-    const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
-    const [avgRating, setAvgRating] = useState(0);
-
-    const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useSessionState('kalpira:admin:search', '');
-    const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-    // Modal state
-    const [createRole, setCreateRole] = useState<Role | null>(null);
-    const [editUser, setEditUser] = useState<AdminUser | null>(null);
-    const [detailUserId, setDetailUserId] = useState<string | null>(null);
-    const [confirm, setConfirm] = useState<{ message: string; action: () => Promise<void> } | null>(null);
-    const [confirmBusy, setConfirmBusy] = useState(false);
-
-    const loadAll = useCallback(async () => {
-        setLoading(true);
-        setErrorMsg(null);
-        try {
-            const [s, c, iv, st, se, fb] = await Promise.all([
-                AdminApi.stats(),
-                AdminApi.users('candidate'),
-                AdminApi.interviewers(),
-                AdminApi.studies(),
-                AdminApi.sessions(),
-                AdminApi.feedback(),
-            ]);
-            setStats(s);
-            setCandidates(c.users);
-            setInterviewers(iv.interviewers);
-            setStudies(st.studies);
-            setSessions(se.sessions);
-            setFeedback(fb.feedback);
-            setAvgRating(fb.averageRating);
-        } catch (e) {
-            setErrorMsg(e instanceof Error ? e.message : 'Failed to load admin data. Are you signed in as an admin?');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { loadAll(); }, [loadAll]);
-
-    const runConfirm = async () => {
-        if (!confirm) return;
-        setConfirmBusy(true);
-        try {
-            await confirm.action();
-            setConfirm(null);
-        } catch (e) {
-            setErrorMsg(e instanceof Error ? e.message : 'Action failed');
-        } finally {
-            setConfirmBusy(false);
-        }
-    };
-
-    const handleLogout = async () => {
-        await apiFetch('/api/auth', { method: 'DELETE' });
-        window.location.href = `${mainAppUrl}/login`;
-    };
-
-    const matches = (s: string) => {
-        if (!search) return true;
-        return s.toLowerCase().includes(search.toLowerCase());
-    };
-
-    const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
-        { id: 'overview', label: 'Overview', icon: BarChart3 },
-        { id: 'candidates', label: 'Candidates', icon: Users },
-        { id: 'interviewers', label: 'Interviewers', icon: UserCog },
-        { id: 'studies', label: 'Studies', icon: GraduationCap },
-        { id: 'sessions', label: 'Sessions', icon: Activity },
-        { id: 'feedback', label: 'Feedback', icon: MessageSquare },
-    ];
-
+// ─── Search + create header ───────────────────────────────────────────────
+export function Toolbar({ search, setSearch, onCreate, createLabel }: {
+    search: string; setSearch: (s: string) => void; onCreate?: () => void; createLabel?: string;
+}) {
     return (
-        <div className="min-h-screen bg-slate-950 text-white flex">
-            <AnimatePresence>
-                {sidebarOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
-                )}
-            </AnimatePresence>
-
-            {/* Sidebar */}
-            <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 flex-shrink-0 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-                <div className="p-6 border-b border-slate-800">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                            <Shield size={18} className="text-white" />
-                        </div>
-                        <div>
-                            <p className="font-bold text-white text-sm">Admin Panel</p>
-                            <p className="text-xs text-slate-400">InterviewCoach</p>
-                        </div>
-                    </div>
-                </div>
-                <nav className="flex-1 p-4 space-y-1 overflow-auto">
-                    {navItems.map((item) => (
-                        <button key={item.id} onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === item.id ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                            <item.icon size={16} />
-                            {item.label}
-                            {activeTab === item.id && <ChevronRight size={14} className="ml-auto" />}
-                        </button>
-                    ))}
-                </nav>
-                <div className="p-4 border-t border-slate-800 space-y-2">
-                    <button onClick={() => { window.location.href = `${mainAppUrl}/studies`; }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
-                        <Database size={16} /> Back to App
-                    </button>
-                    <button onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
-                        <LogOut size={16} /> Logout
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main */}
-            <div className="flex-1 flex flex-col min-w-0">
-                <header className="sticky top-0 z-10 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800 px-4 sm:px-6 py-4 flex items-center gap-4">
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white">
-                        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
-                    <div className="flex-1">
-                        <h1 className="text-lg font-bold text-white capitalize">{activeTab}</h1>
-                    </div>
-                    <button onClick={loadAll} title="Refresh" className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white">
-                        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </header>
-
-                <main className="flex-1 p-4 sm:p-6 overflow-auto">
-                    {errorMsg && (
-                        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center justify-between">
-                            <span>{errorMsg}</span>
-                            <button onClick={() => setErrorMsg(null)} className="ml-3 text-red-400 hover:text-red-200" aria-label="Dismiss"><X size={14} /></button>
-                        </div>
-                    )}
-
-                    {loading ? (
-                        <div className="flex items-center justify-center h-64">
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                                <p className="text-slate-400 text-sm">Loading admin data…</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            {activeTab === 'overview' && <Overview stats={stats} avgRating={avgRating} feedbackCount={feedback.length} go={setActiveTab} />}
-
-                            {activeTab === 'candidates' && (
-                                <UsersTable
-                                    title="candidate" users={candidates.filter((u) => matches(u.name || '') || matches(u.email || ''))}
-                                    search={search} setSearch={setSearch}
-                                    onCreate={() => setCreateRole('candidate')}
-                                    onEdit={setEditUser} onView={setDetailUserId}
-                                    onDelete={(u) => setConfirm({
-                                        message: `Delete ${u.name || u.email}? This removes their sessions, studies and related data permanently.`,
-                                        action: async () => { await AdminApi.deleteUser(u.id); await loadAll(); },
-                                    })}
-                                />
-                            )}
-
-                            {activeTab === 'interviewers' && (
-                                <InterviewersTable
-                                    rows={interviewers.filter((u) => matches(u.name || '') || matches(u.email || ''))}
-                                    search={search} setSearch={setSearch}
-                                    onCreate={() => setCreateRole('interviewer')}
-                                    onView={setDetailUserId}
-                                    onEdit={(iv) => setEditUser({ id: iv.id, name: iv.name, email: iv.email, role: 'interviewer', oauthProvider: iv.oauthProvider, onboardingComplete: true, createdAt: iv.createdAt, _count: { interviewSessions: iv.totalInterviews, studies: iv.studiesCreated } })}
-                                    onDelete={(iv) => setConfirm({
-                                        message: `Delete interviewer ${iv.name || iv.email}? Their studies and assigned interviews will be affected.`,
-                                        action: async () => { await AdminApi.deleteUser(iv.id); await loadAll(); },
-                                    })}
-                                />
-                            )}
-
-                            {activeTab === 'studies' && (
-                                <StudiesTable
-                                    rows={studies.filter((s) => matches(s.name) || matches(s.owner?.email || ''))}
-                                    search={search} setSearch={setSearch}
-                                    onDelete={(s) => setConfirm({
-                                        message: `Delete study "${s.name}"? Stored interviews under it will be removed.`,
-                                        action: async () => { await AdminApi.deleteStudy(s.id); await loadAll(); },
-                                    })}
-                                />
-                            )}
-
-                            {activeTab === 'sessions' && <SessionsTable rows={sessions} />}
-
-                            {activeTab === 'feedback' && <FeedbackTable rows={feedback} avg={avgRating} />}
-                        </>
-                    )}
-                </main>
+        <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input type="text" placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50" />
             </div>
-
-            {/* Modals */}
-            {createRole && <CreateUserModal defaultRole={createRole} onClose={() => setCreateRole(null)} onCreated={loadAll} />}
-            {editUser && <EditUserModal user={editUser} onClose={() => setEditUser(null)} onSaved={loadAll} />}
-            {detailUserId && <UserDetailModal userId={detailUserId} onClose={() => setDetailUserId(null)} />}
-            {confirm && <ConfirmDialog message={confirm.message} onConfirm={runConfirm} onCancel={() => setConfirm(null)} busy={confirmBusy} />}
+            {onCreate && (
+                <button type="button" onClick={onCreate} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium">
+                    <UserPlus size={16} /> {createLabel || 'Create'}
+                </button>
+            )}
         </div>
     );
 }
 
+export function IconBtn({ onClick, title, children, danger }: { onClick: () => void; title: string; children: React.ReactNode; danger?: boolean }) {
+    return (
+        <button type="button" onClick={onClick} title={title} aria-label={title}
+            className={`p-2 rounded-lg transition-all ${danger ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-violet-300 hover:bg-violet-500/10'}`}>
+            {children}
+        </button>
+    );
+}
+
 // ─── Overview ─────────────────────────────────────────────────────────────
-function Overview({ stats, avgRating, feedbackCount, go }: {
-    stats: Stats | null; avgRating: number; feedbackCount: number; go: (t: Tab) => void;
+export function Overview({ stats, avgRating, feedbackCount }: {
+    stats: Stats | null; avgRating: number; feedbackCount: number;
 }) {
     return (
         <div className="space-y-6">
@@ -336,7 +146,7 @@ function Overview({ stats, avgRating, feedbackCount, go }: {
                         <div className="flex items-center gap-2 mb-3"><Star size={16} className="text-amber-400" /><h3 className="text-sm font-semibold text-white">Interviewer feedback</h3></div>
                         <p className="text-3xl font-bold text-white">{avgRating ? avgRating.toFixed(1) : '—'}<span className="text-sm text-slate-500"> / 5</span></p>
                         <p className="text-xs text-slate-500 mt-1">{feedbackCount} review{feedbackCount !== 1 ? 's' : ''}</p>
-                        <button onClick={() => go('feedback')} className="mt-3 text-xs text-violet-300 hover:text-violet-200 flex items-center gap-1">View all <ChevronRight size={12} /></button>
+                        <Link href="/feedback" className="mt-3 text-xs text-violet-300 hover:text-violet-200 flex items-center gap-1">View all <ChevronRight size={12} /></Link>
                     </div>
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
                         <div className="flex items-center gap-2 mb-3"><Zap size={16} className="text-yellow-400" /><h3 className="text-sm font-semibold text-white">Platform health</h3></div>
@@ -357,37 +167,8 @@ function Overview({ stats, avgRating, feedbackCount, go }: {
     );
 }
 
-// ─── Search + create header ───────────────────────────────────────────────
-function Toolbar({ search, setSearch, onCreate, createLabel }: {
-    search: string; setSearch: (s: string) => void; onCreate?: () => void; createLabel?: string;
-}) {
-    return (
-        <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input type="text" placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50" />
-            </div>
-            {onCreate && (
-                <button onClick={onCreate} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium">
-                    <UserPlus size={16} /> {createLabel || 'Create'}
-                </button>
-            )}
-        </div>
-    );
-}
-
-function IconBtn({ onClick, title, children, danger }: { onClick: () => void; title: string; children: React.ReactNode; danger?: boolean }) {
-    return (
-        <button onClick={onClick} title={title} aria-label={title}
-            className={`p-2 rounded-lg transition-all ${danger ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-violet-300 hover:bg-violet-500/10'}`}>
-            {children}
-        </button>
-    );
-}
-
 // ─── Candidates / users table ─────────────────────────────────────────────
-function UsersTable({ title, users, search, setSearch, onCreate, onEdit, onView, onDelete }: {
+export function UsersTable({ title, users, search, setSearch, onCreate, onEdit, onView, onDelete }: {
     title: string; users: AdminUser[]; search: string; setSearch: (s: string) => void;
     onCreate: () => void; onEdit: (u: AdminUser) => void; onView: (id: string) => void; onDelete: (u: AdminUser) => void;
 }) {
@@ -445,7 +226,7 @@ function UsersTable({ title, users, search, setSearch, onCreate, onEdit, onView,
 }
 
 // ─── Interviewers table (with scaling stats) ──────────────────────────────
-function InterviewersTable({ rows, search, setSearch, onCreate, onView, onEdit, onDelete }: {
+export function InterviewersTable({ rows, search, setSearch, onCreate, onView, onEdit, onDelete }: {
     rows: Interviewer[]; search: string; setSearch: (s: string) => void;
     onCreate: () => void; onView: (id: string) => void; onEdit: (iv: Interviewer) => void; onDelete: (iv: Interviewer) => void;
 }) {
@@ -508,7 +289,7 @@ function InterviewersTable({ rows, search, setSearch, onCreate, onView, onEdit, 
 }
 
 // ─── Studies table ────────────────────────────────────────────────────────
-function StudiesTable({ rows, search, setSearch, onDelete }: {
+export function StudiesTable({ rows, search, setSearch, onDelete }: {
     rows: AdminStudy[]; search: string; setSearch: (s: string) => void; onDelete: (s: AdminStudy) => void;
 }) {
     return (
@@ -565,7 +346,7 @@ function StudiesTable({ rows, search, setSearch, onDelete }: {
 }
 
 // ─── Sessions table ───────────────────────────────────────────────────────
-function SessionsTable({ rows }: { rows: AdminSession[] }) {
+export function SessionsTable({ rows }: { rows: AdminSession[] }) {
     return (
         <div className={tableWrap}>
             <div className="overflow-x-auto">
@@ -606,7 +387,7 @@ function SessionsTable({ rows }: { rows: AdminSession[] }) {
 }
 
 // ─── Feedback table ───────────────────────────────────────────────────────
-function FeedbackTable({ rows, avg }: { rows: FeedbackItem[]; avg: number }) {
+export function FeedbackTable({ rows, avg }: { rows: FeedbackItem[]; avg: number }) {
     return (
         <div className="space-y-4">
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 flex items-center gap-4">

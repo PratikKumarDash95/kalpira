@@ -1,5 +1,5 @@
 "use client";
-import { apiFetch, apiUrl } from '@/lib/apiClient';
+import { apiFetch, apiUrl, clearSessionDrafts } from '@/lib/apiClient';
 
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -353,6 +353,7 @@ export default function ProfilePage() {
                         setError('Logout failed. Please try again.');
                         return;
                       }
+                      clearSessionDrafts();
                       router.push(loginPath);
                     }}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-white"

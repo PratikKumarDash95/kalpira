@@ -81,7 +81,7 @@ const InterviewerRegister: React.FC = () => {
             const response = await apiFetch('/api/auth/resend-verification', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.trim() }),
+                body: JSON.stringify({ email: email.trim(), role: 'interviewer' }),
             });
             const data = await response.json();
             if (!response.ok) {

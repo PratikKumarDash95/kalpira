@@ -68,9 +68,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Valid role is required' }, { status: 400 });
         }
 
-        const existing = await supabaseDb.user.findUnique({ where: { email }, select: { id: true } });
+        // Uniqueness is now (email, role): the same email may hold a candidate
+        // AND an interviewer account, so only block a duplicate of the SAME role.
+        const existing = await supabaseDb.user.findFirst({ where: { email, role }, select: { id: true } });
         if (existing) {
-            return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+            return NextResponse.json({ error: `A ${role} with this email already exists` }, { status: 409 });
         }
 
         const hashed = await hashPassword(password);
@@ -109,7 +111,17 @@ export async function PATCH(request: Request) {
         const userId = typeof body.userId === 'string' ? body.userId : '';
         if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
 
+        // Need the current row to compute the effective (email, role) pair for
+        // the uniqueness clash check when either field changes.
+        const target = await supabaseDb.user.findUnique({ where: { id: userId }, select: { email: true, role: true } });
+        if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
         const updates: Record<string, unknown> = {};
+
+        if (body.role !== undefined && !ALLOWED_ROLES.includes(body.role as AllowedRole)) {
+            return NextResponse.json({ error: 'Valid role is required' }, { status: 400 });
+        }
+        const effectiveRole = (body.role !== undefined ? body.role : target.role) as string;
 
         if (body.name !== undefined) {
             updates.name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : null;
@@ -119,15 +131,21 @@ export async function PATCH(request: Request) {
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
             }
-            const clash = await supabaseDb.user.findUnique({ where: { email }, select: { id: true } });
+            // Clash only when another row shares the SAME (email, role) pair.
+            const clash = await supabaseDb.user.findFirst({ where: { email, role: effectiveRole }, select: { id: true } });
             if (clash && clash.id !== userId) {
-                return NextResponse.json({ error: 'Another user already uses this email' }, { status: 409 });
+                return NextResponse.json({ error: `Another ${effectiveRole} already uses this email` }, { status: 409 });
             }
             updates.email = email;
         }
         if (body.role !== undefined) {
-            if (!ALLOWED_ROLES.includes(body.role as AllowedRole)) {
-                return NextResponse.json({ error: 'Valid role is required' }, { status: 400 });
+            // Changing role (without an email change) can also collide with an
+            // existing (email, role) pair for the same email.
+            if (updates.email === undefined && body.role !== target.role) {
+                const clash = await supabaseDb.user.findFirst({ where: { email: target.email, role: body.role }, select: { id: true } });
+                if (clash && clash.id !== userId) {
+                    return NextResponse.json({ error: `Another ${body.role} already uses this email` }, { status: 409 });
+                }
             }
             updates.role = body.role;
         }

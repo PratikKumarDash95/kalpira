@@ -18,8 +18,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Valid role required' }, { status: 400 });
         }
 
-        await (supabaseDb.user.update as any)({
-            where: { email },
+        // Email is no longer globally unique (a candidate + interviewer may
+        // share one). Resolve to a single row by id before updating; refuse if
+        // the email is ambiguous so we never rewrite the wrong account.
+        const matches = await supabaseDb.user.findMany({ where: { email }, select: { id: true, role: true } });
+        if (matches.length === 0) {
+            return NextResponse.json({ error: `No account found for ${email}` }, { status: 404 });
+        }
+        if (matches.length > 1) {
+            return NextResponse.json(
+                { error: `Multiple accounts share ${email} (${matches.map((m: { role: string }) => m.role).join(', ')}). Edit the specific account from the Users panel instead.` },
+                { status: 409 }
+            );
+        }
+
+        await supabaseDb.user.update({
+            where: { id: matches[0].id },
             data: { role },
         });
         return NextResponse.json({ success: true, message: `Updated ${email} to ${role} role` });

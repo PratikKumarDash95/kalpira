@@ -44,12 +44,14 @@ async function resolveById(researcherId: string): Promise<ResearcherContext> {
   };
 }
 
-// Standalone context: uses env vars, resolves default user
+// Standalone context: uses env vars, resolves the session's bound user only
 async function getStandaloneContext(userId?: string): Promise<ResearcherContext> {
-  // In standalone mode, use the single admin user as the context user
+  // Only resolve a user when the session is bound to a specific id. A session
+  // with no userId (e.g. legacy global-admin) must NOT inherit an arbitrary
+  // row via findFirst() — that leaked a seeded user's profile and API keys.
   const user = userId
     ? await supabaseDb.user.findUnique({ where: { id: userId } })
-    : await supabaseDb.user.findFirst();
+    : null;
 
   return {
     researcherId: null,

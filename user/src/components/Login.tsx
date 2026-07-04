@@ -132,10 +132,13 @@ const Login: React.FC = () => {
         return;
       }
 
+      // Scope the login to the selected role — one email can own separate
+      // candidate ('user') and interviewer accounts. Map UI 'user' → 'candidate'.
+      const roleForApi = selectedRole === 'interviewer' ? 'interviewer' : 'candidate';
       const response = await apiFetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmedEmail, password }),
+        body: JSON.stringify({ email: trimmedEmail, password, role: roleForApi }),
       });
 
       const data = await response.json();
@@ -184,7 +187,7 @@ const Login: React.FC = () => {
       const response = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmedEmail }),
+        body: JSON.stringify({ email: trimmedEmail, role: selectedRole === 'interviewer' ? 'interviewer' : 'candidate' }),
       });
       const data = await response.json();
 
@@ -232,6 +235,7 @@ const Login: React.FC = () => {
           otp: resetOtp,
           password,
           confirmPassword,
+          role: selectedRole === 'interviewer' ? 'interviewer' : 'candidate',
         }),
       });
       const data = await response.json();

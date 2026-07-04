@@ -61,9 +61,10 @@ export async function POST(request: Request) {
             );
         }
 
-        // Check if user already exists
-        const existingUser = await supabaseDb.user.findUnique({
-            where: { email: trimmedEmail },
+        // Check if a CANDIDATE account already exists for this email. The same
+        // email may separately own an interviewer account, so scope by role.
+        const existingUser = await supabaseDb.user.findFirst({
+            where: { email: trimmedEmail, role: 'candidate' },
         });
 
         if (existingUser) {

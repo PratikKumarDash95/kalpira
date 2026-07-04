@@ -17,12 +17,16 @@ export async function GET() {
     }
 
     // In standalone mode, password users still carry a researcherId in the
-    // session. Return that profile when available; otherwise fall back to the
-    // first local user so the UI can show a profile instead of Sign in.
+    // session. A session WITHOUT a researcherId is not a real user identity
+    // (e.g. the legacy global-admin login) — do NOT fall back to findFirst(),
+    // which returned an arbitrary/seeded row and made a logged-out or admin
+    // browser display someone else's profile.
     if (!isHostedMode()) {
-      const user = researcherId
-        ? await supabaseDb.user.findUnique({ where: { id: researcherId } })
-        : await supabaseDb.user.findFirst();
+      if (!researcherId) {
+        return NextResponse.json({ mode: 'standalone', authenticated: false, profile: null }, { status: 401 });
+      }
+
+      const user = await supabaseDb.user.findUnique({ where: { id: researcherId } });
 
       return NextResponse.json({
         mode: 'standalone',

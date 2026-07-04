@@ -10,12 +10,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const role = body.role === 'interviewer' ? 'interviewer' : 'candidate';
 
     if (!emailPattern.test(email)) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
-    const user = await supabaseDb.user.findUnique({ where: { email } });
+    const user = await supabaseDb.user.findFirst({ where: { email, role } });
 
     if (!user) {
       return NextResponse.json({ success: true });
