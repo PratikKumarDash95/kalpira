@@ -1,38 +1,27 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { requireAdmin } from '@/lib/adminAuth';
 import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
 
-async function isAdmin(): Promise<boolean> {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-    if (!token) return false;
-    const result = await verifySessionToken(token);
-    if (!result.valid || !result.researcherId) return false;
-    const user = await supabaseDb.user.findUnique({
-        where: { id: result.researcherId },
-        select: { role: true },
-    });
-    return user?.role === 'admin';
-}
-
 export async function GET() {
-    if (!(await isAdmin())) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const denied = await requireAdmin();
+    if (denied) return denied;
 
     try {
         const sessions = await supabaseDb.interviewSession.findMany({
             orderBy: { startedAt: 'desc' },
-            take: 50,
+            take: 100,
             select: {
                 id: true,
                 startedAt: true,
                 completedAt: true,
                 averageScore: true,
                 role: true,
+                difficulty: true,
+                mode: true,
+                candidateName: true,
+                candidateEmail: true,
                 user: {
                     select: { name: true, email: true },
                 },

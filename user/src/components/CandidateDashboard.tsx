@@ -15,6 +15,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
+import InterviewFeedbackWidget from '@/components/InterviewFeedbackWidget';
 
 interface CandidateInfo {
   id: string;
@@ -197,13 +198,18 @@ const CandidateDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => router.push(session.completedAt ? `/results/${session.id}` : `/candidate/interview/${session.id}`)}
-                    className="flex w-full items-center justify-center gap-2 px-3 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors"
-                  >
-                    {session.completedAt ? <CheckCircle size={16} /> : <ArrowRight size={16} />}
-                    {session.completedAt ? 'View Results' : 'Start Interview'}
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => router.push(session.completedAt ? `/results/${session.id}` : `/candidate/interview/${session.id}`)}
+                      className="flex w-full items-center justify-center gap-2 px-3 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors"
+                    >
+                      {session.completedAt ? <CheckCircle size={16} /> : <ArrowRight size={16} />}
+                      {session.completedAt ? 'View Results' : 'Start Interview'}
+                    </button>
+                    {session.completedAt && (
+                      <InterviewFeedbackWidget sessionId={session.id} interviewerName={session.interviewerName} />
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))}
