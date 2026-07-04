@@ -166,6 +166,7 @@ const tables = {
   improvementPlan: 'ImprovementPlan',
   badge: 'Badge',
   readinessIndex: 'ReadinessIndex',
+  interviewFeedback: 'InterviewFeedback',
 } as const;
 
 type ModelName = keyof typeof tables;
@@ -197,6 +198,7 @@ type SupabaseDb = {
   improvementPlan: Delegate;
   badge: Delegate;
   readinessIndex: Delegate;
+  interviewFeedback: Delegate;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -470,6 +472,7 @@ const db: SupabaseDb = {
   improvementPlan: delegate('improvementPlan'),
   badge: delegate('badge'),
   readinessIndex: delegate('readinessIndex'),
+  interviewFeedback: delegate('interviewFeedback'),
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);
   },

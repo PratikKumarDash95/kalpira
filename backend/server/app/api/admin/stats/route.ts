@@ -1,44 +1,44 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { requireAdmin } from '@/lib/adminAuth';
 import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
 
-async function isAdmin(): Promise<boolean> {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-    if (!token) return false;
-    const result = await verifySessionToken(token);
-    if (!result.valid || !result.researcherId) return false;
-    const user = await supabaseDb.user.findUnique({
-        where: { id: result.researcherId },
-        select: { role: true },
-    });
-    return user?.role === 'admin';
-}
-
 export async function GET() {
-    if (!(await isAdmin())) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const denied = await requireAdmin();
+    if (denied) return denied;
 
     try {
-        const [totalUsers, totalStudies, totalSessions, recentUsers] = await Promise.all([
-            supabaseDb.user.count(),
-            supabaseDb.study.count(),
-            supabaseDb.interviewSession.count(),
-            supabaseDb.user.findMany({
-                orderBy: { createdAt: 'desc' },
-                take: 5,
-                select: { id: true, name: true, email: true, createdAt: true },
-            }),
+        const [users, studies, sessions] = await Promise.all([
+            supabaseDb.user.findMany({ select: { id: true, role: true, name: true, email: true, createdAt: true } }),
+            supabaseDb.study.findMany({ select: { id: true, isLocked: true } }),
+            supabaseDb.interviewSession.findMany({ select: { id: true, completedAt: true } }),
         ]);
 
+        const roleOf = (r: string | null | undefined) =>
+            r === 'admin' || r === 'interviewer' ? r : 'candidate';
+
+        const totalCandidates = users.filter(u => roleOf(u.role) === 'candidate').length;
+        const totalInterviewers = users.filter(u => roleOf(u.role) === 'interviewer').length;
+        const totalAdmins = users.filter(u => roleOf(u.role) === 'admin').length;
+
+        const activeStudies = studies.filter(s => !s.isLocked).length;
+        const activeInterviews = sessions.filter(s => !s.completedAt).length;
+
+        const recentUsers = [...users]
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5)
+            .map(u => ({ id: u.id, name: u.name, email: u.email, role: roleOf(u.role), createdAt: u.createdAt }));
+
         return NextResponse.json({
-            totalUsers,
-            totalStudies,
-            totalSessions,
+            totalUsers: users.length,
+            totalCandidates,
+            totalInterviewers,
+            totalAdmins,
+            totalStudies: studies.length,
+            activeStudies,
+            totalSessions: sessions.length,
+            activeInterviews,
             recentUsers,
         });
     } catch (error) {
