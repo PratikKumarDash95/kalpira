@@ -13,6 +13,11 @@ const OAUTH_ORIGIN_COOKIE = 'oauth_return_origin';
 const BASELINE_ORIGINS = [
   'https://kalpira.in',
   'https://www.kalpira.in',
+  // First-party subdomains (recommended production setup — share one cookie).
+  'https://admin.kalpira.in',
+  'https://interviewer.kalpira.in',
+  'https://api.kalpira.in',
+  // Legacy Vercel aliases (kept so nothing breaks during the migration).
   'https://kalpira.vercel.app',
   'https://kalpira-admin.vercel.app',
   'https://kalpira-interviewer.vercel.app',
