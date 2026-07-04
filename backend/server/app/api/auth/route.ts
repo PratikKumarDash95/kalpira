@@ -11,6 +11,8 @@ import {
   createSessionToken,
   verifySessionToken,
   getSessionCookieOptions,
+  getSessionSecondsForRole,
+  clearSessionCookie,
   SESSION_COOKIE_NAME
 } from '@/lib/auth';
 import { isHostedMode } from '@/lib/mode';
@@ -19,7 +21,7 @@ import supabaseDb from '@/lib/supabaseDb';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { password, email } = body as { password: string; email?: string };
+    const { password, email, role: rawRole } = body as { password: string; email?: string; role?: string };
 
     if (!password) {
       return NextResponse.json(
@@ -32,8 +34,13 @@ export async function POST(request: Request) {
     if (email) {
       const { verifyPassword } = await import('@/lib/auth');
 
-      const user = await supabaseDb.user.findUnique({
-        where: { email },
+      // One email can own separate candidate + interviewer accounts, so the
+      // login MUST be scoped to the role the user picked. Map the UI's 'user'
+      // to the stored 'candidate' role; default to candidate when unspecified.
+      const role = rawRole === 'interviewer' ? 'interviewer' : 'candidate';
+
+      const user = await supabaseDb.user.findFirst({
+        where: { email, role },
       });
 
       if (!user || !user.password) {
@@ -61,13 +68,14 @@ export async function POST(request: Request) {
         );
       }
 
-      // Create session for this specific user
-      const sessionToken = await createSessionToken(user.id);
+      // Create session for this specific user (role controls token lifetime)
+      const sessionRole = user.role || 'candidate';
+      const sessionToken = await createSessionToken(user.id, sessionRole);
 
       const cookieStore = await cookies();
-      cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
+      cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions(getSessionSecondsForRole(sessionRole)));
 
-      return NextResponse.json({ success: true, user: { id: user.id, role: user.role || 'candidate' } });
+      return NextResponse.json({ success: true, user: { id: user.id, role: sessionRole } });
     }
 
     // Scenario 2: Legacy Standalone Admin Password (No Email)
@@ -99,10 +107,10 @@ export async function POST(request: Request) {
     }
 
     // Create signed session token (no researcherId for global admin)
-    const sessionToken = await createSessionToken();
+    const sessionToken = await createSessionToken(undefined, 'admin');
 
     const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
+    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions(getSessionSecondsForRole('admin')));
 
     return NextResponse.json({ success: true });
 
@@ -128,7 +136,7 @@ export async function GET() {
     // Verify the token is valid (not just that it exists)
     const session = await verifySessionToken(authCookie.value);
     if (!session.valid) {
-      cookieStore.delete(SESSION_COOKIE_NAME);
+      clearSessionCookie(cookieStore);
     }
 
     return NextResponse.json({
@@ -144,7 +152,9 @@ export async function GET() {
 export async function DELETE() {
   try {
     const cookieStore = await cookies();
-    cookieStore.delete(SESSION_COOKIE_NAME);
+    // Clear with the SAME domain/path/sameSite the cookie was set with, or the
+    // domain-scoped (.kalpira.in) cookie survives and the session never ends.
+    clearSessionCookie(cookieStore);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json(

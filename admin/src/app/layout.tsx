@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import AdminShell from '@/components/AdminShell';
 
 export const metadata: Metadata = {
   title: 'Kalpira Admin',
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="kalpira-light min-h-screen font-sans antialiased">
-        {children}
+        <AdminShell>{children}</AdminShell>
       </body>
     </html>
   );

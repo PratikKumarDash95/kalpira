@@ -73,7 +73,7 @@ const InterviewerLogin: React.FC = () => {
             const res = await apiFetch('/api/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, role: 'interviewer' }),
             });
             const data = await res.json();
             if (!res.ok) { setError(data.error || 'Login failed.'); return; }
@@ -117,7 +117,7 @@ const InterviewerLogin: React.FC = () => {
             const response = await apiFetch('/api/auth/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.trim() }),
+                body: JSON.stringify({ email: email.trim(), role: 'interviewer' }),
             });
             const data = await response.json();
             if (!response.ok) {
@@ -162,6 +162,7 @@ const InterviewerLogin: React.FC = () => {
                     otp: resetOtp,
                     password,
                     confirmPassword,
+                    role: 'interviewer',
                 }),
             });
             const data = await response.json();

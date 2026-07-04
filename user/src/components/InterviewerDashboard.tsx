@@ -1,5 +1,5 @@
 'use client';
-import { apiFetch, apiUrl } from '@/lib/apiClient';
+import { apiFetch, apiUrl, clearSessionDrafts } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -227,6 +227,7 @@ const InterviewerDashboard: React.FC = () => {
             setError('Logout failed. Please try again.');
             return;
         }
+        clearSessionDrafts();
         router.push(portalPath('/login'));
     };
 

@@ -8,16 +8,20 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   let email = '';
+  let role: 'candidate' | 'interviewer' = 'candidate';
 
   try {
     const body = await request.json();
     email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    // Same email can own separate candidate/interviewer accounts — reset the
+    // one matching the role the user chose on the login screen.
+    role = body.role === 'interviewer' ? 'interviewer' : 'candidate';
 
     if (!emailPattern.test(email)) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
-    const user = await supabaseDb.user.findUnique({ where: { email } });
+    const user = await supabaseDb.user.findFirst({ where: { email, role } });
 
     if (!user || !user.password) {
       return NextResponse.json({
@@ -54,7 +58,7 @@ export async function POST(request: Request) {
     if (error instanceof EmailDeliveryError) {
       try {
         if (emailPattern.test(email)) {
-          const user = await supabaseDb.user.findUnique({ where: { email } });
+          const user = await supabaseDb.user.findFirst({ where: { email, role } });
           if (user?.passwordResetOtp) {
             await supabaseDb.user.update({
               where: { id: user.id },

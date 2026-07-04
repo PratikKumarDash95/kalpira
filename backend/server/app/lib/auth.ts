@@ -9,6 +9,21 @@ const SESSION_COOKIE_NAME = 'research-auth';
 const TOKEN_DURATION_DAYS = 2;
 const TOKEN_DURATION_SECONDS = 60 * 60 * 24 * TOKEN_DURATION_DAYS;
 
+// Role-based session lifetime. Candidates stay signed in longest (2 days);
+// interviewer and admin sessions are shorter-lived (1 day) since they carry
+// more privilege. The JWT `exp` and the cookie `maxAge` are both set from this
+// so the token auto-expires server-side AND the browser drops the cookie.
+const DAY_SECONDS = 60 * 60 * 24;
+const ROLE_TOKEN_SECONDS: Record<string, number> = {
+  candidate: 2 * DAY_SECONDS,
+  interviewer: 1 * DAY_SECONDS,
+  admin: 1 * DAY_SECONDS,
+};
+
+export function getSessionSecondsForRole(role?: string): number {
+  return (role && ROLE_TOKEN_SECONDS[role]) || TOKEN_DURATION_SECONDS;
+}
+
 // Get the signing secret from environment
 // Uses SESSION_SECRET if available, falls back to ADMIN_PASSWORD
 function getSecret(): Uint8Array {
@@ -29,8 +44,10 @@ function getSecret(): Uint8Array {
 }
 
 // Create a signed session token
-// In hosted mode, embeds researcherId for multi-tenant context resolution
-export async function createSessionToken(researcherId?: string): Promise<string> {
+// In hosted mode, embeds researcherId for multi-tenant context resolution.
+// The role controls the token lifetime (see ROLE_TOKEN_SECONDS) and is stored
+// as a claim so callers can read it without a DB round-trip.
+export async function createSessionToken(researcherId?: string, role?: string): Promise<string> {
   const secret = getSecret();
 
   const payload: Record<string, unknown> = { type: 'session' };
@@ -40,6 +57,10 @@ export async function createSessionToken(researcherId?: string): Promise<string>
     payload.researcherId = researcherId;
   }
 
+  if (role) {
+    payload.role = role;
+  }
+
   if (isHostedMode()) {
     payload.mode = 'hosted';
   }
@@ -47,7 +68,7 @@ export async function createSessionToken(researcherId?: string): Promise<string>
   const token = await new jose.SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(`${TOKEN_DURATION_SECONDS}s`)
+    .setExpirationTime(`${getSessionSecondsForRole(role)}s`)
     .sign(secret);
 
   return token;
@@ -57,6 +78,7 @@ export async function createSessionToken(researcherId?: string): Promise<string>
 export interface SessionVerifyResult {
   valid: boolean;
   researcherId?: string; // Present in hosted mode
+  role?: string; // Present when the token was issued with a role
 }
 
 // Verify a session token
@@ -77,16 +99,17 @@ export async function verifySessionToken(token: string): Promise<SessionVerifyRe
 
     // Always extract researcherId if present (for Interviewer role in standalone mode)
     const researcherId = payload.researcherId as string | undefined;
+    const role = payload.role as string | undefined;
 
     // In hosted mode, researcherId is mandatory
     if (isHostedMode()) {
       if (!researcherId) {
         return { valid: false };
       }
-      return { valid: true, researcherId };
+      return { valid: true, researcherId, role };
     }
 
-    return { valid: true, researcherId };
+    return { valid: true, researcherId, role };
   } catch {
     // Token invalid, expired, or tampered with
     return { valid: false };
@@ -122,7 +145,7 @@ export function isCrossSiteDeployment(): boolean {
 // increasingly BLOCK such third-party cookies entirely, so the subdomain setup
 // above is strongly recommended. Locally everything is same-site localhost, so
 // Lax (without Secure, since local dev is plain http) is kept as the default.
-export function getSessionCookieOptions() {
+export function getSessionCookieOptions(maxAgeSeconds: number = TOKEN_DURATION_SECONDS) {
   const crossSite = isCrossSiteDeployment();
   // Optional: scope the cookie to a shared parent domain (leading dot), e.g.
   // ".kalpira.in", so api.kalpira.in and www.kalpira.in share one first-party
@@ -132,10 +155,30 @@ export function getSessionCookieOptions() {
     httpOnly: true,
     secure: crossSite,
     sameSite: crossSite ? ('none' as const) : ('lax' as const),
-    maxAge: TOKEN_DURATION_SECONDS,
+    maxAge: maxAgeSeconds,
     path: '/',
     ...(domain ? { domain } : {}),
   };
+}
+
+// Clear the session cookie. A cookie set with Domain=<COOKIE_DOMAIN>/Path=/ can
+// ONLY be removed by a Set-Cookie that repeats the SAME domain/path (and, for
+// cross-site cookies, SameSite=None; Secure). Deleting by name alone leaves the
+// domain-scoped cookie alive — so logout must use these matching attributes.
+export function clearSessionCookie(cookieStore: {
+  set: (name: string, value: string, options: Record<string, unknown>) => void;
+}): void {
+  const crossSite = isCrossSiteDeployment();
+  const domain = process.env.COOKIE_DOMAIN?.trim() || undefined;
+  cookieStore.set(SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: crossSite,
+    sameSite: crossSite ? ('none' as const) : ('lax' as const),
+    maxAge: 0,
+    expires: new Date(0),
+    path: '/',
+    ...(domain ? { domain } : {}),
+  });
 }
 
 export { SESSION_COOKIE_NAME, TOKEN_DURATION_DAYS, TOKEN_DURATION_SECONDS };

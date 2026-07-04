@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import * as arctic from 'arctic';
 import { cookies } from 'next/headers';
-import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { createSessionToken, getSessionCookieOptions, getSessionSecondsForRole, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { getGoogleProfile } from '@/lib/googleOAuth';
 import supabaseDb from '@/lib/supabaseDb';
 import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin } from '@/lib/oauthOrigin';
@@ -73,10 +73,11 @@ export async function GET(request: Request) {
     });
 
     if (!user) {
-      // Email is unique across all roles, so link/promote an existing account
-      // instead of inserting a duplicate row.
-      const existing = await supabaseDb.user.findUnique({
-        where: { email: googleUser.email },
+      // Link an existing INTERVIEWER account for this email (scoped by role).
+      // A candidate account may separately own the same email — we must NOT
+      // promote/overwrite it; only ever touch the interviewer row here.
+      const existing = await supabaseDb.user.findFirst({
+        where: { email: googleUser.email, role: 'interviewer' },
       });
 
       if (existing) {
@@ -86,7 +87,6 @@ export async function GET(request: Request) {
             oauthProvider: 'google',
             oauthId: googleUser.id,
             avatarUrl: existing.avatarUrl || googleUser.picture,
-            role: 'interviewer',
             emailVerifiedAt: existing.emailVerifiedAt || new Date(),
             emailVerificationToken: null,
             emailVerificationSentAt: null,
@@ -114,8 +114,8 @@ export async function GET(request: Request) {
       }
     }
 
-    const sessionToken = await createSessionToken(user.id);
-    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
+    const sessionToken = await createSessionToken(user.id, 'interviewer');
+    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions(getSessionSecondsForRole('interviewer')));
 
     return NextResponse.redirect(new URL('/interviewer/dashboard', baseUrl));
   } catch (error) {

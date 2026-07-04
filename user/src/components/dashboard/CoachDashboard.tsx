@@ -1,5 +1,5 @@
 'use client';
-import { apiFetch, apiUrl } from '@/lib/apiClient';
+import { apiFetch, apiUrl, clearSessionDrafts } from '@/lib/apiClient';
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
@@ -101,8 +101,10 @@ const CoachDashboard: React.FC = () => {
     const handleLogout = useCallback(async () => {
         try {
             await apiFetch('/api/auth/logout', { method: 'POST' });
+            clearSessionDrafts();
             router.push('/login');
         } catch {
+            clearSessionDrafts();
             router.push('/login');
         }
     }, [router]);

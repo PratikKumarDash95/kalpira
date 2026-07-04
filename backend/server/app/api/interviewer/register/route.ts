@@ -29,13 +29,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: passwordError }, { status: 400 });
         }
 
-        const existingUser = await supabaseDb.user.findUnique({ where: { email } });
+        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedName = name.trim();
+
+        // Check for an existing INTERVIEWER account for this email (a candidate
+        // account with the same email may legitimately coexist).
+        const existingUser = await supabaseDb.user.findFirst({ where: { email: trimmedEmail, role: 'interviewer' } });
         if (existingUser) {
             return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
         }
 
-        const trimmedEmail = email.trim().toLowerCase();
-        const trimmedName = name.trim();
         const passwordHash = await hashPassword(password);
         const { rawToken, hashedToken } = createEmailVerificationToken();
         const now = new Date();

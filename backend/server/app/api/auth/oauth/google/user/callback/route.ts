@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import * as arctic from 'arctic';
 import { cookies } from 'next/headers';
-import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { createSessionToken, getSessionCookieOptions, getSessionSecondsForRole, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { getGoogleProfile } from '@/lib/googleOAuth';
 import supabaseDb from '@/lib/supabaseDb';
 import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin } from '@/lib/oauthOrigin';
@@ -66,16 +66,20 @@ export async function GET(request: Request) {
     step = 'reading Google profile';
     const googleUser = await getGoogleProfile(tokens);
 
-    // Find existing user by OAuth provider+id
+    // Find existing CANDIDATE by OAuth provider+id. Scope by role: the same
+    // Google account can also own an interviewer row, and this "user" flow must
+    // only ever resolve the candidate account.
     step = 'finding user by Google OAuth id';
     let user = await supabaseDb.user.findFirst({
-      where: { oauthProvider: 'google', oauthId: googleUser.id },
+      where: { oauthProvider: 'google', oauthId: googleUser.id, role: 'candidate' },
     });
 
     if (!user) {
-      // Check if email is already registered (link accounts)
+      // Check if a CANDIDATE account already exists for this email (link it).
+      // Scope by role so a Google "user" sign-in never links to / promotes the
+      // interviewer account that may share this email.
       step = 'finding user by Google email';
-      const existing = await supabaseDb.user.findUnique({ where: { email: googleUser.email } });
+      const existing = await supabaseDb.user.findFirst({ where: { email: googleUser.email, role: 'candidate' } });
       if (existing) {
         // Link Google OAuth to existing account
         step = 'linking Google OAuth to existing user';
@@ -114,8 +118,9 @@ export async function GET(request: Request) {
     }
 
     step = 'creating session';
-    const sessionToken = await createSessionToken(user.id);
-    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions());
+    const sessionRole = user.role || 'candidate';
+    const sessionToken = await createSessionToken(user.id, sessionRole);
+    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions(getSessionSecondsForRole(sessionRole)));
 
     // Land the account on the dashboard that matches its ACTUAL role. Someone
     // may sign in via the "user" button with an account that is actually an

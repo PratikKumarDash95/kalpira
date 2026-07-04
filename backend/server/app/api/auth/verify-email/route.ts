@@ -23,8 +23,11 @@ export async function GET(request: Request) {
   }
 
   const hashedToken = hashEmailVerificationToken(token);
-  const user = await supabaseDb.user.findUnique({
-    where: { email },
+  // The verification token is unique per row, so match on (email, token) to
+  // pick the exact account even when a candidate and interviewer share the
+  // email. findFirst (not findUnique) since email alone is no longer unique.
+  const user = await supabaseDb.user.findFirst({
+    where: { email, emailVerificationToken: hashedToken },
   });
 
   if (!user || user.emailVerificationToken !== hashedToken) {

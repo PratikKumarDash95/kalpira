@@ -13,6 +13,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const role = body.role === 'interviewer' ? 'interviewer' : 'candidate';
     const otp = typeof body.otp === 'string' ? body.otp.trim() : '';
     const password = typeof body.password === 'string' ? body.password : '';
     const confirmPassword = typeof body.confirmPassword === 'string' ? body.confirmPassword : '';
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Passwords do not match.' }, { status: 400 });
     }
 
-    const user = await supabaseDb.user.findUnique({ where: { email } });
+    const user = await supabaseDb.user.findFirst({ where: { email, role } });
     const hashedOtp = hashPasswordResetOtp(otp);
 
     if (
