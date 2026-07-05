@@ -1,36 +1,23 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import supabaseDb from '@/lib/supabaseDb';
-import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
 import { isInterviewClosed } from '@/lib/interviewDeadline';
 import { sendInterviewAssignmentEmail } from '@/lib/email';
+import { getInterviewerUser } from '@/lib/interviewerAuth';
+import { resolveEffectivePlan } from '@/lib/plans';
+import { excludeSelfPreviewSessions } from '@/lib/previewSession';
 
 export const dynamic = 'force-dynamic';
 
 const db = supabaseDb as any;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-async function getInterviewerId(): Promise<string | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-    if (!token) return null;
-    const session = await verifySessionToken(token);
-    if (!session.valid || !session.researcherId) return null;
-    const user = await db.user.findUnique({ where: { id: session.researcherId } });
-    if (!user || user.role !== 'interviewer') return null;
-    return user.id;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  const interviewerId = await getInterviewerId();
+  const interviewer = await getInterviewerUser();
 
-  if (!interviewerId) {
+  if (!interviewer) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const interviewerId = interviewer.id;
 
   const study = await db.study.findFirst({
     where: { id: params.id, userId: interviewerId },
@@ -71,16 +58,29 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'This interview is closed. New candidates cannot be assigned.' }, { status: 410 });
   }
 
+  // Enforce the plan's per-interview candidate (seat) limit. Self-preview runs
+  // don't consume seats, so exclude them from the existing count.
+  const { limits } = resolveEffectivePlan(interviewer);
+  const existingSessions = await db.interviewSession.findMany({ where: { studyId: params.id } });
+  const existingRealCount = excludeSelfPreviewSessions(existingSessions).length;
+  const newCandidateEmails = new Set(existingSessions.map((s: any) => (s.candidateEmail || '').toLowerCase()));
+  const incomingNewCount = uniqueCandidates.filter((c) => !newCandidateEmails.has(c.candidateEmail)).length;
+  if (existingRealCount + incomingNewCount > limits.maxStudentsPerInterview) {
+    return NextResponse.json(
+      {
+        error: `This exceeds your plan's limit of ${limits.maxStudentsPerInterview} candidates per interview. Upgrade your plan for more seats.`,
+        code: 'PLAN_LIMIT',
+      },
+      { status: 403 },
+    );
+  }
+
   const assignments = [];
   let reusedCount = 0;
   let createdCount = 0;
   let emailSentCount = 0;
   let emailFailedCount = 0;
 
-  const interviewer = await db.user.findUnique({
-    where: { id: interviewerId },
-    select: { name: true, email: true },
-  });
   const studyName = typeof config?.name === 'string' && config.name.trim() ? config.name.trim() : 'Interview';
   const companyName = typeof config?.companyName === 'string' ? config.companyName : '';
 

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import supabaseDb from '@/lib/supabaseDb';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { resolveEffectivePlan } from '@/lib/plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,8 @@ type InterviewerUser = {
     onboardingComplete: boolean;
     encryptedGeminiApiKey: string | null;
     encryptedAnthropicApiKey: string | null;
+    subscriptionPlan: string | null;
+    planExpiresAt: Date | string | null;
     createdAt: Date;
 };
 
@@ -41,6 +44,8 @@ async function getInterviewer() {
             onboardingComplete: true,
             encryptedGeminiApiKey: true,
             encryptedAnthropicApiKey: true,
+            subscriptionPlan: true,
+            planExpiresAt: true,
             createdAt: true,
         },
     }) as InterviewerUser | null;
@@ -52,6 +57,7 @@ async function getInterviewer() {
 }
 
 function toProfile(user: InterviewerUser) {
+    const effective = resolveEffectivePlan(user);
     return {
         id: user.id,
         email: user.email || '',
@@ -62,6 +68,9 @@ function toProfile(user: InterviewerUser) {
         onboardingComplete: user.onboardingComplete,
         hasGeminiKey: !!user.encryptedGeminiApiKey,
         hasAnthropicKey: !!user.encryptedAnthropicApiKey,
+        plan: effective.planKey,
+        planExpiresAt: effective.expiresAt,
+        planActive: effective.isActive,
         createdAt: user.createdAt,
     };
 }

@@ -4,13 +4,21 @@ import { apiFetch, apiUrl, clearSessionDrafts } from '@/lib/apiClient';
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import JSZip from 'jszip';
 import { useSessionState } from '@/hooks/useSessionState';
+import { PLAN_LABELS, PlanKey } from '@/lib/plans';
+import {
+    AssignmentCandidate,
+    candidatesFromRows,
+    createCandidate,
+    emailPattern,
+    parseCsvRows,
+    parseXlsxRows,
+} from '@/lib/candidateImport';
 import {
     Briefcase, Plus, Users, BarChart2, Clock,
     LogOut, Loader2, AlertTriangle, Copy, Check, ExternalLink,
     TrendingUp, FileText, Zap, Send, X, User, Mail, UserCircle,
-    FileSpreadsheet, Trash2, UserPlus
+    FileSpreadsheet, Trash2, UserPlus, CreditCard
 } from 'lucide-react';
 
 interface StudySummary {
@@ -26,150 +34,12 @@ interface InterviewerInfo {
     id: string;
     name: string;
     email: string;
+    plan?: PlanKey;
+    planExpiresAt?: string | null;
+    planActive?: boolean;
 }
 
-interface AssignmentCandidate {
-    id: string;
-    name: string;
-    email: string;
-    source: 'manual' | 'file';
-}
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const createCandidate = (source: AssignmentCandidate['source'] = 'manual'): AssignmentCandidate => ({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    name: '',
-    email: '',
-    source,
-});
-
-const normalizeCell = (value: string) => value.replace(/\s+/g, ' ').trim();
-
-const parseXml = (xml: string) => new DOMParser().parseFromString(xml, 'application/xml');
-
-const columnIndexFromRef = (cellRef: string, fallback: number) => {
-    const letters = cellRef.replace(/[0-9]/g, '').toUpperCase();
-    if (!letters) return fallback;
-    return letters.split('').reduce((total, letter) => total * 26 + letter.charCodeAt(0) - 64, 0) - 1;
-};
-
-const detectDelimiter = (firstLine: string): string => {
-    const counts = { ',': 0, ';': 0, '\t': 0 };
-    let inQuote = false;
-    for (const ch of firstLine) {
-        if (ch === '"') inQuote = !inQuote;
-        else if (!inQuote && (ch === ',' || ch === ';' || ch === '\t')) {
-            counts[ch as ',' | ';' | '\t'] += 1;
-        }
-    }
-    return (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as string) || ',';
-};
-
-const parseCsvRows = (rawText: string): string[][] => {
-    // Strip UTF-8 BOM, normalize trailing whitespace
-    const text = rawText.replace(/^﻿/, '');
-    const firstLineEnd = text.search(/[\r\n]/);
-    const firstLine = firstLineEnd === -1 ? text : text.slice(0, firstLineEnd);
-    const delimiter = detectDelimiter(firstLine);
-
-    const rows: string[][] = [];
-    let row: string[] = [];
-    let cell = '';
-    let quoted = false;
-
-    for (let index = 0; index < text.length; index += 1) {
-        const char = text[index];
-        const next = text[index + 1];
-
-        if (char === '"' && quoted && next === '"') {
-            cell += '"';
-            index += 1;
-        } else if (char === '"') {
-            quoted = !quoted;
-        } else if (char === delimiter && !quoted) {
-            row.push(normalizeCell(cell));
-            cell = '';
-        } else if ((char === '\n' || char === '\r') && !quoted) {
-            if (char === '\r' && next === '\n') index += 1;
-            row.push(normalizeCell(cell));
-            if (row.some(Boolean)) rows.push(row);
-            row = [];
-            cell = '';
-        } else {
-            cell += char;
-        }
-    }
-
-    // Flush any final cell (even if unterminated quote — better than dropping it silently)
-    if (cell.length > 0 || row.length > 0) {
-        row.push(normalizeCell(cell));
-        if (row.some(Boolean)) rows.push(row);
-    }
-    return rows;
-};
-
-const parseXlsxRows = async (file: File): Promise<string[][]> => {
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
-    const sharedXml = await zip.file('xl/sharedStrings.xml')?.async('string');
-    const sharedStrings = sharedXml
-        ? Array.from(parseXml(sharedXml).getElementsByTagName('si')).map(item =>
-            normalizeCell(Array.from(item.getElementsByTagName('t')).map(node => node.textContent || '').join(''))
-        )
-        : [];
-
-    const sheetPath = zip.file('xl/worksheets/sheet1.xml')
-        ? 'xl/worksheets/sheet1.xml'
-        : Object.keys(zip.files).find(path => /^xl\/worksheets\/sheet\d+\.xml$/.test(path));
-
-    if (!sheetPath) return [];
-
-    const sheetXml = await zip.file(sheetPath)?.async('string');
-    if (!sheetXml) return [];
-
-    const sheet = parseXml(sheetXml);
-    return Array.from(sheet.getElementsByTagName('row')).map(rowNode => {
-        const row: string[] = [];
-
-        Array.from(rowNode.getElementsByTagName('c')).forEach((cellNode, fallbackIndex) => {
-            const ref = cellNode.getAttribute('r') || '';
-            const type = cellNode.getAttribute('t');
-            const index = columnIndexFromRef(ref, fallbackIndex);
-            const valueNode = cellNode.getElementsByTagName('v')[0];
-            const inlineNode = cellNode.getElementsByTagName('t')[0];
-            const rawValue = valueNode?.textContent || inlineNode?.textContent || '';
-            const value = type === 's' ? sharedStrings[Number(rawValue)] || '' : rawValue;
-            if (index >= 0) row[index] = normalizeCell(value);
-        });
-
-        return row.map(cell => cell || '');
-    }).filter(row => row.some(Boolean));
-};
-
-const candidatesFromRows = (rows: string[][]): AssignmentCandidate[] => {
-    if (!rows.length) return [];
-
-    const header = rows[0].map(cell => cell.toLowerCase());
-    const headerHasLabels = header.some(cell => cell.includes('name') || cell.includes('email') || cell.includes('mail'));
-    const nameIndex = header.findIndex(cell => cell.includes('name') || cell.includes('candidate'));
-    const emailIndex = header.findIndex(cell => cell.includes('email') || cell.includes('mail'));
-    const dataRows = headerHasLabels ? rows.slice(1) : rows;
-
-    return dataRows.flatMap(row => {
-        const detectedEmailIndex = emailIndex >= 0 ? emailIndex : row.findIndex(cell => emailPattern.test(cell.toLowerCase()));
-        if (detectedEmailIndex < 0) return [];
-
-        const detectedNameIndex = nameIndex >= 0
-            ? nameIndex
-            : row.findIndex((cell, index) => index !== detectedEmailIndex && cell && !emailPattern.test(cell.toLowerCase()));
-
-        const name = normalizeCell(row[detectedNameIndex] || '');
-        const email = normalizeCell(row[detectedEmailIndex] || '').toLowerCase();
-
-        if (!name || !emailPattern.test(email)) return [];
-        return [{ ...createCandidate('file'), name, email }];
-    });
-};
+const isPlanLimitError = (data: { code?: string } | null | undefined) => data?.code === 'PLAN_LIMIT';
 
 const InterviewerDashboard: React.FC = () => {
     const router = useRouter();
@@ -362,7 +232,10 @@ const InterviewerDashboard: React.FC = () => {
 
             const data = await res.json();
             if (!res.ok) {
-                setAssignmentMessage({ type: 'error', text: data.error || 'Failed to assign interview.' });
+                setAssignmentMessage({
+                    type: 'error',
+                    text: isPlanLimitError(data) ? (data.error || 'Upgrade your plan to assign more candidates.') : (data.error || 'Failed to assign interview.'),
+                });
                 return;
             }
 
@@ -406,6 +279,15 @@ const InterviewerDashboard: React.FC = () => {
         );
     }
 
+    const planKey = interviewer?.plan || 'free';
+    const planLabel = PLAN_LABELS[planKey] || PLAN_LABELS.free;
+    const planMeta = planKey === 'free'
+        ? 'Trial limits'
+        : interviewer?.planExpiresAt
+            ? `Renews ${new Date(interviewer.planExpiresAt).toLocaleDateString()}`
+            : 'Active plan';
+    const assignmentNeedsUpgrade = assignmentMessage?.type === 'error' && assignmentMessage.text.toLowerCase().includes('upgrade');
+
     return (
         <div className="min-h-screen bg-slate-950 text-white">
             <div className="fixed inset-0 pointer-events-none">
@@ -427,6 +309,13 @@ const InterviewerDashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <button
+                            onClick={() => router.push(portalPath('/billing'))}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-sm transition-colors border border-slate-700"
+                        >
+                            <CreditCard size={15} />
+                            <span>{planLabel}</span>
+                        </button>
+                        <button
                             onClick={() => router.push(portalPath('/profile'))}
                             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-sm transition-colors border border-slate-700"
                         >
@@ -440,8 +329,9 @@ const InterviewerDashboard: React.FC = () => {
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-4">
                     {[
+                        { label: 'Plan', value: planLabel, detail: planMeta, icon: CreditCard, color: 'text-amber-400' },
                         { label: 'Total Interviews', value: studies.length, icon: FileText, color: 'text-violet-400' },
                         { label: 'Total Candidates', value: studies.reduce((s, st) => s + st.candidateCount, 0), icon: Users, color: 'text-blue-400' },
                         {
@@ -462,6 +352,9 @@ const InterviewerDashboard: React.FC = () => {
                                 <span className="text-xs text-slate-500">{stat.label}</span>
                             </div>
                             <p className="text-2xl font-bold text-white">{stat.value}</p>
+                            {'detail' in stat && stat.detail && (
+                                <p className="mt-1 text-xs text-slate-500">{stat.detail}</p>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -682,9 +575,20 @@ const InterviewerDashboard: React.FC = () => {
                             </div>
 
                             {assignmentMessage && (
-                                <p className={`mt-3 text-xs ${assignmentMessage.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {assignmentMessage.text}
-                                </p>
+                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                                    <p className={`text-xs ${assignmentMessage.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        {assignmentMessage.text}
+                                    </p>
+                                    {assignmentNeedsUpgrade && (
+                                        <button
+                                            type="button"
+                                            onClick={() => router.push(portalPath('/billing'))}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-600/20 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-600/30"
+                                        >
+                                            <CreditCard size={13} /> Upgrade
+                                        </button>
+                                    )}
+                                </div>
                             )}
 
                             <div className="flex gap-3 mt-5">

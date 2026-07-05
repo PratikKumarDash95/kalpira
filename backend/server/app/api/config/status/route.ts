@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { getRequestContext } from '@/lib/researcherContext';
+import { isRazorpayConfigured } from '@/lib/razorpay';
 
 export async function GET() {
   try {
@@ -20,6 +21,7 @@ export async function GET() {
       hasAnthropicKey: !!context.anthropicApiKey,
       hasGeminiKey: !!context.geminiApiKey,
       hasOllamaConfigured: !!(process.env.OLLAMA_BASE_URL || process.env.AI_PROVIDER === 'ollama'),
+      hasRazorpayConfigured: isRazorpayConfigured(),
     };
 
     return NextResponse.json(status);

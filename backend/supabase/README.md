@@ -19,6 +19,13 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
+Optional payments env vars:
+
+```bash
+RAZORPAY_KEY_ID=...
+RAZORPAY_KEY_SECRET=...
+```
+
 The server database adapter expects the tables defined in `schema.sql`.
 
 ## Optional media buckets

@@ -30,6 +30,8 @@ create table if not exists public."User" (
   "encryptedGeminiApiKey" text,
   "encryptedAnthropicApiKey" text,
   "role" text not null default 'candidate',
+  "subscriptionPlan" text not null default 'free',
+  "planExpiresAt" timestamptz,
   "onboardingComplete" boolean not null default false,
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now(),
@@ -184,6 +186,19 @@ create table if not exists public."MediaAsset" (
   unique ("bucket", "objectPath")
 );
 
+create table if not exists public."Payment" (
+  "id" text primary key default gen_random_uuid()::text,
+  "userId" text references public."User"("id") on delete set null,
+  "plan" text not null,
+  "amount" integer not null default 0,
+  "currency" text not null default 'INR',
+  "razorpayOrderId" text,
+  "razorpayPaymentId" text,
+  "status" text not null default 'created',
+  "createdAt" timestamptz not null default now(),
+  "updatedAt" timestamptz not null default now()
+);
+
 create index if not exists "User_email_idx" on public."User"("email");
 create index if not exists "User_passwordResetOtpExpiresAt_idx" on public."User"("passwordResetOtpExpiresAt");
 create index if not exists "UserSkill_userId_idx" on public."UserSkill"("userId");
@@ -205,6 +220,8 @@ create index if not exists "Badge_userId_idx" on public."Badge"("userId");
 create index if not exists "MediaAsset_userId_idx" on public."MediaAsset"("userId");
 create index if not exists "MediaAsset_studyId_idx" on public."MediaAsset"("studyId");
 create index if not exists "MediaAsset_sessionId_idx" on public."MediaAsset"("sessionId");
+create index if not exists "Payment_userId_idx" on public."Payment"("userId");
+create index if not exists "Payment_razorpayOrderId_idx" on public."Payment"("razorpayOrderId");
 
 drop trigger if exists "User_set_updated_at" on public."User";
 create trigger "User_set_updated_at"
@@ -219,6 +236,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists "Study_set_updated_at" on public."Study";
 create trigger "Study_set_updated_at"
 before update on public."Study"
+for each row execute function public.set_updated_at();
+
+drop trigger if exists "Payment_set_updated_at" on public."Payment";
+create trigger "Payment_set_updated_at"
+before update on public."Payment"
 for each row execute function public.set_updated_at();
 
 -- Server routes should use SUPABASE_SERVICE_ROLE_KEY.
