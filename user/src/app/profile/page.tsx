@@ -107,14 +107,17 @@ export default function ProfilePage() {
       }
 
       const savedProfile = saveData.profile || saveData.user;
+      // Clear the sessionStorage drafts FIRST — clear() also resets the live
+      // state to '' as a side effect, so it must run BEFORE these setters or it
+      // wipes the just-uploaded avatar/cover URL (blank avatar + no cover).
+      clearAvatarUrlDraft();
+      clearCoverUrlDraft();
       setProfile(savedProfile);
       if (savedProfile) {
         setName(savedProfile.name || '');
         setAvatarUrl(savedProfile.avatarUrl || '');
         setCoverUrl(savedProfile.coverUrl || '');
       }
-      clearAvatarUrlDraft();
-      clearCoverUrlDraft();
       setMessage(`${kind === 'avatar' ? 'Profile photo' : 'Cover image'} uploaded and saved.`);
     } catch {
       setError(`Failed to upload ${kind} image.`);
@@ -146,10 +149,18 @@ export default function ProfilePage() {
         setError(data.error || 'Failed to save profile.');
         return;
       }
-      setProfile(data.profile || data.user);
+      const saved = data.profile || data.user;
+      // Clear drafts first (clear() also resets state to ''), then restore the
+      // saved values so the name / avatar / cover fields don't blank out.
       clearNameDraft();
       clearAvatarUrlDraft();
       clearCoverUrlDraft();
+      setProfile(saved);
+      if (saved) {
+        setName(saved.name || '');
+        setAvatarUrl(saved.avatarUrl || '');
+        setCoverUrl(saved.coverUrl || '');
+      }
       setMessage('Profile saved.');
     } catch {
       setError('Failed to save profile.');
