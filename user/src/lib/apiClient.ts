@@ -1,4 +1,8 @@
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+// Keep browser API calls same-origin by default so Next.js rewrites proxy /api/*
+// to the backend. This avoids depending on a public API DNS record and keeps
+// session cookies first-party on www.kalpira.in.
+const useDirectApi = process.env.NEXT_PUBLIC_API_DIRECT === 'true';
+const apiBaseUrl = (useDirectApi ? process.env.NEXT_PUBLIC_API_URL || '' : '').replace(/\/$/, '');
 
 export function apiUrl(path: string): string {
   if (!path.startsWith('/')) {
