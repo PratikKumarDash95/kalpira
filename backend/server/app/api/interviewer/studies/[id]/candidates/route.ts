@@ -3,27 +3,14 @@
 // NOTE: Uses (supabaseDb as any) casts because the Supabase client needs regeneration
 // after the schema migration. Restart the dev server to fix type errors.
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import supabaseDb from '@/lib/supabaseDb';
-import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { isInterviewClosed } from '@/lib/interviewDeadline';
+import { excludeSelfPreviewSessions } from '@/lib/previewSession';
+import { getInterviewerId } from '@/lib/interviewerAuth';
 
 export const dynamic = 'force-dynamic';
 
 const db = supabaseDb as any;
-
-async function getInterviewerId(): Promise<string | null> {
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-        if (!token) return null;
-        const session = await verifySessionToken(token);
-        if (!session.valid || !session.researcherId) return null;
-        const user = await db.user.findUnique({ where: { id: session.researcherId } });
-        if (!user || user.role !== 'interviewer') return null;
-        return user.id;
-    } catch { return null; }
-}
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     const interviewerId = await getInterviewerId();
@@ -71,7 +58,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
             },
         });
 
-        const candidates = sessions.map((sess: any) => ({
+        // Drop the interviewer's own self-preview / self-practice runs — they are
+        // the interviewer testing their own interview, not real candidate results.
+        const realSessions = excludeSelfPreviewSessions(sessions);
+
+        const candidates = realSessions.map((sess: any) => ({
             sessionId: sess.id,
             candidateName: sess.candidateName || 'Anonymous',
             candidateEmail: sess.candidateEmail || '',

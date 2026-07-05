@@ -15,7 +15,7 @@ import {
   Lightbulb, User, ToggleLeft, ToggleRight, Link as LinkIcon,
   Copy, Check, Loader2, LogIn, Save, CheckCircle, GitBranch,
   Clock, AlertTriangle, ExternalLink, Brain, MessageSquare,
-  Settings, ChevronRight, Zap
+  Settings, ChevronRight, Zap, CreditCard
 } from 'lucide-react';
 
 const PROFILE_PRESETS: ProfileField[] = [
@@ -31,6 +31,8 @@ const STEPS = [
   { id: 2, label: 'AI Settings', icon: Brain, desc: 'Provider, model & style' },
   { id: 3, label: 'Launch', icon: Zap, desc: 'Links, consent & go live' },
 ];
+
+const isPlanLimitError = (data: { code?: string } | null | undefined) => data?.code === 'PLAN_LIMIT';
 
 const StudySetup: React.FC = () => {
   const router = useRouter();
@@ -76,6 +78,7 @@ const StudySetup: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveErrorCode, setSaveErrorCode] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [candidateName, setCandidateName, clearCandidateNameDraft] = useSessionState(`${draftPrefix}:candidate-name`, '');
   const [candidateEmail, setCandidateEmail, clearCandidateEmailDraft] = useSessionState(`${draftPrefix}:candidate-email`, '');
@@ -307,6 +310,7 @@ const StudySetup: React.FC = () => {
 
     setIsPublishing(true);
     setSaveError(null);
+    setSaveErrorCode(null);
     setPublishError(null);
     setLinkError(null);
 
@@ -327,6 +331,7 @@ const StudySetup: React.FC = () => {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
+        setSaveErrorCode(isPlanLimitError(data) ? 'PLAN_LIMIT' : null);
         setSaveError(data.error || 'Failed to save study.');
         return;
       }
@@ -373,7 +378,7 @@ const StudySetup: React.FC = () => {
   const handleSaveStudy = async () => {
     if (isAuthenticated === false) { router.push(isInterviewerFlow ? interviewerPath('/login') : '/login'); return; }
     if (isAuthenticated === null) return;
-    setIsSaving(true); setSaveSuccess(false); setSaveError(null);
+    setIsSaving(true); setSaveSuccess(false); setSaveError(null); setSaveErrorCode(null);
     try {
       const config = buildConfig();
       const isUpdate = !!savedStudyId && !isInterviewerFlow;
@@ -387,7 +392,7 @@ const StudySetup: React.FC = () => {
       });
       if (!response.ok) {
         if (response.status === 401) { setIsAuthenticated(false); router.push(isInterviewerFlow ? interviewerPath('/login') : '/login'); return; }
-        if (response.status === 503) { setSaveError('Storage not configured. Check DATABASE_URL for Supabase Postgres.'); return; }
+        if (response.status === 503) { setSaveErrorCode(null); setSaveError('Storage not configured. Check DATABASE_URL for Supabase Postgres.'); return; }
         if (response.status === 409) {
           const data = await response.json();
           if (data.requiresConfirmation) {
@@ -409,6 +414,7 @@ const StudySetup: React.FC = () => {
           }
         }
         const data = await response.json().catch(() => ({}));
+        setSaveErrorCode(isPlanLimitError(data) ? 'PLAN_LIMIT' : null);
         setSaveError(data.error || 'Failed to save study.'); return;
       }
       const data = await response.json();
@@ -519,8 +525,17 @@ const StudySetup: React.FC = () => {
             <div className="flex-1">
               <p className="text-sm font-medium text-red-300">{isInterviewerFlow ? 'Publish Failed' : 'Save Failed'}</p>
               <p className="text-xs text-red-400/80 mt-0.5">{saveError}</p>
+              {isInterviewerFlow && saveErrorCode === 'PLAN_LIMIT' && (
+                <button
+                  type="button"
+                  onClick={() => router.push(interviewerPath('/billing'))}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-600/20 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-600/30"
+                >
+                  <CreditCard size={13} /> Upgrade plan
+                </button>
+              )}
             </div>
-            <button onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-300"><X size={16} /></button>
+            <button onClick={() => { setSaveError(null); setSaveErrorCode(null); }} className="text-red-400 hover:text-red-300"><X size={16} /></button>
           </motion.div>
         )}
 

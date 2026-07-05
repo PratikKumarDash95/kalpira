@@ -167,6 +167,7 @@ const tables = {
   badge: 'Badge',
   readinessIndex: 'ReadinessIndex',
   interviewFeedback: 'InterviewFeedback',
+  payment: 'Payment',
 } as const;
 
 type ModelName = keyof typeof tables;
@@ -199,6 +200,7 @@ type SupabaseDb = {
   badge: Delegate;
   readinessIndex: Delegate;
   interviewFeedback: Delegate;
+  payment: Delegate;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -212,6 +214,7 @@ const dateFields = new Set([
   'passwordResetOtpExpiresAt',
   'startedAt',
   'completedAt',
+  'planExpiresAt',
   'lastUpdated',
   'lastOccurredAt',
   'generatedAt',
@@ -473,6 +476,7 @@ const db: SupabaseDb = {
   badge: delegate('badge'),
   readinessIndex: delegate('readinessIndex'),
   interviewFeedback: delegate('interviewFeedback'),
+  payment: delegate('payment'),
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);
   },
