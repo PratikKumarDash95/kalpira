@@ -22,6 +22,13 @@ const PORT = Number(process.env.SERVER_PORT || process.env.PORT || 3001);
 // ALWAYS allowed (baseline) so a stale/misconfigured CORS_ORIGIN env var on the
 // host can't lock out the live apps; CORS_ORIGIN adds any extra origins on top.
 import { getAllowedOrigins } from './app/lib/oauthOrigin';
+import {
+  SESSION_COOKIE_NAME,
+  verifySessionToken,
+  refreshSessionToken,
+  getSessionCookieOptions,
+  IDLE_SESSION_SECONDS,
+} from './app/lib/auth';
 
 const allowedOrigins = getAllowedOrigins();
 console.log('[Server] CORS allow-list:', allowedOrigins.join(', '));
@@ -49,6 +56,56 @@ app.use('/api/ai', aiLimiter);
 // Request logging (production: swap for morgan/pino)
 app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+// ---- Sliding session refresh ----
+// User sessions carry a fixed 5-day absolute cap and a 2-day idle window. On
+// every request bearing a still-valid session, slide the idle window forward
+// (re-issuing the cookie) so active users stay signed in up to the 5-day cap,
+// while 2 days of inactivity lets the cookie/token lapse → auto sign-out.
+// Throttled to once/hour so we don't re-sign a JWT on every single request.
+// Note: route handlers that set their own session cookie (login/logout) run
+// AFTER this and overwrite the Set-Cookie via the next-compat adapter, so their
+// intent always wins.
+const SESSION_REFRESH_THROTTLE_SECONDS = 60 * 60;
+app.use(async (req, res, next) => {
+  try {
+    const cookieHeader = req.headers.cookie;
+    if (cookieHeader) {
+      const match = cookieHeader
+        .split(';')
+        .map((c) => c.trim())
+        .find((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`));
+      const token = match
+        ? decodeURIComponent(match.slice(SESSION_COOKIE_NAME.length + 1))
+        : null;
+
+      if (token) {
+        const session = await verifySessionToken(token);
+        const nowSec = Math.floor(Date.now() / 1000);
+        const dueForRefresh =
+          !session.issuedAt || nowSec - session.issuedAt > SESSION_REFRESH_THROTTLE_SECONDS;
+
+        if (session.valid && session.absoluteExp && dueForRefresh) {
+          const refreshed = await refreshSessionToken(session);
+          if (refreshed) {
+            const opts = getSessionCookieOptions(IDLE_SESSION_SECONDS);
+            res.cookie(SESSION_COOKIE_NAME, refreshed, {
+              httpOnly: opts.httpOnly,
+              secure: opts.secure,
+              sameSite: opts.sameSite,
+              path: opts.path,
+              ...(opts.domain ? { domain: opts.domain } : {}),
+              maxAge: opts.maxAge * 1000, // express expects milliseconds
+            });
+          }
+        }
+      }
+    }
+  } catch {
+    // Session refresh must never break a request — fall through unauthenticated.
+  }
   next();
 });
 

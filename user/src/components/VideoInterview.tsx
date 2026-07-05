@@ -84,6 +84,11 @@ const VideoInterview: React.FC = () => {
     const isSendingRef = useRef(false);
     const lastSentTextRef = useRef('');
     const lastSentAtRef = useRef(0);
+    // Echo suppression: track whether the AI is currently speaking and whether
+    // the user intends the mic to be listening, so we can pause recognition
+    // while TTS plays (otherwise the speaker audio loops back into the mic).
+    const aiSpeakingRef = useRef(false);
+    const listeningDesiredRef = useRef(false);
 
     // ── Scroll chat to bottom ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -126,7 +131,13 @@ const VideoInterview: React.FC = () => {
                         height: { ideal: 480 },
                         frameRate: { ideal: 15, max: 20 },
                     },
-                    audio: true,
+                    // Enable the browser's acoustic echo cancellation so the
+                    // AI's TTS coming out of the speakers isn't picked back up.
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    },
                 });
                 if (!mounted) {
                     stream.getTracks().forEach(t => t.stop());
@@ -181,9 +192,22 @@ const VideoInterview: React.FC = () => {
         const voices = synth.getVoices();
         const preferred = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en'));
         if (preferred) utt.voice = preferred;
-        utt.onstart = () => setAiSpeaking(true);
-        utt.onend = () => setAiSpeaking(false);
-        utt.onerror = () => setAiSpeaking(false);
+        const onSpeakEnd = () => {
+            setAiSpeaking(false);
+            aiSpeakingRef.current = false;
+            // Resume listening only if the user had the mic on before the AI spoke.
+            if (listeningDesiredRef.current) {
+                try { recognitionRef.current?.start(); } catch { /* already started */ }
+            }
+        };
+        utt.onstart = () => {
+            setAiSpeaking(true);
+            aiSpeakingRef.current = true;
+            // Pause mic recognition so the spoken response isn't captured as input.
+            try { recognitionRef.current?.stop(); } catch { /* not running */ }
+        };
+        utt.onend = onSpeakEnd;
+        utt.onerror = onSpeakEnd;
         synth.speak(utt);
     }, [isTTSEnabled]);
 
@@ -203,6 +227,8 @@ const VideoInterview: React.FC = () => {
 
         recognition.onresult = (event: any) => {
             if (!isMounted) return;
+            // Drop anything captured while the AI is speaking — it's echo, not the user.
+            if (aiSpeakingRef.current) return;
             let interim = '';
             let final = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -262,9 +288,14 @@ const VideoInterview: React.FC = () => {
     const toggleListening = () => {
         if (!speechToTextEnabled) return;
         if (isListening) {
+            listeningDesiredRef.current = false;
             recognitionRef.current?.stop();
         } else {
+            listeningDesiredRef.current = true;
+            // Stop any in-progress TTS so we don't immediately pause again.
             window.speechSynthesis?.cancel();
+            aiSpeakingRef.current = false;
+            setAiSpeaking(false);
             try {
                 recognitionRef.current?.start();
             } catch (e) {
