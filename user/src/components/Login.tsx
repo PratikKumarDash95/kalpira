@@ -42,6 +42,10 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [mode, setMode] = useState<'standalone' | 'hosted' | null>(null);
+  // Guard: while true, we're checking for an existing session and show a spinner
+  // instead of the form. If a session is found we redirect and never flip this
+  // false, so the login form never flashes for an already-signed-in user.
+  const [authChecking, setAuthChecking] = useState(true);
   const [selectedRole, setSelectedRole, clearRoleDraft] = useSessionState<LoginRole>('kalpira:login:role', 'user');
   const [authView, setAuthView] = useState<'login' | 'forgot' | 'reset'>('login');
   const [resetLoading, setResetLoading] = useState(false);
@@ -55,6 +59,48 @@ const Login: React.FC = () => {
       .then((data) => setMode(data.mode))
       .catch(() => setMode('standalone'));
   }, []);
+
+  // Already-signed-in guard: if a valid session exists, send the user straight
+  // to their dashboard instead of showing the login form. Prevents logging into
+  // a second account "on top of" the current one without logging out first.
+  useEffect(() => {
+    let cancelled = false;
+
+    const dashboardFor = (role: string | undefined) =>
+      role === 'interviewer' ? '/interviewer/dashboard'
+        : role === 'admin' ? '/admin'
+        : '/studies';
+
+    const check = async () => {
+      try {
+        // Candidate / interviewer sessions carry a profile with a role.
+        const meRes = await apiFetch('/api/auth/me');
+        if (meRes.ok) {
+          const data = await meRes.json().catch(() => null);
+          if (data?.authenticated && data.profile) {
+            if (!cancelled) router.replace(dashboardFor(data.profile.role));
+            return; // leave authChecking true → spinner stays until navigation
+          }
+        } else {
+          // Legacy global-admin sessions have no profile; detect via /api/auth.
+          const authRes = await apiFetch('/api/auth');
+          if (authRes.ok) {
+            const authData = await authRes.json().catch(() => null);
+            if (authData?.authenticated && !authData.researcherId) {
+              if (!cancelled) router.replace('/admin');
+              return;
+            }
+          }
+        }
+      } catch {
+        // Network error → treat as logged-out and show the form.
+      }
+      if (!cancelled) setAuthChecking(false);
+    };
+
+    check();
+    return () => { cancelled = true; };
+  }, [router]);
 
   useEffect(() => {
     const role = getLoginRole(searchParams.get('role'));
@@ -257,7 +303,10 @@ const Login: React.FC = () => {
     }
   };
 
-  if (mode === null) {
+  // Wait for BOTH the mode fetch and the existing-session check before rendering
+  // the form — otherwise an already-signed-in user briefly sees the login form
+  // before being redirected.
+  if (mode === null || authChecking) {
     return (
       <div className="min-h-screen bg-stone-900 flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-stone-400" />

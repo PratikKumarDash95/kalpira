@@ -6,22 +6,33 @@ import * as jose from 'jose';
 import { isHostedMode } from './mode';
 
 const SESSION_COOKIE_NAME = 'research-auth';
+
+// Participant *link* token lifetime (used by /api/generate-link). This is a
+// separate short-lived token embedded in shareable interview URLs — NOT a
+// signed-in user session — so it keeps its own 2-day expiry.
 const TOKEN_DURATION_DAYS = 2;
 const TOKEN_DURATION_SECONDS = 60 * 60 * 24 * TOKEN_DURATION_DAYS;
 
-// Role-based session lifetime. Candidates stay signed in longest (2 days);
-// interviewer and admin sessions are shorter-lived (1 day) since they carry
-// more privilege. The JWT `exp` and the cookie `maxAge` are both set from this
-// so the token auto-expires server-side AND the browser drops the cookie.
+// ── User session lifetime policy ──────────────────────────────────────────────
+// Every signed-in user session (candidate / interviewer / admin, all roles)
+// enforces TWO independent limits:
+//   • ABSOLUTE cap (5 days): the session cannot outlive 5 days from login no
+//     matter how active the user is — after that they must sign in again. This
+//     is anchored by the `absoluteExp` claim, fixed at login and preserved
+//     across refreshes.
+//   • IDLE window (2 days): 2 days with no request auto-expires the session.
+//     Each authenticated request slides this window forward (see
+//     refreshSessionToken), capped by the absolute limit.
 const DAY_SECONDS = 60 * 60 * 24;
-const ROLE_TOKEN_SECONDS: Record<string, number> = {
-  candidate: 2 * DAY_SECONDS,
-  interviewer: 1 * DAY_SECONDS,
-  admin: 1 * DAY_SECONDS,
-};
+const ABSOLUTE_SESSION_SECONDS = 5 * DAY_SECONDS;
+const IDLE_SESSION_SECONDS = 2 * DAY_SECONDS;
 
-export function getSessionSecondsForRole(role?: string): number {
-  return (role && ROLE_TOKEN_SECONDS[role]) || TOKEN_DURATION_SECONDS;
+// Cookie lifetime for a freshly issued / refreshed session equals the idle
+// window, so the browser also drops the cookie after 2 days of inactivity.
+// Role no longer affects lifetime (unified policy); the param is kept so the
+// existing call sites don't need to change.
+export function getSessionSecondsForRole(_role?: string): number {
+  return IDLE_SESSION_SECONDS;
 }
 
 // Get the signing secret from environment
@@ -45,12 +56,17 @@ function getSecret(): Uint8Array {
 
 // Create a signed session token
 // In hosted mode, embeds researcherId for multi-tenant context resolution.
-// The role controls the token lifetime (see ROLE_TOKEN_SECONDS) and is stored
-// as a claim so callers can read it without a DB round-trip.
+// Lifetime is uniform across roles now (2-day idle / 5-day absolute); the role
+// is still stored as a claim so callers can read it without a DB round-trip.
 export async function createSessionToken(researcherId?: string, role?: string): Promise<string> {
   const secret = getSecret();
+  const nowSec = Math.floor(Date.now() / 1000);
 
-  const payload: Record<string, unknown> = { type: 'session' };
+  // Fixed at login and carried across every refresh so the 5-day hard cap
+  // survives sliding-window extensions.
+  const absoluteExp = nowSec + ABSOLUTE_SESSION_SECONDS;
+
+  const payload: Record<string, unknown> = { type: 'session', absoluteExp };
 
   // Always include researcherId if provided (needed for both hosted mode and Interviewer role)
   if (researcherId) {
@@ -65,13 +81,46 @@ export async function createSessionToken(researcherId?: string, role?: string): 
     payload.mode = 'hosted';
   }
 
+  // Live expiry = idle window, but never beyond the absolute cap.
+  const exp = Math.min(nowSec + IDLE_SESSION_SECONDS, absoluteExp);
+
   const token = await new jose.SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(`${getSessionSecondsForRole(role)}s`)
+    .setIssuedAt(nowSec)
+    .setExpirationTime(exp)
     .sign(secret);
 
   return token;
+}
+
+// Re-issue a session token with the 2-day idle window slid forward, preserving
+// the original absolute expiry. Returns null when the 5-day absolute cap has
+// been reached — the caller should then NOT refresh, letting the current token
+// lapse so the user is forced to sign in again.
+export async function refreshSessionToken(
+  session: { researcherId?: string; role?: string; absoluteExp?: number },
+): Promise<string | null> {
+  const { researcherId, role, absoluteExp } = session;
+  // Legacy tokens issued before this policy have no absolute anchor — don't
+  // refresh them; they expire on their own and re-issue fresh on next login.
+  if (!absoluteExp) return null;
+
+  const secret = getSecret();
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (nowSec >= absoluteExp) return null; // hard cap hit
+
+  const payload: Record<string, unknown> = { type: 'session', absoluteExp };
+  if (researcherId) payload.researcherId = researcherId;
+  if (role) payload.role = role;
+  if (isHostedMode()) payload.mode = 'hosted';
+
+  const exp = Math.min(nowSec + IDLE_SESSION_SECONDS, absoluteExp);
+
+  return new jose.SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt(nowSec)
+    .setExpirationTime(exp)
+    .sign(secret);
 }
 
 // Session verification result
@@ -79,6 +128,8 @@ export interface SessionVerifyResult {
   valid: boolean;
   researcherId?: string; // Present in hosted mode
   role?: string; // Present when the token was issued with a role
+  absoluteExp?: number; // Unix seconds — fixed 5-day hard cap (for sliding refresh)
+  issuedAt?: number; // Unix seconds — when this token was signed (refresh throttling)
 }
 
 // Verify a session token
@@ -100,16 +151,24 @@ export async function verifySessionToken(token: string): Promise<SessionVerifyRe
     // Always extract researcherId if present (for Interviewer role in standalone mode)
     const researcherId = payload.researcherId as string | undefined;
     const role = payload.role as string | undefined;
+    const absoluteExp = payload.absoluteExp as number | undefined;
+    const issuedAt = payload.iat as number | undefined;
+
+    // Belt-and-suspenders: reject anything past the absolute 5-day cap even if a
+    // future bug ever issued an `exp` beyond it.
+    if (absoluteExp && Math.floor(Date.now() / 1000) >= absoluteExp) {
+      return { valid: false };
+    }
 
     // In hosted mode, researcherId is mandatory
     if (isHostedMode()) {
       if (!researcherId) {
         return { valid: false };
       }
-      return { valid: true, researcherId, role };
+      return { valid: true, researcherId, role, absoluteExp, issuedAt };
     }
 
-    return { valid: true, researcherId, role };
+    return { valid: true, researcherId, role, absoluteExp, issuedAt };
   } catch {
     // Token invalid, expired, or tampered with
     return { valid: false };
@@ -181,7 +240,13 @@ export function clearSessionCookie(cookieStore: {
   });
 }
 
-export { SESSION_COOKIE_NAME, TOKEN_DURATION_DAYS, TOKEN_DURATION_SECONDS };
+export {
+  SESSION_COOKIE_NAME,
+  TOKEN_DURATION_DAYS,
+  TOKEN_DURATION_SECONDS,
+  ABSOLUTE_SESSION_SECONDS,
+  IDLE_SESSION_SECONDS,
+};
 
 // === Participant Token Verification ===
 
