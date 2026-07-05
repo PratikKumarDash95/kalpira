@@ -26,7 +26,28 @@ function serializeCookie(item: CookieSetItem): string {
   return str;
 }
 
-function toWebRequest(req: ExpressRequest): Request {
+// True when express.json() (or another body parser) already populated req.body.
+// For multipart/form-data uploads and other non-JSON bodies, no parser runs, so
+// req.body is left empty and the raw stream must be buffered instead.
+function isParsedBody(body: unknown): boolean {
+  if (body == null) return false;
+  if (typeof body === 'string' || Buffer.isBuffer(body)) return body.length > 0;
+  if (typeof body === 'object') return Object.keys(body as object).length > 0;
+  return false;
+}
+
+// Buffer the raw request stream. Used when express.json didn't consume it (e.g.
+// multipart uploads) so the handler's request.formData()/arrayBuffer() work.
+function readRawBody(req: ExpressRequest): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+function toWebRequest(req: ExpressRequest, rawBody?: Buffer): Request {
   const host = req.headers.host ?? 'localhost';
   const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
   const url = `${protocol}://${host}${req.originalUrl}`;
@@ -38,12 +59,17 @@ function toWebRequest(req: ExpressRequest): Request {
   }
 
   const init: RequestInit = { method: req.method, headers };
-  if (req.method !== 'GET' && req.method !== 'HEAD' && req.body != null) {
-    if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
-      init.body = req.body as any;
-    } else {
-      init.body = JSON.stringify(req.body);
-      if (!headers.has('content-type')) headers.set('content-type', 'application/json');
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    if (rawBody && rawBody.length) {
+      // Preserve the original Content-Type (e.g. multipart boundary) verbatim.
+      init.body = rawBody as any;
+    } else if (isParsedBody(req.body)) {
+      if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
+        init.body = req.body as any;
+      } else {
+        init.body = JSON.stringify(req.body);
+        if (!headers.has('content-type')) headers.set('content-type', 'application/json');
+      }
     }
   }
   return new Request(url, init);
@@ -58,7 +84,15 @@ export function adapt(handler: RouteHandler) {
     };
 
     try {
-      const webReq = toWebRequest(req);
+      // If express.json didn't parse the body (multipart, octet-stream, etc.),
+      // the raw stream is still unread — buffer it so the handler can read it.
+      let rawBody: Buffer | undefined;
+      const mayHaveBody = req.method !== 'GET' && req.method !== 'HEAD';
+      if (mayHaveBody && !isParsedBody(req.body)) {
+        rawBody = await readRawBody(req);
+      }
+
+      const webReq = toWebRequest(req, rawBody);
       const response = await requestContext.run(store, () =>
         Promise.resolve(handler(webReq, { params: (req.params ?? {}) as Record<string, string> }))
       );
