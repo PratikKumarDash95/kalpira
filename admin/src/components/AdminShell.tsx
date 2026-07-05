@@ -5,7 +5,7 @@
 // so reload and back/forward land on the same view instead of resetting to the
 // dashboard — replacing the former single-page sessionStorage tab state.
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -45,6 +45,44 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     const pathname = usePathname() || '/';
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'http://localhost:3000';
+
+    // Admin-session gate: verify the caller is actually an admin BEFORE rendering
+    // any admin chrome. A candidate/interviewer session (or logged-out browser)
+    // is bounced to the main app login so the admin UI can't be viewed by simply
+    // navigating to this app's URL. Server routes are already protected, but this
+    // stops the shell from rendering at all for non-admins.
+    const [authState, setAuthState] = useState<'checking' | 'ok' | 'denied'>('checking');
+
+    useEffect(() => {
+        let cancelled = false;
+        apiFetch('/api/admin/me')
+            .then((res) => {
+                if (cancelled) return;
+                if (res.ok) {
+                    setAuthState('ok');
+                } else {
+                    setAuthState('denied');
+                    window.location.href = `${mainAppUrl}/login`;
+                }
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setAuthState('denied');
+                window.location.href = `${mainAppUrl}/login`;
+            });
+        return () => { cancelled = true; };
+    }, [mainAppUrl]);
+
+    if (authState !== 'ok') {
+        return (
+            <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+                <div className="flex items-center gap-3 text-slate-400 text-sm">
+                    <Shield size={16} className="text-violet-400" />
+                    {authState === 'denied' ? 'Redirecting to sign in…' : 'Verifying admin access…'}
+                </div>
+            </div>
+        );
+    }
 
     const active = NAV.reduce((best, item) => {
         if (item.href === '/') return pathname === '/' ? item.href : best;
