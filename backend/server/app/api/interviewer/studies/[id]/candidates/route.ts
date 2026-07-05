@@ -54,10 +54,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
             ));
         }
 
+        // Ownership already verified above via the study.findFirst check.
+        // Note: do NOT add a nested `study: { userId }` filter here — the DB shim
+        // can't resolve that relation on raw session rows and would drop every row.
         const sessions = await db.interviewSession.findMany({
             where: {
                 studyId: params.id,
-                study: { userId: interviewerId },
             },
             orderBy: { startedAt: 'desc' },
             include: {
