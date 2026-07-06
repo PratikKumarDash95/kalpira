@@ -62,13 +62,43 @@ export function resolveReturnOrigin(request: Request): string | null {
   return allowed.includes(origin) ? origin : null;
 }
 
-export function getOauthOriginCookieOptions() {
+// Shared options for ALL short-lived OAuth cookies (state, code_verifier,
+// return_origin). These must carry the same COOKIE_DOMAIN as the session
+// cookie (see auth.ts getSessionCookieOptions) — otherwise a login started on
+// the apex domain (kalpira.in) sets a host-only cookie that never reaches the
+// callback if it lands on a sibling host (e.g. www.kalpira.in), causing a
+// false "state mismatch" -> /login?error=invalid_state ("Session expired").
+export function getOauthStateCookieOptions() {
+  const domain = process.env.COOKIE_DOMAIN?.trim() || undefined;
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax' as const,
     maxAge: 600,
     path: '/',
+    ...(domain ? { domain } : {}),
+  };
+}
+
+export function getOauthOriginCookieOptions() {
+  return getOauthStateCookieOptions();
+}
+
+// A cookie set with a Domain attribute can only be cleared by a Set-Cookie
+// that repeats the SAME domain/path (RFC 6265) — deleting by name alone
+// leaves it alive until it expires on its own. Match auth.ts's
+// clearSessionCookie pattern: call cookieStore.set(name, '', { ...this, maxAge: 0 })
+// wherever a callback route clears one of the short-lived OAuth cookies above.
+export function getOauthCookieClearOptions() {
+  const domain = process.env.COOKIE_DOMAIN?.trim() || undefined;
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    maxAge: 0,
+    expires: new Date(0),
+    path: '/',
+    ...(domain ? { domain } : {}),
   };
 }
 
