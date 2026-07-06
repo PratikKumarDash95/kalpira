@@ -43,7 +43,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
   }
 
   if (!session.study) {
-    return NextResponse.json({ error: 'Interview study not found' }, { status: 404 });
+    return NextResponse.json({ error: 'This interview is no longer available — the study it belonged to was removed by the interviewer.' }, { status: 410 });
   }
 
   const config = parseConfig(session.study.configJSON);

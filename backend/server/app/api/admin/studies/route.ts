@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import supabaseDb from '@/lib/supabaseDb';
+import { countPendingSessions } from '@/lib/kv';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,8 +57,10 @@ export async function GET() {
     }
 }
 
-// DELETE /api/admin/studies — remove a study (cascades stored interviews;
-// sessions keep their row with studyId set null per the schema FK rules).
+// DELETE /api/admin/studies — remove a study (cascades stored interviews).
+// Refuses to delete while candidates still have pending assignments, since
+// InterviewSession.studyId is ON DELETE SET NULL and would otherwise silently
+// orphan those sessions (candidate later hits "Interview study not found").
 export async function DELETE(request: Request) {
     const denied = await requireAdmin();
     if (denied) return denied;
@@ -67,6 +70,15 @@ export async function DELETE(request: Request) {
         if (!studyId) {
             return NextResponse.json({ error: 'studyId is required' }, { status: 400 });
         }
+
+        const pendingSessions = await countPendingSessions(studyId);
+        if (pendingSessions > 0) {
+            return NextResponse.json(
+                { error: `This study has ${pendingSessions} pending candidate assignment(s). Complete, terminate, or mark them absent before deleting.` },
+                { status: 409 }
+            );
+        }
+
         await supabaseDb.study.delete({ where: { id: studyId } });
         return NextResponse.json({ success: true });
     } catch (error) {
