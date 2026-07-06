@@ -9,7 +9,7 @@ import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME } from
 import { getResearcherByOAuth, saveResearcher } from '@/lib/platformDb';
 import { ResearcherAccount } from '@/types';
 import { randomUUID } from 'crypto';
-import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin } from '@/lib/oauthOrigin';
+import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin, getOauthCookieClearOptions } from '@/lib/oauthOrigin';
 
 export const runtime = "nodejs";
 
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
   // can be more than one live in parallel, e.g. a custom domain + Vercel
   // alias), falling back to the configured default if unset/stale.
   const baseUrl = cookieStore.get(OAUTH_ORIGIN_COOKIE)?.value || getDefaultFrontendOrigin();
-  cookieStore.delete(OAUTH_ORIGIN_COOKIE);
+  cookieStore.set(OAUTH_ORIGIN_COOKIE, '', getOauthCookieClearOptions());
 
   try {
     const url = new URL(request.url);
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=invalid_state', baseUrl));
     }
 
-    cookieStore.delete('github_oauth_state');
+    cookieStore.set('github_oauth_state', '', getOauthCookieClearOptions());
 
     // Create GitHub client safely
     const github = getGitHubClient();

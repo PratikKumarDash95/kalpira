@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { createSessionToken, getSessionCookieOptions, getSessionSecondsForRole, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { getGoogleProfile } from '@/lib/googleOAuth';
 import supabaseDb from '@/lib/supabaseDb';
-import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin } from '@/lib/oauthOrigin';
+import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin, getOauthCookieClearOptions } from '@/lib/oauthOrigin';
 
 // The OAuth callback route lives on this backend (it's where these route.ts
 // files are actually served from), NOT on the frontend app. This must match
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   // can be more than one live in parallel, e.g. a custom domain + Vercel
   // alias), falling back to the configured default if unset/stale.
   const baseUrl = cookieStore.get(OAUTH_ORIGIN_COOKIE)?.value || getDefaultFrontendOrigin();
-  cookieStore.delete(OAUTH_ORIGIN_COOKIE);
+  cookieStore.set(OAUTH_ORIGIN_COOKIE, '', getOauthCookieClearOptions());
 
   try {
     const url = new URL(request.url);
@@ -60,8 +60,8 @@ export async function GET(request: Request) {
       return NextResponse.redirect(getInterviewerLoginUrl(baseUrl, 'invalid_state'));
     }
 
-    cookieStore.delete('google_interviewer_oauth_state');
-    cookieStore.delete('google_interviewer_oauth_code_verifier');
+    cookieStore.set('google_interviewer_oauth_state', '', getOauthCookieClearOptions());
+    cookieStore.set('google_interviewer_oauth_code_verifier', '', getOauthCookieClearOptions());
 
     const google = getGoogleClient();
     const tokens = await google.validateAuthorizationCode(code, codeVerifier);

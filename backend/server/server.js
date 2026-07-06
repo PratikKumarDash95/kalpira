@@ -17,6 +17,9 @@ const PORT = process.env.SERVER_PORT || process.env.PORT || 3001;
 const BASELINE_ORIGINS = [
   'https://kalpira.in',
   'https://www.kalpira.in',
+  'https://admin.kalpira.in',
+  'https://interviewer.kalpira.in',
+  'https://api.kalpira.in',
   'https://kalpira.vercel.app',
   'https://kalpira-admin.vercel.app',
   'https://kalpira-interviewer.vercel.app',

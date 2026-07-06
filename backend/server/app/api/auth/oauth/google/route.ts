@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import * as arctic from 'arctic';
 import { cookies } from 'next/headers';
 import { isHostedMode } from '@/lib/mode';
-import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin, getOauthOriginCookieOptions, resolveReturnOrigin } from '@/lib/oauthOrigin';
+import { OAUTH_ORIGIN_COOKIE, getDefaultFrontendOrigin, getOauthOriginCookieOptions, getOauthStateCookieOptions, resolveReturnOrigin } from '@/lib/oauthOrigin';
 
 // The OAuth callback route lives on this backend (it's where these route.ts
 // files are actually served from), NOT on the frontend app. This must match
@@ -51,20 +51,8 @@ export async function GET(request: Request) {
 
     // Store state and code verifier in cookies for callback verification
     const cookieStore = await cookies();
-    cookieStore.set('google_oauth_state', state, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // Lax needed for OAuth redirects
-      maxAge: 600, // 10 minutes
-      path: '/',
-    });
-    cookieStore.set('google_oauth_code_verifier', codeVerifier, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 600,
-      path: '/',
-    });
+    cookieStore.set('google_oauth_state', state, getOauthStateCookieOptions());
+    cookieStore.set('google_oauth_code_verifier', codeVerifier, getOauthStateCookieOptions());
 
     const returnOrigin = resolveReturnOrigin(request);
     if (returnOrigin) {
