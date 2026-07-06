@@ -236,6 +236,23 @@ export async function getAllStudies(userId?: string | null): Promise<StoredStudy
   }
 }
 
+// InterviewSession.studyId is ON DELETE SET NULL, so deleting a Study never
+// fails at the DB level even if candidates still have pending assignments —
+// it just silently orphans their session (studyId -> null), which later shows
+// up to the candidate as "Interview study not found". Block the delete
+// instead, mirroring the existing soft-lock check in PUT /api/studies/[id].
+const TERMINAL_SESSION_MODES = ['terminated', 'absent'];
+
+export async function countPendingSessions(studyId: string): Promise<number> {
+  return supabaseDb.interviewSession.count({
+    where: {
+      studyId,
+      completedAt: null,
+      mode: { notIn: TERMINAL_SESSION_MODES },
+    },
+  });
+}
+
 export async function deleteStudy(id: string, userId?: string | null): Promise<{ success: boolean; error?: string }> {
   try {
     const study = await supabaseDb.study.findFirst({
@@ -248,6 +265,14 @@ export async function deleteStudy(id: string, userId?: string | null): Promise<{
 
     if (!study) {
       return { success: false, error: 'Study not found' };
+    }
+
+    const pendingSessions = await countPendingSessions(id);
+    if (pendingSessions > 0) {
+      return {
+        success: false,
+        error: `This study has ${pendingSessions} pending candidate assignment(s). Complete, terminate, or mark them absent before deleting.`,
+      };
     }
 
     // Check for interviews first
