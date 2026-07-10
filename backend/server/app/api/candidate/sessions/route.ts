@@ -65,7 +65,13 @@ export async function GET() {
         startedAt: session.mode === 'assigned' ? null : session.startedAt,
         completedAt: session.completedAt,
         averageScore: session.averageScore,
-        status: session.completedAt ? 'completed' : session.mode === 'assigned' ? 'assigned' : 'in_progress',
+        status: session.completedAt
+          ? 'completed'
+          : session.mode === 'rejected'
+            ? 'rejected'
+            : session.mode === 'assigned'
+              ? 'assigned'
+              : 'in_progress',
         questionCount: config?.coreQuestions?.length || 0,
       };
     });

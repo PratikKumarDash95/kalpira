@@ -14,6 +14,7 @@ import {
   Mail,
   User,
   Users,
+  XCircle,
 } from 'lucide-react';
 import InterviewFeedbackWidget from '@/components/InterviewFeedbackWidget';
 
@@ -37,7 +38,7 @@ interface CandidateSession {
   assignedAt: string;
   completedAt: string | null;
   averageScore: number;
-  status: 'assigned' | 'in_progress' | 'completed';
+  status: 'assigned' | 'in_progress' | 'completed' | 'rejected';
   questionCount: number;
 }
 
@@ -45,6 +46,7 @@ const activeStatusRank: Record<CandidateSession['status'], number> = {
   in_progress: 0,
   assigned: 0,
   completed: 1,
+  rejected: 2,
 };
 
 const sessionTime = (session: CandidateSession) =>
@@ -56,6 +58,7 @@ const CandidateDashboard: React.FC = () => {
   const [sessions, setSessions] = useState<CandidateSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const sortedSessions = [...sessions].sort((a, b) => {
     const rankDiff = activeStatusRank[a.status] - activeStatusRank[b.status];
     if (rankDiff !== 0) return rankDiff;
@@ -105,7 +108,28 @@ const CandidateDashboard: React.FC = () => {
   const statusClass = (status: CandidateSession['status']) => {
     if (status === 'completed') return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20';
     if (status === 'in_progress') return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+    if (status === 'rejected') return 'bg-red-500/10 text-red-300 border-red-500/20';
     return 'bg-violet-500/10 text-violet-300 border-violet-500/20';
+  };
+
+  const handleReject = async (sessionId: string) => {
+    if (!window.confirm('Reject this interview? The interviewer will see that you declined it. This cannot be undone.')) return;
+    setRejectingId(sessionId);
+    try {
+      const res = await apiFetch(`/api/candidate/sessions/${sessionId}/reject`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to reject interview.');
+        return;
+      }
+      setSessions(prev =>
+        prev.map(s => (s.id === sessionId ? { ...s, status: 'rejected' as const } : s))
+      );
+    } catch {
+      setError('Failed to reject interview.');
+    } finally {
+      setRejectingId(null);
+    }
   };
 
   if (loading) {
@@ -199,13 +223,30 @@ const CandidateDashboard: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <button
-                      onClick={() => router.push(session.completedAt ? `/results/${session.id}` : `/candidate/interview/${session.id}`)}
-                      className="flex w-full items-center justify-center gap-2 px-3 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors"
-                    >
-                      {session.completedAt ? <CheckCircle size={16} /> : <ArrowRight size={16} />}
-                      {session.completedAt ? 'View Results' : 'Start Interview'}
-                    </button>
+                    {session.status === 'rejected' ? (
+                      <div className="flex w-full items-center justify-center gap-2 px-3 py-2.5 bg-red-500/10 text-red-300 border border-red-500/20 rounded-xl text-sm font-medium">
+                        <XCircle size={16} /> You rejected this interview
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => router.push(session.completedAt ? `/results/${session.id}` : `/candidate/interview/${session.id}`)}
+                          className="flex w-full items-center justify-center gap-2 px-3 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors"
+                        >
+                          {session.completedAt ? <CheckCircle size={16} /> : <ArrowRight size={16} />}
+                          {session.completedAt ? 'View Results' : 'Start Interview'}
+                        </button>
+                        {!session.completedAt && (
+                          <button
+                            onClick={() => handleReject(session.id)}
+                            disabled={rejectingId === session.id}
+                            className="flex w-full items-center justify-center gap-2 px-3 py-2.5 bg-slate-800 hover:bg-red-500/10 hover:text-red-300 text-slate-400 border border-slate-700 hover:border-red-500/20 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                          >
+                            <XCircle size={16} /> {rejectingId === session.id ? 'Rejecting…' : 'Reject Interview'}
+                          </button>
+                        )}
+                      </>
+                    )}
                     {session.completedAt && (
                       <InterviewFeedbackWidget sessionId={session.id} interviewerName={session.interviewerName} />
                     )}

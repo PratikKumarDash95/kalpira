@@ -4,15 +4,11 @@ import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
 
-function parseConfig(configJSON?: string | null) {
-  if (!configJSON) return null;
-  try {
-    return JSON.parse(configJSON);
-  } catch {
-    return null;
-  }
-}
-
+// POST /api/candidate/sessions/[id]/reject
+// Candidate declines an interview assigned to their email. The session is
+// marked with mode: 'rejected' — a terminal state (see TERMINAL_SESSION_MODES
+// in lib/kv.ts) so the interviewer can clearly see the candidate rejected it,
+// and it no longer blocks study deletion or can be started/rejoined.
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   const authUser = await getAuthUser();
 
@@ -31,47 +27,34 @@ export async function POST(_request: Request, { params }: { params: { id: string
 
   const session = await supabaseDb.interviewSession.findUnique({
     where: { id: params.id },
-    include: { study: true },
+    select: { id: true, candidateEmail: true, candidateName: true, completedAt: true, mode: true },
   });
 
   if (!session || session.candidateEmail?.toLowerCase() !== user.email.toLowerCase()) {
     return NextResponse.json({ error: 'This interview is not assigned to your email' }, { status: 403 });
   }
 
-  if (session.completedAt || session.mode === 'terminated') {
-    return NextResponse.json({ error: 'This interview has already been completed or terminated' }, { status: 409 });
+  if (session.completedAt) {
+    return NextResponse.json({ error: 'This interview has already been completed and cannot be rejected' }, { status: 409 });
   }
 
   if (session.mode === 'rejected') {
-    return NextResponse.json({ error: 'You rejected this interview and it can no longer be started.' }, { status: 409 });
+    return NextResponse.json({ error: 'You have already rejected this interview' }, { status: 409 });
   }
 
-  if (!session.study) {
-    return NextResponse.json({ error: 'This interview is no longer available — the study it belonged to was removed by the interviewer.' }, { status: 410 });
-  }
-
-  const config = parseConfig(session.study.configJSON);
-  if (!config) {
-    return NextResponse.json({ error: 'Interview configuration is invalid' }, { status: 500 });
+  if (session.mode === 'terminated' || session.mode === 'absent') {
+    return NextResponse.json({ error: 'This interview is already closed and cannot be rejected' }, { status: 409 });
   }
 
   await supabaseDb.interviewSession.update({
     where: { id: session.id },
     data: {
       userId: user.id,
-      mode: session.mode === 'assigned' ? 'video' : session.mode,
+      mode: 'rejected',
       candidateName: session.candidateName || user.name || 'Candidate',
       candidateEmail: user.email.toLowerCase(),
     },
   });
 
-  return NextResponse.json({
-    sessionId: session.id,
-    studyId: session.studyId,
-    studyConfig: { ...config, id: session.studyId || config.id },
-    candidate: {
-      name: session.candidateName || user.name || 'Candidate',
-      email: user.email.toLowerCase(),
-    },
-  });
+  return NextResponse.json({ sessionId: session.id, status: 'rejected' });
 }

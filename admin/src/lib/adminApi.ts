@@ -120,5 +120,8 @@ export const AdminApi = {
 
     sessions: () => apiFetch('/api/admin/sessions').then(json<{ sessions: AdminSession[] }>),
 
+    deleteSession: (sessionId: string) =>
+        apiFetch('/api/admin/sessions', { method: 'DELETE', body: JSON.stringify({ sessionId }) }).then(json<{ success: boolean }>),
+
     feedback: () => apiFetch('/api/admin/feedback').then(json<{ feedback: FeedbackItem[]; count: number; averageRating: number }>),
 };

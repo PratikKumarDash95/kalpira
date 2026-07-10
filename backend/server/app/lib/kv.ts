@@ -241,7 +241,7 @@ export async function getAllStudies(userId?: string | null): Promise<StoredStudy
 // it just silently orphans their session (studyId -> null), which later shows
 // up to the candidate as "Interview study not found". Block the delete
 // instead, mirroring the existing soft-lock check in PUT /api/studies/[id].
-const TERMINAL_SESSION_MODES = ['terminated', 'absent'];
+const TERMINAL_SESSION_MODES = ['terminated', 'absent', 'rejected'];
 
 export async function countPendingSessions(studyId: string): Promise<number> {
   return supabaseDb.interviewSession.count({

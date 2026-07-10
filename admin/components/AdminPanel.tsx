@@ -139,6 +139,21 @@ export default function AdminPanel() {
         setDeletingId(null);
     };
 
+    const handleDeleteSession = async (sessionId: string) => {
+        if (!confirm('Delete this interview session? This also removes its questions, responses, and scores. This cannot be undone.')) return;
+        setDeletingId(sessionId);
+        const res = await fetch('/api/admin/sessions', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId }),
+        });
+        if (res.ok) {
+            setSessions(prev => prev.filter(s => s.id !== sessionId));
+            if (stats) setStats({ ...stats, totalSessions: Math.max(0, stats.totalSessions - 1) });
+        }
+        setDeletingId(null);
+    };
+
     const handleLogout = async () => {
         await fetch('/api/auth', { method: 'DELETE' });
         router.push('/login');
@@ -497,12 +512,13 @@ export default function AdminPanel() {
                                                     <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider hidden md:table-cell">Duration</th>
                                                     <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
                                                     <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider hidden lg:table-cell">Date</th>
+                                                    <th className="text-right px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-800">
                                                 {sessions.length === 0 && (
                                                     <tr>
-                                                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">
+                                                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500 text-sm">
                                                             No sessions yet
                                                         </td>
                                                     </tr>
@@ -540,6 +556,16 @@ export default function AdminPanel() {
                                                         </td>
                                                         <td className="px-4 py-3 hidden lg:table-cell">
                                                             <span className="text-slate-400 text-xs">{formatDate(session.startedAt)}</span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            <button
+                                                                onClick={() => handleDeleteSession(session.id)}
+                                                                disabled={deletingId === session.id}
+                                                                title="Delete session"
+                                                                className="inline-flex items-center justify-center p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))}
