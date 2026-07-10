@@ -66,7 +66,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
             sessionId: sess.id,
             candidateName: sess.candidateName || 'Anonymous',
             candidateEmail: sess.candidateEmail || '',
-            status: sess.mode === 'absent' ? 'absent' : sess.completedAt ? 'completed' : 'incomplete',
+            status: sess.mode === 'rejected' ? 'rejected' : sess.mode === 'absent' ? 'absent' : sess.completedAt ? 'completed' : 'incomplete',
             startedAt: sess.startedAt,
             completedAt: sess.completedAt,
             averageScore: sess.averageScore,

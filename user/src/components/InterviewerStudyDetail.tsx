@@ -30,7 +30,7 @@ interface Candidate {
     sessionId: string;
     candidateName: string;
     candidateEmail: string;
-    status: 'completed' | 'incomplete' | 'absent';
+    status: 'completed' | 'incomplete' | 'absent' | 'rejected';
     startedAt: string;
     completedAt: string | null;
     averageScore: number;
@@ -117,6 +117,7 @@ const InterviewerStudyDetail: React.FC = () => {
 
     const completed = candidates.filter(c => c.completedAt);
     const absent = candidates.filter(c => c.status === 'absent');
+    const rejected = candidates.filter(c => c.status === 'rejected');
     const avgScore = completed.length > 0
         ? Math.round(completed.reduce((s, c) => s + c.averageScore, 0) / completed.length)
         : 0;
@@ -144,11 +145,12 @@ const InterviewerStudyDetail: React.FC = () => {
                 )}
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     {[
                         { label: 'Total Candidates', value: candidates.length, icon: Users, color: 'text-violet-400' },
                         { label: 'Completed', value: completed.length, icon: CheckCircle, color: 'text-emerald-400' },
                         { label: 'Absent', value: absent.length, icon: XCircle, color: 'text-red-400' },
+                        { label: 'Rejected', value: rejected.length, icon: XCircle, color: 'text-rose-400' },
                         { label: 'Avg Score', value: avgScore > 0 ? `${avgScore}%` : '—', icon: TrendingUp, color: 'text-blue-400' },
                     ].map(stat => (
                         <div key={stat.label} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
@@ -208,7 +210,11 @@ const InterviewerStudyDetail: React.FC = () => {
 
                                     <div className="flex items-center gap-4 flex-shrink-0">
                                         {/* Status */}
-                                        {candidate.status === 'absent' ? (
+                                        {candidate.status === 'rejected' ? (
+                                            <span className="flex items-center gap-1 text-xs text-rose-400">
+                                                <XCircle size={13} /> Rejected
+                                            </span>
+                                        ) : candidate.status === 'absent' ? (
                                             <span className="flex items-center gap-1 text-xs text-red-400">
                                                 <XCircle size={13} /> Absent
                                             </span>

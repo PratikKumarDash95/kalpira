@@ -120,12 +120,14 @@ export async function POST(request: Request) {
                 },
             });
 
-            if (existingSession?.completedAt || existingSession?.mode === 'terminated') {
+            if (existingSession?.completedAt || existingSession?.mode === 'terminated' || existingSession?.mode === 'rejected') {
                 return NextResponse.json(
                     {
                         error: existingSession.mode === 'terminated'
                             ? 'This interview was terminated and cannot be rejoined.'
-                            : 'This interview has already been completed.',
+                            : existingSession.mode === 'rejected'
+                                ? 'This interview was rejected by the candidate and cannot be started.'
+                                : 'This interview has already been completed.',
                     },
                     { status: 409 }
                 );

@@ -34,3 +34,33 @@ export async function GET() {
         return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
     }
 }
+
+// DELETE /api/admin/sessions — remove a single InterviewSession by id.
+// Related Question / Response / ScoreBreakdown rows are removed by the
+// schema's onDelete: Cascade, so this fully clears the assigned interview.
+export async function DELETE(request: Request) {
+    const denied = await requireAdmin();
+    if (denied) return denied;
+
+    try {
+        const { sessionId } = await request.json().catch(() => ({}));
+        if (!sessionId || typeof sessionId !== 'string') {
+            return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
+        }
+
+        const existing = await supabaseDb.interviewSession.findUnique({
+            where: { id: sessionId },
+            select: { id: true },
+        });
+        if (!existing) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        }
+
+        await supabaseDb.interviewSession.delete({ where: { id: sessionId } });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Admin delete session error:', error);
+        return NextResponse.json({ error: 'Failed to delete session' }, { status: 500 });
+    }
+}
