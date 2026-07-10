@@ -93,7 +93,7 @@ export function Field({ label, children }: { label: string; children: React.Reac
 }
 
 export const inputClass =
-    'w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40';
+    'w-full rounded-lg bg-[color:var(--surface)] border border-[color:var(--line-strong)] px-3 py-2 text-sm text-[color:var(--text)] placeholder-[color:var(--faint)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-ring)] focus:border-brand-500';
 
 // ─── Small hook for async form submit state ───────────────────────────────
 export function useSubmit() {

@@ -8,6 +8,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -16,6 +17,9 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    // baseUrl is required for the "@/*" -> "../user/src/*" alias below; silence the
+    // TS7.0 deprecation notice while keeping the behavior the app depends on.
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "plugins": [
       {

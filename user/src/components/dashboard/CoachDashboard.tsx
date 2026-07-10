@@ -112,7 +112,7 @@ const CoachDashboard: React.FC = () => {
     // Error state
     if (error && !data) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+            <div className="app-shell min-h-screen flex items-center justify-center p-6">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -135,7 +135,7 @@ const CoachDashboard: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="app-shell min-h-screen">
             {/* ── Header ── */}
             <header className="sticky top-0 z-40 backdrop-blur-xl bg-slate-950/80 border-b border-slate-800/50">
                 <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -148,7 +148,7 @@ const CoachDashboard: React.FC = () => {
                             <ArrowLeft className="w-4 h-4 text-slate-400" />
                         </button>
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
                                 <Brain className="w-4 h-4 text-white" />
                             </div>
                             <div>
@@ -186,7 +186,7 @@ const CoachDashboard: React.FC = () => {
             <main className="max-w-6xl mx-auto px-6 py-10">
                 {/* ── Hero: Readiness Gauge ── */}
                 <section className="flex justify-center mb-14">
-                    <div className="w-full max-w-lg rounded-3xl bg-gradient-to-b from-slate-900/80 to-slate-900/40 border border-slate-800/50 p-10 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-3xl surface p-10">
                         <ReadinessGauge score={data?.readinessScore} />
 
                         {/* Quick stats strip */}

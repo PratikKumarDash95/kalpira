@@ -206,7 +206,7 @@ const Dashboard: React.FC = () => {
               {isAdmin && (
                 <button
                   onClick={() => router.push('/admin')}
-                  className="px-3 py-2 text-sm bg-violet-900/30 hover:bg-violet-900/50 text-violet-300 border border-violet-500/30 rounded-xl transition-colors flex items-center gap-2"
+                  className="px-3 py-2 text-sm bg-[color:var(--brand-soft)] hover:bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)] border border-[color:var(--line-strong)] rounded-xl transition-colors flex items-center gap-2"
                 >
                   <Shield size={16} />
                   Admin
@@ -254,7 +254,7 @@ const Dashboard: React.FC = () => {
                   <BookOpen size={14} /> My Studies
                 </button>
                 {isAdmin && (
-                  <button onClick={() => router.push('/admin')} className="px-3 py-2 text-sm bg-violet-900/30 text-violet-300 border border-violet-500/30 rounded-xl flex items-center gap-2 justify-center">
+                  <button onClick={() => router.push('/admin')} className="px-3 py-2 text-sm bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)] border border-[color:var(--line-strong)] rounded-xl flex items-center gap-2 justify-center">
                     <Shield size={14} /> Admin Panel
                   </button>
                 )}

@@ -308,8 +308,8 @@ const Login: React.FC = () => {
   // before being redirected.
   if (mode === null || authChecking) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-stone-400" />
+      <div className="app-shell min-h-screen flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-brand-500" />
       </div>
     );
   }
@@ -319,19 +319,19 @@ const Login: React.FC = () => {
   const isResetFlow = authView !== 'login';
 
   return (
-    <div className="min-h-screen bg-stone-900 flex items-center justify-center p-4 sm:p-8">
+    <div className="app-shell min-h-screen flex items-center justify-center p-4 sm:p-8">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.98, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         className="max-w-sm w-full"
       >
-        <div className="bg-stone-800/50 rounded-xl border border-stone-700 p-8">
+        <div className="surface p-8">
           <div className="text-center mb-6">
-            <div className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center mx-auto mb-4">
-              <Lock size={24} className="text-stone-300" />
-            </div>
-            <h1 className="text-xl font-bold text-white">{isResetFlow ? 'Reset Password' : 'Login'}</h1>
-            <p className="text-stone-400 text-sm mt-1">
+            <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--brand-soft)]">
+              <Lock size={22} className="text-brand-500" />
+            </span>
+            <h1 className="text-xl font-bold text-[color:var(--text)]">{isResetFlow ? 'Reset password' : 'Welcome back'}</h1>
+            <p className="text-[color:var(--muted)] text-sm mt-1">
               {isResetFlow
                 ? 'Use your email OTP to choose a new password'
                 : mode === 'hosted' ? 'Sign in to access your research dashboard' : 'Enter your credentials to access the dashboard'}
@@ -354,7 +354,7 @@ const Login: React.FC = () => {
 
           {!isResetFlow && (
           <div className="mb-4">
-            <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-700 bg-stone-800 p-1">
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-[color:var(--line-strong)] bg-[color:var(--surface-soft)] p-1">
               {roleOptions.map(({ id, label, Icon }) => {
                 const active = selectedRole === id;
                 return (
@@ -362,8 +362,8 @@ const Login: React.FC = () => {
                     key={id}
                     type="button"
                     onClick={() => setSelectedRole(id)}
-                    className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-                      active ? 'bg-stone-600 text-white' : 'text-stone-400 hover:text-stone-200'
+                    className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+                      active ? 'bg-brand-500 text-white shadow-sm' : 'text-[color:var(--muted)] hover:text-[color:var(--text)]'
                     }`}
                   >
                     <Icon size={14} />
@@ -426,7 +426,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={resetLoading || !email.trim()}
-                className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Send OTP'}
               </button>
@@ -503,7 +503,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={resetLoading || resetOtp.length !== 6}
-                className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Save Password'}
               </button>
@@ -541,7 +541,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : 'Login'}
               </button>
@@ -601,7 +601,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading || !email.trim()}
-                className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : 'Login'}
               </button>

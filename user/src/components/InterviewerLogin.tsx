@@ -185,22 +185,17 @@ const InterviewerLogin: React.FC = () => {
     const inputCls = "w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
 
     return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
-                <div className="absolute top-0 left-1/3 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
-            </div>
-
+        <div className="app-shell min-h-screen flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative w-full max-w-md">
                 <div className="text-center mb-8">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-900/40">
-                        <Briefcase size={26} className="text-white" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--brand-soft)] mx-auto mb-4">
+                        <Briefcase size={26} className="text-brand-500" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">{authView === 'login' ? 'Interviewer Sign In' : 'Reset Password'}</h1>
+                    <h1 className="text-2xl font-bold text-[color:var(--text)]">{authView === 'login' ? 'Interviewer Sign In' : 'Reset Password'}</h1>
                     <p className="text-slate-400 text-sm mt-1">{authView === 'login' ? 'Access your interview dashboard' : 'Use your email OTP to choose a new password'}</p>
                 </div>
 
-                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm">
+                <div className="surface p-8">
                     {authView === 'login' && (
                     <>
                     <button
@@ -238,7 +233,7 @@ const InterviewerLogin: React.FC = () => {
                         )}
 
                         <button type="submit" disabled={resetLoading || !email.trim()}
-                            className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
+                            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
                             {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Send OTP'}
                         </button>
                         <button type="button" onClick={() => { setAuthView('login'); setError(null); setSuccess(null); }}
@@ -295,7 +290,7 @@ const InterviewerLogin: React.FC = () => {
                         )}
 
                         <button type="submit" disabled={resetLoading || resetOtp.length !== 6}
-                            className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
+                            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
                             {resetLoading ? <Loader2 size={18} className="animate-spin" /> : 'Save Password'}
                         </button>
                         <button type="button" onClick={() => { setAuthView('forgot'); setError(null); setSuccess(null); }}
@@ -342,7 +337,7 @@ const InterviewerLogin: React.FC = () => {
                         )}
 
                         <button type="submit" disabled={isLoading}
-                            className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
+                            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
                             {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
                             {isLoading ? 'Signing in...' : 'Sign In'}
                         </button>

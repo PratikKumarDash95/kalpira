@@ -109,7 +109,7 @@ const CandidateDashboard: React.FC = () => {
     if (status === 'completed') return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20';
     if (status === 'in_progress') return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
     if (status === 'rejected') return 'bg-red-500/10 text-red-300 border-red-500/20';
-    return 'bg-violet-500/10 text-violet-300 border-violet-500/20';
+    return 'border-[color:var(--line-strong)] bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)]';
   };
 
   const handleReject = async (sessionId: string) => {
@@ -134,20 +134,19 @@ const CandidateDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 size={40} className="animate-spin text-violet-400" />
+      <div className="app-shell min-h-screen flex items-center justify-center">
+        <Loader2 size={40} className="animate-spin text-brand-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="fixed inset-0 pointer-events-none bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
+    <div className="app-shell min-h-screen">
 
       <div className="relative max-w-[1500px] mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center">
               <User size={18} />
             </div>
             <div>
@@ -187,7 +186,7 @@ const CandidateDashboard: React.FC = () => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
-                className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 min-h-[18rem]"
+                className="surface p-4 min-h-[18rem]"
               >
                 <div className="flex h-full flex-col justify-between gap-4">
                   <div className="min-w-0">
@@ -231,7 +230,7 @@ const CandidateDashboard: React.FC = () => {
                       <>
                         <button
                           onClick={() => router.push(session.completedAt ? `/results/${session.id}` : `/candidate/interview/${session.id}`)}
-                          className="flex w-full items-center justify-center gap-2 px-3 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors"
+                          className="btn-primary w-full px-3 py-2.5 text-sm"
                         >
                           {session.completedAt ? <CheckCircle size={16} /> : <ArrowRight size={16} />}
                           {session.completedAt ? 'View Results' : 'Start Interview'}
