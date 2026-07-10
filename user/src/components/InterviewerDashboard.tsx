@@ -273,8 +273,8 @@ const InterviewerDashboard: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <Loader2 size={40} className="animate-spin text-violet-400" />
+            <div className="app-shell min-h-screen flex items-center justify-center">
+                <Loader2 size={40} className="animate-spin text-brand-500" />
             </div>
         );
     }
@@ -289,17 +289,13 @@ const InterviewerDashboard: React.FC = () => {
     const assignmentNeedsUpgrade = assignmentMessage?.type === 'error' && assignmentMessage.text.toLowerCase().includes('upgrade');
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
-                <div className="absolute top-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
-            </div>
+        <div className="app-shell min-h-screen">
 
             <div className="relative max-w-7xl mx-auto px-4 py-8">
                 {/* ── Top Bar ── */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center">
                             <Briefcase size={18} className="text-white" />
                         </div>
                         <div>
@@ -346,7 +342,7 @@ const InterviewerDashboard: React.FC = () => {
                             color: 'text-emerald-400'
                         },
                     ].map(stat => (
-                        <div key={stat.label} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+                        <div key={stat.label} className="surface p-5">
                             <div className="flex items-center gap-2 mb-2">
                                 <stat.icon size={16} className={stat.color} />
                                 <span className="text-xs text-slate-500">{stat.label}</span>
@@ -372,7 +368,7 @@ const InterviewerDashboard: React.FC = () => {
                     <h2 className="text-lg font-semibold text-white">Your Interviews</h2>
                     <button
                         onClick={() => router.push(portalPath('/setup'))}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-all text-sm shadow-lg shadow-violet-900/30">
+                        className="btn-primary px-4 py-2.5 text-sm">
                         <Plus size={16} /> Create Interview
                     </button>
                 </div>
@@ -386,7 +382,7 @@ const InterviewerDashboard: React.FC = () => {
                             <h3 className="text-slate-400 font-medium mb-2">No interviews yet</h3>
                             <p className="text-slate-600 text-sm mb-6">Create your first interview and share the link with candidates</p>
                             <button onClick={() => router.push(portalPath('/setup'))}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm transition-all">
+                                className="btn-primary inline-flex px-5 py-2.5 text-sm">
                                 <Zap size={16} /> Create First Interview
                             </button>
                         </motion.div>
@@ -397,7 +393,7 @@ const InterviewerDashboard: React.FC = () => {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className="flex min-h-[250px] flex-col bg-slate-900/60 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-colors">
+                                    className="flex min-h-[250px] flex-col surface p-4 hover:border-brand-300 transition-colors">
                                     <div className="flex-1 min-w-0">
                                         <div className="mb-2 flex items-start justify-between gap-2">
                                             <h3 className="min-w-0 text-sm font-semibold leading-5 text-white line-clamp-2" title={study.config.name}>
@@ -457,7 +453,7 @@ const InterviewerDashboard: React.FC = () => {
                                         {/* View candidates */}
                                         <button
                                             onClick={() => router.push(portalPath(`/studies/${study.id}`))}
-                                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-600/20 px-2 py-2 text-xs text-violet-300 transition-colors hover:bg-violet-600/30">
+                                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-[color:var(--line-strong)] bg-[color:var(--brand-soft)] px-2 py-2 text-xs text-[color:var(--brand-strong)] transition-colors hover:bg-[color:var(--brand-soft)]">
                                             <ExternalLink size={13} />
                                             <span className="truncate">Results</span>
                                         </button>
@@ -482,14 +478,14 @@ const InterviewerDashboard: React.FC = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--text)]/40 px-4"
                     >
                         <motion.form
                             initial={{ opacity: 0, y: 12, scale: 0.98 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 12, scale: 0.98 }}
                             onSubmit={handleAssignCandidate}
-                            className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl shadow-black/40"
+                            className="w-full max-w-3xl surface p-5 shadow-2xl shadow-black/40"
                         >
                             <div className="flex items-start justify-between gap-4 mb-5">
                                 <div className="min-w-0">
@@ -583,7 +579,7 @@ const InterviewerDashboard: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => router.push(portalPath('/billing'))}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-600/20 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-600/30"
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--line-strong)] bg-[color:var(--brand-soft)] px-3 py-1.5 text-xs font-medium text-[color:var(--brand-strong)] hover:bg-[color:var(--brand-soft)]"
                                         >
                                             <CreditCard size={13} /> Upgrade
                                         </button>
@@ -603,7 +599,7 @@ const InterviewerDashboard: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={!!assigningStudyId}
-                                    className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                    className="btn-primary flex-1 py-3 text-sm disabled:opacity-50"
                                 >
                                     {assigningStudyId ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                     Assign{assignmentCandidates.filter(candidate => candidate.name.trim() && emailPattern.test(candidate.email.trim().toLowerCase())).length ? ` ${assignmentCandidates.filter(candidate => candidate.name.trim() && emailPattern.test(candidate.email.trim().toLowerCase())).length}` : ''}

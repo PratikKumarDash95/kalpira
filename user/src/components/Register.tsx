@@ -98,18 +98,18 @@ const Register: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-stone-900 flex items-center justify-center p-4 sm:p-8">
+        <div className="app-shell min-h-screen flex items-center justify-center p-4 sm:p-8">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="max-w-sm w-full"
             >
-                <div className="bg-stone-800/50 rounded-xl border border-stone-700 p-8">
+                <div className="surface p-8">
                     <div className="text-center mb-6">
-                        <div className="w-12 h-12 rounded-full bg-stone-700 flex items-center justify-center mx-auto mb-4">
-                            <User size={24} className="text-stone-300" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--brand-soft)] mx-auto mb-4">
+                            <User size={24} className="text-brand-500" />
                         </div>
-                        <h1 className="text-xl font-bold text-white">Create Account</h1>
+                        <h1 className="text-xl font-bold text-[color:var(--text)]">Create Account</h1>
                         <p className="text-stone-400 text-sm mt-1">
                             Sign up to start conducting research interviews
                         </p>
@@ -192,7 +192,7 @@ const Register: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 bg-stone-600 hover:bg-stone-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <>

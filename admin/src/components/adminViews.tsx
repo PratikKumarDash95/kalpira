@@ -74,8 +74,8 @@ export function Stars({ n }: { n: number }) {
     );
 }
 
-export const tableWrap = 'rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden';
-export const th = 'text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider';
+export const tableWrap = 'rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] shadow-card overflow-hidden';
+export const th = 'text-left px-4 py-3 text-xs font-medium text-[color:var(--muted)] uppercase tracking-wider';
 
 // ─── Search + create header ───────────────────────────────────────────────
 export function Toolbar({ search, setSearch, onCreate, createLabel }: {
