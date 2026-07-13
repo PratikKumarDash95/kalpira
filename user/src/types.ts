@@ -128,6 +128,11 @@ export interface StudyConfig {
   textToSpeechEnabled?: boolean;  // Whether AI voice playback is enabled for the interview UI
   consentText: string;
   createdAt: number;
+  // Self-service kind: distinguishes a user's own custom study from a self-practice
+  // run. Both are candidate-owned Study rows created via POST /api/studies and are
+  // gated by the candidate's subscription with SEPARATE caps. Absent ⇒ 'study'.
+  // (Interviewer-assigned interviews are InterviewSession rows and never set this.)
+  kind?: 'study' | 'practice';
   // Follow-up study lineage
   parentStudyId?: string;         // ID of parent study if this is a follow-up
   parentStudyName?: string;       // Name of parent study for display

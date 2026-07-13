@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store';
 import { generateParticipantLink } from '@/services/geminiService';
-import { StudyConfig, ProfileField, AIBehavior, AIProviderType, LinkExpirationOption, InterviewerAssignment, GEMINI_MODELS, CLAUDE_MODELS, OLLAMA_MODELS, DEFAULT_GEMINI_MODEL, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_MODEL } from '@/types';
+import { StudyConfig, ProfileField, AIBehavior, AIProviderType, LinkExpirationOption, InterviewerAssignment, DEFAULT_GEMINI_MODEL, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_MODEL } from '@/types';
 import { dateInputToEndsAt, endsAtToDateInput, formatInterviewEndDate } from '@/lib/interviewDeadline';
 import { INTERVIEWER_AI_MODEL, INTERVIEWER_AI_PROVIDER, withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 import { useSessionState } from '@/hooks/useSessionState';
@@ -87,7 +87,6 @@ const StudySetup: React.FC = () => {
   const [isPublished, setIsPublished] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedAssignment, setPublishedAssignment] = useState<InterviewerAssignment | null>(null);
-  const [configStatus, setConfigStatus] = useState<{ hasAnthropicKey: boolean; hasGeminiKey: boolean; hasOllamaConfigured: boolean; } | null>(null);
 
   useEffect(() => {
     if (studyConfig?.id && !studyConfig.id.startsWith('study-')) {
@@ -106,12 +105,6 @@ const StudySetup: React.FC = () => {
     };
     checkAuth();
   }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      apiFetch('/api/config/status').then(r => r.ok ? r.json() : null).then(d => d && setConfigStatus(d)).catch(() => { });
-    }
-  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isInterviewerFlow) return;
@@ -238,7 +231,7 @@ const StudySetup: React.FC = () => {
       ...(parentStudyInfo && { parentStudyId: parentStudyInfo.id, parentStudyName: parentStudyInfo.name, generatedFrom: 'synthesis' as const })
     };
 
-    return isInterviewerFlow ? withInterviewerAiConfig(config) : config;
+    return isInterviewerFlow ? withInterviewerAiConfig(config) : { ...config, kind: 'study' as const };
   };
 
   const handleSubmit = async () => {
@@ -438,12 +431,6 @@ const StudySetup: React.FC = () => {
     { id: 'exploratory', label: 'Exploratory', desc: 'Chase insights. Deep probing.', icon: <Sparkles size={18} /> },
   ];
 
-  const providerOptions: { id: AIProviderType; label: string; desc: string; badge?: string }[] = [
-    { id: 'gemini', label: 'Google Gemini', desc: 'Fast & cost-effective', badge: 'Recommended' },
-    { id: 'claude', label: 'Anthropic Claude', desc: 'Nuanced reasoning' },
-    { id: 'ollama', label: 'Ollama (Local)', desc: 'Free & private' },
-  ];
-
   // ── Input class ──────────────────────────────────────────────────────────────
   const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
 
@@ -525,10 +512,10 @@ const StudySetup: React.FC = () => {
             <div className="flex-1">
               <p className="text-sm font-medium text-red-300">{isInterviewerFlow ? 'Publish Failed' : 'Save Failed'}</p>
               <p className="text-xs text-red-400/80 mt-0.5">{saveError}</p>
-              {isInterviewerFlow && saveErrorCode === 'PLAN_LIMIT' && (
+              {saveErrorCode === 'PLAN_LIMIT' && (
                 <button
                   type="button"
-                  onClick={() => router.push(interviewerPath('/billing'))}
+                  onClick={() => router.push(isInterviewerFlow ? interviewerPath('/billing') : '/subscription')}
                   className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-600/20 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-600/30"
                 >
                   <CreditCard size={13} /> Upgrade plan
@@ -741,38 +728,15 @@ const StudySetup: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-3">
-                    {providerOptions.map(opt => (
-                      <button
-                        key={opt.id}
-                        onClick={() => {
-                          setAiProvider(opt.id);
-                          setAiModel(opt.id === 'claude' ? DEFAULT_CLAUDE_MODEL : opt.id === 'ollama' ? DEFAULT_OLLAMA_MODEL : DEFAULT_GEMINI_MODEL);
-                          setIsDirty(true);
-                        }}
-                        className={`relative p-4 rounded-xl border-2 text-left transition-all ${aiProvider === opt.id ? 'border-violet-500 bg-violet-500/10' : 'border-slate-700 hover:border-slate-600 bg-slate-800/30'}`}
-                      >
-                        {opt.badge && <span className="absolute top-2 right-2 text-xs bg-violet-600 text-white px-1.5 py-0.5 rounded-full">{opt.badge}</span>}
-                        <p className={`text-sm font-semibold mb-0.5 ${aiProvider === opt.id ? 'text-violet-300' : 'text-slate-300'}`}>{opt.label}</p>
-                        <p className="text-xs text-slate-500">{opt.desc}</p>
-                      </button>
-                    ))}
+                  <div className="rounded-xl border-2 border-violet-500 bg-violet-500/10 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-violet-300">Platform AI</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Your studies run on our platform&apos;s AI — no API keys needed. Usage is covered by your subscription.</p>
+                      </div>
+                      <span className="text-xs bg-violet-600 text-white px-2 py-1 rounded-full flex-shrink-0">Included</span>
+                    </div>
                   </div>
-                )}
-
-                {/* Model */}
-                {!isInterviewerFlow && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Model</label>
-                  <select value={aiModel} onChange={e => { setAiModel(e.target.value); setIsDirty(true); }} className={inputCls}>
-                    {(aiProvider === 'gemini' ? GEMINI_MODELS : aiProvider === 'claude' ? CLAUDE_MODELS : OLLAMA_MODELS).map(m => (
-                      <option key={m.id} value={m.id}>{m.label}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-slate-600 mt-1">
-                    {(aiProvider === 'gemini' ? GEMINI_MODELS : aiProvider === 'claude' ? CLAUDE_MODELS : OLLAMA_MODELS).find(m => m.id === aiModel)?.desc || ''}
-                  </p>
-                </div>
                 )}
 
                 {/* Reasoning */}
@@ -787,35 +751,6 @@ const StudySetup: React.FC = () => {
                   </select>
                   <p className="text-xs text-slate-600 mt-1">Auto: OFF for interviews (faster), ON for synthesis (deeper analysis)</p>
                 </div>
-
-                {/* Warnings */}
-                {aiProvider === 'gemini' && configStatus && !configStatus.hasGeminiKey && (
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2">
-                    <AlertTriangle size={15} className="text-amber-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-amber-300">Gemini API Key Missing</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Add a Gemini API key in Settings before previewing or publishing AI interviews.</p>
-                    </div>
-                  </div>
-                )}
-                {aiProvider === 'claude' && configStatus && !configStatus.hasAnthropicKey && (
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2">
-                    <AlertTriangle size={15} className="text-amber-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-amber-300">Anthropic API Key Missing</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Set <code className="text-slate-300">ANTHROPIC_API_KEY</code> in your environment variables.</p>
-                    </div>
-                  </div>
-                )}
-                {aiProvider === 'ollama' && (
-                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-2">
-                    <AlertTriangle size={15} className="text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-blue-300">Ollama must be running locally</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Run <code className="text-slate-300">ollama pull {aiModel}</code> to download the model.</p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Interview Style */}

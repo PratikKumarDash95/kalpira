@@ -11,6 +11,21 @@ import { registerStudyOwnership } from '@/lib/platformDb';
 import { isHostedMode } from '@/lib/mode';
 import { StudyConfig, StoredStudy } from '@/types';
 import { randomUUID } from 'crypto';
+import supabaseDb from '@/lib/supabaseDb';
+import { resolveEffectiveCandidatePlan } from '@/lib/candidatePlans';
+import { withPlatformAiConfig } from '@/lib/platformAiConfig';
+
+// Split a user's own studies into custom-study vs self-practice counts. Both are
+// candidate-owned Study rows; a missing kind marker (older rows) counts as 'study'.
+function countOwnStudies(studies: StoredStudy[]): { studies: number; practices: number } {
+  let studyCount = 0;
+  let practiceCount = 0;
+  for (const s of studies) {
+    if (s.config?.kind === 'practice') practiceCount += 1;
+    else studyCount += 1;
+  }
+  return { studies: studyCount, practices: practiceCount };
+}
 
 // GET /api/studies - List all saved studies
 export async function GET() {
@@ -73,16 +88,56 @@ export async function POST(request: Request) {
       );
     }
 
+    const ownerId = researcherId || context.userId;
+
+    // Enforce the candidate's self-service subscription. Custom studies and
+    // self-practices have SEPARATE caps. Interviewer-assigned interviews are
+    // InterviewSession rows (not created here) and are never counted.
+    // A missing kind marker defaults to a custom study.
+    const kind: 'study' | 'practice' = config.kind === 'practice' ? 'practice' : 'study';
+    if (ownerId) {
+      const owner = await supabaseDb.user.findUnique({ where: { id: ownerId } });
+      // Only candidates are gated here. Interviewers/admins creating via their own
+      // flows are unaffected; this route is the candidate self-service path.
+      if (owner && owner.role !== 'interviewer' && owner.role !== 'admin') {
+        const { limits } = resolveEffectiveCandidatePlan(owner);
+        const existing = await getAllStudies(ownerId);
+        const used = countOwnStudies(existing);
+
+        if (kind === 'practice' && used.practices >= limits.maxPractices) {
+          return NextResponse.json(
+            {
+              error: `You've reached your plan's limit of ${limits.maxPractices} practice session${limits.maxPractices !== 1 ? 's' : ''}. Upgrade your subscription to create more.`,
+              code: 'PLAN_LIMIT',
+            },
+            { status: 403 },
+          );
+        }
+        if (kind === 'study' && used.studies >= limits.maxStudies) {
+          return NextResponse.json(
+            {
+              error: `You've reached your plan's limit of ${limits.maxStudies} custom stud${limits.maxStudies !== 1 ? 'ies' : 'y'}. Upgrade your subscription to create more.`,
+              code: 'PLAN_LIMIT',
+            },
+            { status: 403 },
+          );
+        }
+      }
+    }
+
     // Create server-assigned ID
     const now = Date.now();
     const studyId = randomUUID();
 
-    // Update config with server-assigned ID
-    const serverConfig: StudyConfig = {
+    // Update config with server-assigned ID and force platform AI. Candidates no
+    // longer supply their own keys, so any client-sent aiProvider/aiModel is
+    // overridden with the platform default here. The kind marker is preserved.
+    const serverConfig: StudyConfig = withPlatformAiConfig({
       ...config,
       id: studyId,
+      kind,
       createdAt: now
-    };
+    });
 
     const storedStudy: StoredStudy = {
       id: studyId,
@@ -93,7 +148,6 @@ export async function POST(request: Request) {
       isLocked: false
     };
 
-    const ownerId = researcherId || context.userId;
     const success = await saveStudy(storedStudy, ownerId);
     if (!success) {
       return NextResponse.json(

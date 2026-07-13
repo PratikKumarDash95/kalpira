@@ -69,9 +69,9 @@ const PracticeSetup: React.FC = () => {
             topicAreas: topicAreas.filter(t => t.trim()),
             profileSchema: [], // No profile collection needed for self-practice
             aiBehavior: 'standard',
-            // Leave aiProvider/aiModel unset so the server-side factory picks the
-            // configured default (Claude via FreeModel when ANTHROPIC_BASE_URL /
-            // FREEMODEL_API_KEY are in the env, else Gemini).
+            // Self-practice runs on the platform's AI; the server forces the
+            // provider/model, so we leave them unset here.
+            kind: 'practice', // gated by the candidate subscription's practice cap
             enableReasoning: false,
             linksEnabled: true,
             linkExpiration: '7days',

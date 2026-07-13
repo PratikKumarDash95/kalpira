@@ -14,12 +14,10 @@ export async function GET() {
       return NextResponse.json({ error: error || 'Authentication required' }, { status: 401 });
     }
 
-    // Return researcher-specific key status from context
-    // In standalone mode, these come from env vars
-    // In hosted mode, these come from the researcher's decrypted credentials
+    // AI keys are no longer user-supplied for the self-service flow
+    // (studies/practices run on the platform's AI), so only the still-relevant
+    // flags are surfaced here.
     const status = {
-      hasAnthropicKey: !!context.anthropicApiKey,
-      hasGeminiKey: !!context.geminiApiKey,
       hasOllamaConfigured: !!(process.env.OLLAMA_BASE_URL || process.env.AI_PROVIDER === 'ollama'),
       hasRazorpayConfigured: isRazorpayConfigured(),
     };

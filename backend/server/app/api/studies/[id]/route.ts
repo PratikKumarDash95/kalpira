@@ -11,6 +11,7 @@ import { getRequestContext } from '@/lib/researcherContext';
 import { deleteStudyOwnership } from '@/lib/platformDb';
 import { isHostedMode } from '@/lib/mode';
 import { StudyConfig } from '@/types';
+import { withPlatformAiConfig } from '@/lib/platformAiConfig';
 
 // GET /api/studies/[id] - Get single study
 export async function GET(
@@ -104,13 +105,16 @@ export async function PUT(
       );
     }
 
-    // Update config while preserving ID and createdAt
-    const updatedConfig: StudyConfig = {
+    // Update config while preserving ID and createdAt. Force platform AI and
+    // preserve the original kind marker so an edit can't switch provider/model
+    // (candidates don't supply keys) or relabel a practice as a custom study.
+    const updatedConfig: StudyConfig = withPlatformAiConfig({
       ...study.config,
       ...config,
       id: study.id, // Preserve original ID
+      kind: study.config.kind, // Preserve original kind (study vs practice)
       createdAt: study.config.createdAt // Preserve original creation time
-    };
+    });
 
     // Validate required fields still exist after merge
     if (!updatedConfig.name || !updatedConfig.researchQuestion) {

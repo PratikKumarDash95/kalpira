@@ -13,8 +13,6 @@ interface Profile {
   avatarUrl: string | null;
   coverUrl: string | null;
   onboardingComplete: boolean;
-  hasGeminiKey: boolean;
-  hasAnthropicKey: boolean;
 }
 
 type MediaKind = 'avatar' | 'cover';
@@ -379,20 +377,13 @@ export default function ProfilePage() {
                 <h2 className="text-base font-semibold text-slate-950">Account status</h2>
                 <div className="mt-4 space-y-3 text-sm">
                   {!isInterviewerProfile && (
-                    <>
-                      <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
-                        <span className="text-slate-600">Gemini key</span>
-                        <span className={profile.hasGeminiKey ? 'text-emerald-600' : 'text-slate-400'}>
-                          {profile.hasGeminiKey ? 'Configured' : 'Missing'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">
-                        <span className="text-slate-600">Claude key</span>
-                        <span className={profile.hasAnthropicKey ? 'text-emerald-600' : 'text-slate-400'}>
-                          {profile.hasAnthropicKey ? 'Configured' : 'Missing'}
-                        </span>
-                      </div>
-                    </>
+                    <button
+                      onClick={() => router.push('/subscription')}
+                      className="flex w-full items-center justify-between rounded-xl bg-white/70 px-3 py-2 text-left transition-colors hover:bg-white"
+                    >
+                      <span className="text-slate-600">Subscription</span>
+                      <span className="text-indigo-600">Manage plan &amp; usage</span>
+                    </button>
                   )}
                   {isInterviewerProfile && (
                     <div className="flex items-center justify-between rounded-xl bg-white/70 px-3 py-2">

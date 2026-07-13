@@ -163,8 +163,8 @@ const InterviewChat: React.FC = () => {
         console.error('Error initializing interview:', error);
         if (mounted) {
           setInitError(
-            'Failed to connect to AI. Please check that your API key is configured correctly ' +
-            'and the AI service is running.'
+            'Failed to connect to AI. Please try again in a moment — if this keeps happening, ' +
+            'the AI service may be temporarily unavailable.'
           );
         }
       } finally {
@@ -391,7 +391,7 @@ const InterviewChat: React.FC = () => {
               {thinkingTooLong && (
                 <p className="text-xs text-amber-400/80 mt-2 max-w-xs">
                   This is taking longer than expected. The AI service may be unreachable.
-                  Check your API key and network connection.
+                  Check your network connection and try again.
                 </p>
               )}
             </div>
