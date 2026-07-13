@@ -43,8 +43,6 @@ export async function GET() {
           coverUrl: user.coverUrl,
           onboardingComplete: user.onboardingComplete,
           hasRedisConfigured: true,
-          hasGeminiKey: !!user.encryptedGeminiApiKey,
-          hasAnthropicKey: !!user.encryptedAnthropicApiKey,
         } : null,
       });
     }
@@ -144,8 +142,6 @@ export async function PATCH(request: Request) {
         coverUrl: user.coverUrl,
         onboardingComplete: user.onboardingComplete,
         hasRedisConfigured: true,
-        hasGeminiKey: !!user.encryptedGeminiApiKey,
-        hasAnthropicKey: !!user.encryptedAnthropicApiKey,
       } : null,
     });
   } catch (error) {
