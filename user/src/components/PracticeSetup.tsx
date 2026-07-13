@@ -10,7 +10,7 @@ import { StudyConfig } from '@/types';
 import { useSessionState } from '@/hooks/useSessionState';
 import {
     FileText, Plus, X, ArrowRight, Sparkles, Brain, Briefcase, Layers,
-    Code, Award, Hash, Zap, Loader2, AlertCircle
+    Code, Award, Hash, Zap, Loader2, AlertCircle, CreditCard
 } from 'lucide-react';
 
 const PracticeSetup: React.FC = () => {
@@ -26,6 +26,7 @@ const PracticeSetup: React.FC = () => {
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [limitReached, setLimitReached] = useState(false);
 
     const addTopic = () => setTopicAreas([...topicAreas, '']);
     const removeTopic = (i: number) => {
@@ -40,6 +41,7 @@ const PracticeSetup: React.FC = () => {
 
         setIsGenerating(true);
         setError(null);
+        setLimitReached(false);
         resetParticipant();
 
         // Construct the research question / prompt context from inputs
@@ -90,6 +92,13 @@ const PracticeSetup: React.FC = () => {
             });
             if (!saveRes.ok) {
                 const errBody = await saveRes.json().catch(() => ({}));
+                // Plan cap reached — show an upgrade prompt instead of a plain error.
+                if (saveRes.status === 403 && errBody?.code === 'PLAN_LIMIT') {
+                    setLimitReached(true);
+                    setError(errBody.error || "You've reached your plan's practice limit.");
+                    setIsGenerating(false);
+                    return;
+                }
                 throw new Error(errBody.error || `Failed to save study (${saveRes.status})`);
             }
             const { study: savedStudy } = await saveRes.json();
@@ -267,9 +276,20 @@ const PracticeSetup: React.FC = () => {
                     </div>
 
                     {error && (
-                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400">
-                            <AlertCircle size={20} />
-                            <p className="text-sm">{error}</p>
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex flex-col gap-3 text-red-400">
+                            <div className="flex items-center gap-3">
+                                <AlertCircle size={20} />
+                                <p className="text-sm">{error}</p>
+                            </div>
+                            {limitReached && (
+                                <button
+                                    type="button"
+                                    onClick={() => router.push('/subscription')}
+                                    className="self-start inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-600/20 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-600/30"
+                                >
+                                    <CreditCard size={13} /> Upgrade plan
+                                </button>
+                            )}
                         </div>
                     )}
 
