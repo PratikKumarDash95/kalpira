@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 import { StoredInterview } from '@/types';
 import { getInterview } from '@/services/storageService';
 import { Markdown } from '@/components/ui/Markdown';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import EmptyState from '@/components/layout/EmptyState';
+import { Skeleton, SkeletonCard, SkeletonPageHeader } from '@/components/ui/Skeleton';
 import {
-  ArrowLeft,
   Download,
   Clock,
   MessageSquare,
@@ -113,44 +116,41 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
 
   if (loading) {
     return (
-      <div className="kalpira-light min-h-screen p-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="skeleton mb-5 h-10 w-40 rounded-xl" />
-          <div className="skeleton-card mb-6 rounded-2xl border border-stone-700 p-6">
-            <div className="skeleton mb-3 h-8 w-2/3" />
-            <div className="skeleton mb-5 h-4 w-1/2" />
-            <div className="flex gap-3">
-              <div className="skeleton h-9 w-28 rounded-xl" />
-              <div className="skeleton h-9 w-28 rounded-xl" />
-            </div>
+      <PageShell>
+        <SkeletonPageHeader className="mb-6" />
+        <SkeletonCard className="mb-6">
+          <Skeleton className="mb-3 h-8 w-2/3" />
+          <Skeleton className="mb-5 h-4 w-1/2" />
+          <div className="flex gap-3">
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-28" />
           </div>
-          <div className="skeleton-card rounded-2xl border border-stone-700 p-6">
-            <div className="space-y-4">
-              <div className="skeleton h-16 w-4/5 rounded-xl" />
-              <div className="skeleton ml-auto h-16 w-3/4 rounded-xl" />
-              <div className="skeleton h-20 w-full rounded-xl" />
-              <div className="skeleton ml-auto h-14 w-2/3 rounded-xl" />
-            </div>
+        </SkeletonCard>
+        <SkeletonCard>
+          <div className="space-y-4">
+            <Skeleton className="h-16 w-4/5 rounded-xl" />
+            <Skeleton className="ml-auto h-16 w-3/4 rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="ml-auto h-14 w-2/3 rounded-xl" />
           </div>
-        </div>
-      </div>
+        </SkeletonCard>
+      </PageShell>
     );
   }
 
   if (!interview) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center p-8">
-        <div className="text-center">
-          <h1 className="text-xl font-semibold text-white mb-2">Interview Not Found</h1>
-          <p className="text-stone-400 mb-4">This interview may have been deleted.</p>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 bg-stone-600 text-white rounded-xl"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
+      <PageShell>
+        <EmptyState
+          title="Interview Not Found"
+          description="This interview may have been deleted."
+          action={
+            <button onClick={() => router.push('/dashboard')} className="btn-primary sheen px-5 py-2.5">
+              Back to Dashboard
+            </button>
+          }
+        />
+      </PageShell>
     );
   }
 
@@ -164,62 +164,48 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
   const keyInsights = synthesis?.keyInsights ?? [];
 
   return (
-    <div className="kalpira-light min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center gap-2 text-stone-400 hover:text-stone-300 mb-4 transition-colors"
-          >
-            <ArrowLeft size={18} />
-            Back to Dashboard
-          </button>
-
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-2">{interview.studyName}</h1>
-              <div className="flex items-center gap-4 text-sm text-stone-400">
-                <div className="flex items-center gap-1">
-                  <Clock size={14} />
-                  {formatDuration(interview.createdAt, interview.completedAt)}
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageSquare size={14} />
-                  {transcript.length} messages
-                </div>
-                <div>
-                  {new Date(interview.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleDownloadTranscript}
-                className="px-4 py-2 text-sm bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <Download size={16} />
-                Transcript
-              </button>
-              <button
-                onClick={handleDownloadJSON}
-                className="px-4 py-2 text-sm bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <Download size={16} />
-                JSON
-              </button>
-            </div>
-          </div>
-        </motion.div>
+    <PageShell>
+      <PageHeader
+        back="/dashboard"
+        title={interview.studyName}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-4">
+            <span className="flex items-center gap-1">
+              <Clock size={14} />
+              {formatDuration(interview.createdAt, interview.completedAt)}
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageSquare size={14} />
+              {transcript.length} messages
+            </span>
+            <span>
+              {new Date(interview.createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </span>
+          </span>
+        }
+        actions={
+          <>
+            <button
+              onClick={handleDownloadTranscript}
+              className="btn-secondary px-4 py-2 text-sm"
+            >
+              <Download size={16} />
+              Transcript
+            </button>
+            <button
+              onClick={handleDownloadJSON}
+              className="btn-secondary px-4 py-2 text-sm"
+            >
+              <Download size={16} />
+              JSON
+            </button>
+          </>
+        }
+      />
 
         {/* Participant Profile */}
         {profileFields.length > 0 && (
@@ -435,8 +421,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
             )}
           </motion.div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

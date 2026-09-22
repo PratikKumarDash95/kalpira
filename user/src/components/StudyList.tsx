@@ -1,8 +1,8 @@
 'use client';
-import { apiFetch, apiUrl } from '@/lib/apiClient';
+import { apiFetch } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { StoredStudy, StudyConfig } from '@/types';
 import { getAllStudies, deleteStudy } from '@/services/storageService';
@@ -18,12 +18,13 @@ import {
   Eye,
   Link as LinkIcon,
   MoreVertical,
-  UserCircle,
   AlertTriangle,
-  Menu,
-  X,
   Briefcase
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import PageSection from '@/components/layout/PageSection';
+import EmptyState from '@/components/layout/EmptyState';
 
 const StudyList: React.FC = () => {
   const router = useRouter();
@@ -32,21 +33,13 @@ const StudyList: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [kvWarning, setKvWarning] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [assignedInterviewCount, setAssignedInterviewCount] = useState(0);
 
   useEffect(() => {
     loadStudies();
-    // Check if logged in as admin (admin password login has no researcherId)
-    apiFetch('/api/auth')
-      .then(r => r.json())
-      .then(async d => {
-        setIsAdmin(d.authenticated && !d.researcherId);
-
-        if (!d.authenticated || !d.researcherId) return null;
-
-        const meRes = await apiFetch('/api/auth/me');
+    // Only used to decide whether to surface the "assigned interviews" badge.
+    apiFetch('/api/auth/me')
+      .then(async (meRes) => {
         if (!meRes.ok) return null;
         return meRes.json();
       })
@@ -150,113 +143,50 @@ const StudyList: React.FC = () => {
   };
 
   return (
-    <div className="kalpira-light min-h-screen p-4 sm:p-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 sm:mb-8"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-stone-700 flex items-center justify-center flex-shrink-0">
-                <BookOpen className="text-stone-300" size={20} />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-3xl font-bold text-white truncate">My Studies</h1>
-                <p className="text-stone-400 text-sm">
-                  {studies.length} {studies.length === 1 ? 'study' : 'studies'}
-                </p>
-              </div>
-            </div>
-
-            {/* Desktop buttons */}
-            <div className="hidden md:flex gap-2 flex-wrap justify-end">
-              <button
-                onClick={() => router.push('/setup')}
-                className="px-3 py-2 text-sm bg-stone-600 hover:bg-stone-500 text-white rounded-xl transition-colors flex items-center gap-2"
-              >
-                <Plus size={16} />
-                Create Study
-              </button>
-
-              <button
-                onClick={handleInterviewerPractice}
-                title="Open assigned interviews"
-                className="relative px-3 py-2 text-sm border border-brand-700/50 text-brand-700 hover:bg-brand-900/30 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <Briefcase size={16} />
-                Interview Practice
-                {renderAssignedBadge()}
-              </button>
-
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="px-3 py-2 text-sm bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <Users size={16} />
-                All Interviews
-              </button>
-
-              <button
-                onClick={() => router.push('/profile')}
-                className="px-3 py-2 text-sm border border-stone-600 text-stone-400 hover:bg-stone-700 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <UserCircle size={16} />
-                Profile
-              </button>
-            </div>
-
-            {/* Mobile hamburger */}
+    <PageShell showFooter={false}>
+      <PageHeader
+        icon={<BookOpen size={20} />}
+        title="My Studies"
+        subtitle={`${studies.length} ${studies.length === 1 ? 'study' : 'studies'}`}
+        actions={
+          <>
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex-shrink-0"
+              onClick={() => router.push('/setup')}
+              className="btn-primary sheen px-3 py-2 text-sm"
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              <Plus size={16} />
+              Create Study
             </button>
-          </div>
 
-          {/* Mobile menu */}
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="md:hidden mt-3 grid grid-cols-2 gap-2 overflow-hidden"
-              >
-                <button onClick={() => router.push('/setup')} className="px-3 py-2 text-sm bg-stone-600 text-white rounded-xl flex items-center gap-2 justify-center">
-                  <Plus size={14} /> Create Study
-                </button>
-                <button
-                  onClick={handleInterviewerPractice}
-                  title="Open assigned interviews"
-                  className="relative px-3 py-2 text-sm bg-brand-900/50 text-brand-700 rounded-xl flex items-center gap-2 justify-center"
-                >
-                  <Briefcase size={14} /> Interview Practice
-                  {renderAssignedBadge()}
-                </button>
-                <button onClick={() => router.push('/dashboard')} className="px-3 py-2 text-sm bg-stone-700 text-stone-300 rounded-xl flex items-center gap-2 justify-center">
-                  <Users size={14} /> All Interviews
-                </button>
+            <button
+              onClick={handleInterviewerPractice}
+              title="Open assigned interviews"
+              className="btn-secondary relative px-3 py-2 text-sm"
+            >
+              <Briefcase size={16} />
+              Interview Practice
+              {renderAssignedBadge()}
+            </button>
 
-                <button onClick={() => router.push('/profile')} className="px-3 py-2 text-sm border border-stone-600 text-stone-400 rounded-xl flex items-center gap-2 justify-center">
-                  <UserCircle size={14} /> Profile
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="btn-secondary px-3 py-2 text-sm"
+            >
+              <Users size={16} />
+              All Interviews
+            </button>
+          </>
+        }
+      />
 
-        {/* Storage Warning Banner */}
-        {kvWarning && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 bg-amber-900/30 border border-amber-700/50 rounded-xl p-4 flex items-start gap-3"
-          >
-            <AlertTriangle size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
+      {/* Storage Warning Banner */}
+      {kvWarning && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-amber-900/30 border border-amber-700/50 rounded-xl p-4 flex items-start gap-3"
+        >
+          <AlertTriangle size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h4 className="font-medium text-amber-300 mb-1">Storage Not Configured</h4>
               <p className="text-sm text-amber-400/80">{kvWarning}</p>
@@ -267,42 +197,36 @@ const StudyList: React.FC = () => {
           </motion.div>
         )}
 
-        {/* Content */}
+      <PageSection>
         {loading ? (
           renderStudySkeleton()
         ) : studies.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-stone-800/50 rounded-2xl border border-stone-700 p-12 text-center"
-          >
-            <div className="w-16 h-16 rounded-full bg-stone-800 flex items-center justify-center mx-auto mb-4">
-              <BookOpen size={32} className="text-stone-500" />
-            </div>
-            <h2 className="text-xl font-semibold text-white mb-2">No Studies Yet</h2>
-            <p className="text-stone-400 mb-6">
-              Create your first practice study or open an interview assigned by an interviewer.
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => router.push('/setup')}
-                className="px-6 py-3 bg-stone-600 hover:bg-stone-500 text-white rounded-xl transition-colors flex items-center gap-2"
-              >
-                <Plus size={18} />
-                Create Study
-              </button>
+          <EmptyState
+            icon={<BookOpen size={32} />}
+            title="No Studies Yet"
+            description="Create your first practice study or open an interview assigned by an interviewer."
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <button
+                  onClick={() => router.push('/setup')}
+                  className="btn-primary sheen px-6 py-3"
+                >
+                  <Plus size={18} />
+                  Create Study
+                </button>
 
-              <button
-                onClick={handleInterviewerPractice}
-                title="Open assigned interviews"
-                className="relative px-6 py-3 border border-brand-700/50 text-brand-700 hover:bg-brand-900/30 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <Briefcase size={18} />
-                Interview Practice
-                {renderAssignedBadge()}
-              </button>
-            </div>
-          </motion.div>
+                <button
+                  onClick={handleInterviewerPractice}
+                  title="Open assigned interviews"
+                  className="btn-secondary relative px-6 py-3"
+                >
+                  <Briefcase size={18} />
+                  Interview Practice
+                  {renderAssignedBadge()}
+                </button>
+              </div>
+            }
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {studies.map((study, index) => (
@@ -410,8 +334,8 @@ const StudyList: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 };
 

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, CheckCircle, CreditCard, Dumbbell, Loader2, ShieldCheck, XCircle } from 'lucide-react';
 import { apiFetch } from '@/lib/apiClient';
 import { CANDIDATE_PLAN_CARDS, CANDIDATE_PLAN_LABELS, CandidatePlanKey } from '@/lib/candidatePlans';
+import PageShell from '@/components/layout/PageShell';
 import { loadRazorpayCheckout, openRazorpayCheckout } from '@/lib/razorpay';
 
 interface BillingStatus {
@@ -149,9 +150,9 @@ const CandidateBilling: React.FC = () => {
     const paymentsEnabled = config?.hasRazorpayConfigured !== false;
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <PageShell width="wide">
             <div className="fixed inset-0 pointer-events-none bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
-            <main className="relative mx-auto max-w-6xl px-4 py-8">
+            <main className="relative">
                 <button
                     onClick={() => router.push('/dashboard')}
                     className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-slate-200"
@@ -247,7 +248,7 @@ const CandidateBilling: React.FC = () => {
                     })}
                 </div>
             </main>
-        </div>
+        </PageShell>
     );
 };
 

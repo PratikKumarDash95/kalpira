@@ -7,6 +7,7 @@ import { getAllInterviewsPage, deleteInterview } from '@/services/storageService
 import { throttle } from '@/lib/rateControl';
 import { motion } from 'framer-motion';
 import RequireAuth from '@/components/RequireAuth';
+import PageShell from '@/components/layout/PageShell';
 import {
     FileText,
     Search,
@@ -198,8 +199,11 @@ function AllInterviewsContent() {
     );
 
     return (
-        <div className="min-h-screen bg-stone-950 text-stone-200 p-4 sm:p-8 md:p-12">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <PageShell
+            width="wide"
+            showFooter={false}
+        >
+            <div className="space-y-8">
 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -344,6 +348,6 @@ function AllInterviewsContent() {
                     </div>
                 )}
             </div>
-        </div>
+        </PageShell>
     );
 }

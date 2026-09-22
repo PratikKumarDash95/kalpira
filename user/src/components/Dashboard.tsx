@@ -1,8 +1,7 @@
 'use client';
-import { apiFetch, apiUrl } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { StoredInterview, StoredStudy } from '@/types';
 import { getAllInterviews, exportAllInterviews, getStudyInterviews, getAllStudies, deleteInterview } from '@/services/storageService';
@@ -15,19 +14,17 @@ import {
   MessageSquare,
   Lightbulb,
   FolderOpen,
-  UserCircle,
   Filter,
-  BookOpen,
-  Menu,
-  X,
-  Shield,
   Trash2
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import PageSection from '@/components/layout/PageSection';
+import EmptyState from '@/components/layout/EmptyState';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const [interviews, setInterviews] = useState<StoredInterview[]>([]);
   const [studies, setStudies] = useState<StoredStudy[]>([]);
@@ -35,14 +32,6 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
-
-  // Check admin status on mount
-  useEffect(() => {
-    apiFetch('/api/auth')
-      .then(r => r.json())
-      .then(d => setIsAdmin(d.authenticated && !d.researcherId))
-      .catch(() => { });
-  }, []);
 
   // Load studies on mount
   useEffect(() => {
@@ -134,160 +123,37 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  const renderDashboardSkeleton = () => (
-    <div className="space-y-4">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <div key={index} className="skeleton-card rounded-xl border border-stone-700 p-4 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="mb-3 flex items-center gap-3">
-                <div className="skeleton h-5 w-48 max-w-[55%]" />
-                <div className="skeleton h-6 w-20 rounded-full" />
-              </div>
-              <div className="skeleton mb-3 h-4 w-2/3" />
-              <div className="skeleton mb-4 h-12 w-full rounded-lg" />
-              <div className="flex flex-wrap gap-4">
-                <div className="skeleton h-4 w-20" />
-                <div className="skeleton h-4 w-16" />
-                <div className="skeleton hidden h-4 w-28 sm:block" />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <div className="skeleton h-9 w-9 rounded-lg" />
-              <div className="skeleton h-9 w-9 rounded-lg" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-
-
   return (
-    <div className="kalpira-light min-h-screen p-4 sm:p-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 sm:mb-8"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-stone-700 flex items-center justify-center flex-shrink-0">
-                <FolderOpen className="text-stone-300" size={20} />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-3xl font-bold text-white truncate">Interview Dashboard</h1>
-                <p className="text-stone-400 text-sm">
-                  {interviews.length} interview{interviews.length !== 1 ? 's' : ''} collected
-                </p>
-              </div>
-            </div>
-
-            {/* Desktop buttons */}
-            <div className="hidden md:flex gap-2 flex-wrap justify-end">
-
-              <button
-                onClick={() => router.push('/allinterviews')}
-                className="px-3 py-2 text-sm bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <FolderOpen size={16} />
-                View All Results
-              </button>
-              <button
-                onClick={() => router.push('/studies')}
-                className="px-3 py-2 text-sm bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <BookOpen size={16} />
-                My Studies
-              </button>
-              {isAdmin && (
-                <button
-                  onClick={() => router.push('/admin')}
-                  className="px-3 py-2 text-sm bg-[color:var(--brand-soft)] hover:bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)] border border-[color:var(--line-strong)] rounded-xl transition-colors flex items-center gap-2"
-                >
-                  <Shield size={16} />
-                  Admin
-                </button>
-              )}
-              {interviews.length > 0 && (
-                <button
-                  onClick={handleExportAll}
-                  disabled={exporting}
-                  className="px-3 py-2 text-sm bg-stone-600 hover:bg-stone-500 text-white rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                  Export
-                </button>
-              )}
-              <button
-                onClick={() => router.push('/profile')}
-                className="px-3 py-2 text-sm border border-stone-600 text-stone-400 hover:bg-stone-700 rounded-xl transition-colors flex items-center gap-2"
-              >
-                <UserCircle size={16} />
-                Profile
-              </button>
-            </div>
-
-            {/* Mobile hamburger */}
+    <PageShell width="wide" showFooter={false}>
+      <PageHeader
+        icon={<FolderOpen size={20} />}
+        title="Interview Dashboard"
+        subtitle={`${interviews.length} interview${interviews.length !== 1 ? 's' : ''} collected`}
+        actions={
+          <>
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex-shrink-0"
+              onClick={() => router.push('/allinterviews')}
+              className="btn-secondary px-3 py-2 text-sm"
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              <FolderOpen size={16} />
+              View all results
             </button>
-          </div>
-
-          {/* Mobile menu */}
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="md:hidden mt-3 grid grid-cols-2 gap-2 overflow-hidden"
+            {interviews.length > 0 && (
+              <button
+                onClick={handleExportAll}
+                disabled={exporting}
+                className="btn-primary sheen px-3 py-2 text-sm disabled:opacity-50"
               >
-
-                <button onClick={() => router.push('/studies')} className="px-3 py-2 text-sm bg-stone-700 text-stone-300 rounded-xl flex items-center gap-2 justify-center">
-                  <BookOpen size={14} /> My Studies
-                </button>
-                {isAdmin && (
-                  <button onClick={() => router.push('/admin')} className="px-3 py-2 text-sm bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)] border border-[color:var(--line-strong)] rounded-xl flex items-center gap-2 justify-center">
-                    <Shield size={14} /> Admin Panel
-                  </button>
-                )}
-                {interviews.length > 0 && (
-                  <button onClick={handleExportAll} disabled={exporting} className="px-3 py-2 text-sm bg-stone-600 text-white rounded-xl flex items-center gap-2 justify-center disabled:opacity-50">
-                    {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Export
-                  </button>
-                )}
-                <button onClick={() => router.push('/profile')} className="px-3 py-2 text-sm border border-stone-600 text-stone-400 rounded-xl flex items-center gap-2 justify-center">
-                  <UserCircle size={14} /> Profile
-                </button>
-              </motion.div>
+                {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                Export
+              </button>
             )}
-          </AnimatePresence>
-        </motion.div>
-
-        {warning && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-6 p-4 bg-stone-800 border border-stone-600 rounded-xl text-stone-300 text-sm"
-          >
-            {warning}
-          </motion.div>
-        )}
-
-        {/* Study Filter */}
+          </>
+        }
+      >
+        {/* Study filter — the page-level control row, owned by the header. */}
         {studies.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-6 flex items-center gap-3"
-          >
+          <div className="mb-6 flex flex-wrap items-center gap-3">
             <Filter size={16} className="text-stone-500" />
             <select
               value={selectedStudyId || ''}
@@ -309,32 +175,34 @@ const Dashboard: React.FC = () => {
                 Clear filter
               </button>
             )}
-          </motion.div>
+          </div>
         )}
+      </PageHeader>
 
-        {/* Content */}
+      {warning && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-6 p-4 bg-stone-800 border border-stone-600 rounded-xl text-stone-300 text-sm"
+        >
+          {warning}
+        </motion.div>
+      )}
+
+      <PageSection>
         {loading ? (
-          renderDashboardSkeleton()
+          <SkeletonList rows={5} />
         ) : interviews.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-stone-800/50 rounded-2xl border border-stone-700 p-12 text-center"
-          >
-            <div className="w-16 h-16 rounded-full bg-stone-800 flex items-center justify-center mx-auto mb-4">
-              <FileText size={32} className="text-stone-500" />
-            </div>
-            <h2 className="text-xl font-semibold text-white mb-2">No Interviews Yet</h2>
-            <p className="text-stone-400 mb-6">
-              Completed interviews will appear here. Share participant links to start collecting data.
-            </p>
-            <button
-              onClick={() => router.push('/setup')}
-              className="px-6 py-3 bg-stone-600 hover:bg-stone-500 text-white rounded-xl transition-colors"
-            >
-              Create Study Link
-            </button>
-          </motion.div>
+          <EmptyState
+            icon={<FileText size={32} />}
+            title="No Interviews Yet"
+            description="Completed interviews will appear here. Share participant links to start collecting data."
+            action={
+              <button onClick={() => router.push('/setup')} className="btn-primary sheen px-6 py-3">
+                Create Study Link
+              </button>
+            }
+          />
         ) : (
           <div className="space-y-4">
             {interviews.map((interview, index) => (
@@ -415,8 +283,8 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 };
 

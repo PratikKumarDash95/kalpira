@@ -20,6 +20,7 @@ import {
     TrendingUp, FileText, Zap, Send, X, User, Mail, UserCircle,
     FileSpreadsheet, Trash2, UserPlus, CreditCard
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
 
 interface StudySummary {
     id: string;
@@ -273,9 +274,11 @@ const InterviewerDashboard: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="app-shell min-h-screen flex items-center justify-center">
-                <Loader2 size={40} className="animate-spin text-brand-500" />
-            </div>
+            <PageShell width="wide" showFooter={false}>
+                <div className="flex min-h-[60vh] items-center justify-center">
+                    <Loader2 size={40} className="animate-spin text-brand-500" />
+                </div>
+            </PageShell>
         );
     }
 
@@ -289,9 +292,9 @@ const InterviewerDashboard: React.FC = () => {
     const assignmentNeedsUpgrade = assignmentMessage?.type === 'error' && assignmentMessage.text.toLowerCase().includes('upgrade');
 
     return (
-        <div className="app-shell min-h-screen">
+        <PageShell width="wide" showFooter={false}>
 
-            <div className="relative max-w-7xl mx-auto px-4 py-8">
+            <div className="relative">
                 {/* ── Top Bar ── */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
@@ -609,7 +612,7 @@ const InterviewerDashboard: React.FC = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </PageShell>
     );
 };
 

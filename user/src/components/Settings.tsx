@@ -2,9 +2,12 @@
 import { apiFetch } from '@/lib/apiClient';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CreditCard, ChevronRight, Sparkles } from 'lucide-react';
+import { CreditCard, ChevronRight, Sparkles } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import PageSection from '@/components/layout/PageSection';
+import { Skeleton, SkeletonCard, SkeletonPageHeader } from '@/components/ui/Skeleton';
 
 interface ResearcherProfile {
   name: string;
@@ -32,48 +35,27 @@ const Settings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="kalpira-light min-h-screen p-8">
-        <div className="mx-auto max-w-2xl">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="skeleton h-10 w-10 rounded-lg" />
-            <div className="space-y-2">
-              <div className="skeleton h-7 w-32" />
-              <div className="skeleton h-4 w-56" />
-            </div>
-          </div>
-          <div className="skeleton-card rounded-xl border border-stone-700 p-6">
-            <div className="skeleton mb-5 h-6 w-44" />
-            <div className="skeleton h-12" />
-          </div>
-        </div>
-      </div>
+      <PageShell width="narrow">
+        <SkeletonPageHeader className="mb-8" />
+        <SkeletonCard>
+          <Skeleton className="mb-5 h-6 w-44" />
+          <Skeleton className="h-12" />
+        </SkeletonCard>
+      </PageShell>
     );
   }
 
   return (
-    <div className="kalpira-light min-h-screen p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl mx-auto"
-      >
-        <div className="flex items-center gap-3 mb-8">
-          <button
-            onClick={() => router.push('/studies')}
-            className="p-2 hover:bg-stone-800 rounded-lg transition-colors"
-          >
-            <ArrowLeft size={20} className="text-stone-400" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Settings</h1>
-            {profile && (
-              <p className="text-stone-400 text-sm">{profile.email}</p>
-            )}
-          </div>
-        </div>
+    <PageShell width="narrow">
+      <PageHeader
+        back="/studies"
+        title="Settings"
+        subtitle={profile?.email}
+      />
 
+      <PageSection>
         {/* Subscription */}
-        <div className="bg-stone-800/50 rounded-xl border border-stone-700 p-6 mb-6">
+        <div className="bg-stone-800/50 rounded-xl border border-stone-700 p-6">
           <div className="flex items-center gap-2 mb-4">
             <CreditCard size={18} className="text-stone-400" />
             <h2 className="text-lg font-semibold text-white">Subscription</h2>
@@ -92,8 +74,8 @@ const Settings: React.FC = () => {
             <ChevronRight size={18} className="text-stone-400" />
           </button>
         </div>
-      </motion.div>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 };
 

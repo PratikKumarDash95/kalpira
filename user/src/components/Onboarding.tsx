@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   BookOpen, Dumbbell, CheckCircle, ArrowRight, Loader2, AlertCircle, Sparkles,
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
 
 // Onboarding no longer collects API keys or storage credentials — self-created
 // studies and practices run on the platform's AI, gated by the user's
@@ -45,7 +46,8 @@ const Onboarding: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-900 flex items-center justify-center p-8">
+    <PageShell width="narrow" showFooter={false}>
+      <div className="flex min-h-[70vh] items-center justify-center">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -113,7 +115,8 @@ const Onboarding: React.FC = () => {
           </button>
         </div>
       </motion.div>
-    </div>
+      </div>
+    </PageShell>
   );
 };
 

@@ -12,6 +12,7 @@ import {
     FileText, Plus, X, ArrowRight, Sparkles, Brain, Briefcase, Layers,
     Code, Award, Hash, Zap, Loader2, AlertCircle, CreditCard
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
 
 const PracticeSetup: React.FC = () => {
     const router = useRouter();
@@ -145,14 +146,14 @@ const PracticeSetup: React.FC = () => {
     const labelCls = "block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2";
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8">
+        <PageShell width="narrow" showFooter={false}>
             {/* Background */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
                 <div className="absolute top-0 right-0 w-96 h-96 bg-brand-600/5 rounded-full blur-3xl opacity-50" />
             </div>
 
-            <div className="relative max-w-3xl mx-auto">
+            <div className="relative">
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-900/40">
                         <Briefcase size={32} className="text-white" />
@@ -304,7 +305,7 @@ const PracticeSetup: React.FC = () => {
 
                 </motion.div>
             </div>
-        </div>
+        </PageShell>
     );
 };
 

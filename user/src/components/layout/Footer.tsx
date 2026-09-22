@@ -5,6 +5,16 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { BrandMark } from './BrandMark';
 
+// Mirrors PageShell's content column so the footer lines up with the page above it.
+type FooterWidth = 'narrow' | 'default' | 'wide' | 'full';
+
+const WIDTH_CLASS: Record<FooterWidth, string> = {
+  narrow: 'mx-auto w-full max-w-3xl px-4',
+  default: 'app-container',
+  wide: 'app-container-wide',
+  full: 'app-container',
+};
+
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: 'Product',
@@ -32,7 +42,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   },
 ];
 
-export default function Footer() {
+export default function Footer({ width = 'default' }: { width?: FooterWidth }) {
   const router = useRouter();
   const go = (href: string) => {
     if (href.startsWith('/#')) {
@@ -44,7 +54,7 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-[color:var(--line)] bg-[color:var(--surface)]">
-      <div className="app-container py-12">
+      <div className={`${WIDTH_CLASS[width]} py-12`}>
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2.5">

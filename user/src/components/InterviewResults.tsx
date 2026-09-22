@@ -11,6 +11,8 @@ import {
     BarChart2, Award, BookOpen, Code, Users, Layers
 } from 'lucide-react';
 import { Skeleton, SkeletonList, SkeletonStatRow } from '@/components/ui/Skeleton';
+import PageShell from '@/components/layout/PageShell';
+import EmptyState from '@/components/layout/EmptyState';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ScoreBreakdown {
@@ -406,43 +408,48 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
         // Scoring can take a while, so show the results layout (hero ring, score
         // tiles, panels) rather than a spinner — the page reads as nearly there.
         return (
-            <div className="min-h-screen bg-slate-950 text-white" role="status">
-                <span className="sr-only">Analyzing your performance…</span>
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-8">
-                    <div className="flex items-center justify-between mb-8">
-                        <Skeleton className="h-4 w-40" />
-                        <div className="flex gap-2">
-                            <Skeleton className="h-8 w-28" />
-                            <Skeleton className="h-8 w-32" />
+            <PageShell width="full" padded={false} showFooter={false}>
+                <div role="status">
+                    <span className="sr-only">Analyzing your performance…</span>
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-8">
+                        <div className="flex items-center justify-between mb-8">
+                            <Skeleton className="h-4 w-40" />
+                            <div className="flex gap-2">
+                                <Skeleton className="h-8 w-28" />
+                                <Skeleton className="h-8 w-32" />
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center gap-8 w-full justify-center sm:justify-start">
+                            <Skeleton className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 rounded-full" />
+                            <div className="space-y-3 w-full">
+                                <Skeleton className="h-9 w-64" />
+                                <Skeleton className="h-4 w-48" />
+                            </div>
                         </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-center gap-8 w-full justify-center sm:justify-start">
-                        <Skeleton className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 rounded-full" />
-                        <div className="space-y-3 w-full">
-                            <Skeleton className="h-9 w-64" />
-                            <Skeleton className="h-4 w-48" />
-                        </div>
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-10">
+                        <SkeletonStatRow count={3} className="mb-6" />
+                        <SkeletonList rows={3} />
                     </div>
                 </div>
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-10">
-                    <SkeletonStatRow count={3} className="mb-6" />
-                    <SkeletonList rows={3} />
-                </div>
-            </div>
+            </PageShell>
         );
     }
 
     if (!data) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <AlertCircle size={48} className="text-slate-600 mx-auto" />
-                    <p className="text-slate-400">Results not available</p>
-                    <button onClick={() => router.push('/dashboard')} className="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm">
-                        Go to Dashboard
-                    </button>
-                </div>
-            </div>
+            <PageShell width="narrow">
+                <EmptyState
+                    icon={<AlertCircle size={32} />}
+                    title="Results not available"
+                    description="This session may still be processing, or the report has been removed."
+                    action={
+                        <button onClick={() => router.push('/dashboard')} className="btn-primary sheen px-5 py-2.5">
+                            Go to Dashboard
+                        </button>
+                    }
+                />
+            </PageShell>
         );
     }
 
@@ -458,7 +465,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
     ] as const;
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <PageShell width="full" padded={false} showFooter={false}>
             {/* ── Hero Header ── */}
             <div className="relative overflow-hidden">
                 {/* Background gradient */}
@@ -518,7 +525,9 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
             </div>
 
             {/* ── Tabs ── */}
-            <div className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
+            {/* top-16 clears the sticky navbar (h-16) so the tabs stick below it
+                rather than sliding underneath. */}
+            <div className="sticky top-16 z-10 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6">
                     <div className="flex gap-1">
                         {tabs.map(tab => (
@@ -641,7 +650,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </PageShell>
     );
 };
 

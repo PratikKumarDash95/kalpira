@@ -3,8 +3,11 @@ import { apiFetch, apiUrl, clearSessionDrafts } from '@/lib/apiClient';
 
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeft, Camera, ImagePlus, Loader2, LogOut, Save, Settings, Upload, UserCircle } from 'lucide-react';
+import { Camera, ImagePlus, Loader2, LogOut, Save, Settings, Upload, UserCircle } from 'lucide-react';
 import { useSessionState } from '@/hooks/useSessionState';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import EmptyState from '@/components/layout/EmptyState';
 
 interface Profile {
   id: string;
@@ -169,10 +172,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="kalpira-light min-h-screen p-4 sm:p-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="skeleton mb-5 h-10 w-36 rounded-xl" />
-          <section className="skeleton-card overflow-hidden rounded-3xl">
+      <PageShell>
+        <div className="skeleton mb-5 h-10 w-36 rounded-xl" />
+        <section className="skeleton-card overflow-hidden rounded-3xl">
             <div className="skeleton h-40 rounded-none" />
             <div className="px-5 pb-6 sm:px-8 sm:pb-8">
               <div className="-mt-14 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -205,36 +207,35 @@ export default function ProfilePage() {
               </div>
             </div>
           </section>
-        </div>
-      </main>
+      </PageShell>
     );
   }
 
   if (!profile) {
     return (
-      <main className="kalpira-light flex min-h-screen items-center justify-center p-6">
-        <div className="surface max-w-md rounded-2xl p-6 text-center">
-          <p className="text-sm text-slate-600">{error || 'No profile found.'}</p>
-          <button onClick={() => router.push(loginPath)} className="btn-primary mt-4 px-5 py-2 text-sm font-semibold">
-            Sign in
-          </button>
-        </div>
-      </main>
+      <PageShell width="narrow">
+        <EmptyState
+          title="Profile unavailable"
+          description={error || 'No profile found.'}
+          action={
+            <button onClick={() => router.push(loginPath)} className="btn-primary px-5 py-2 text-sm font-semibold">
+              Sign in
+            </button>
+          }
+        />
+      </PageShell>
     );
   }
 
   return (
-    <main className="kalpira-light min-h-screen p-4 sm:p-8">
-      <div className="mx-auto max-w-4xl">
-        <button
-          onClick={() => router.push(dashboardPath)}
-          className="mb-5 inline-flex items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-white"
-        >
-          <ArrowLeft size={16} />
-          {isInterviewerProfile ? 'Back to dashboard' : 'Back to studies'}
-        </button>
+    <PageShell>
+      <PageHeader
+        back={dashboardPath}
+        title="Profile"
+        subtitle={isInterviewerProfile ? 'Interviewer account' : 'Your Kalpira account'}
+      />
 
-        <section className="surface overflow-hidden rounded-3xl">
+      <section className="surface overflow-hidden rounded-3xl">
             <div className="relative h-40 overflow-hidden bg-slate-100">
             {coverUrl && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -286,7 +287,8 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <div className="pb-2">
-                  <h1 className="text-2xl font-bold text-slate-950">{profile.name || 'Kalpira User'}</h1>
+                  {/* The page's single h1 lives in PageHeader; this is the hero's display name. */}
+                  <h2 className="text-2xl font-bold text-slate-950">{profile.name || 'Kalpira User'}</h2>
                   <p className="text-sm text-slate-500">{profile.email || 'No email available'}</p>
                 </div>
               </div>
@@ -399,7 +401,6 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
-      </div>
-    </main>
+    </PageShell>
   );
 }

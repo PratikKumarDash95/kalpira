@@ -2,7 +2,8 @@
 
 import { Suspense } from 'react';
 import StudySetup from '@/components/StudySetup';
-import { Loader2 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
+import { SkeletonPageHeader, SkeletonCard, Skeleton } from '@/components/ui/Skeleton';
 
 // The interviewer setup page reuses the same StudySetup component.
 // After saving, the study is owned by the interviewer (role=interviewer user).
@@ -11,9 +12,18 @@ import { Loader2 } from 'lucide-react';
 export default function InterviewerSetupPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-brand-700" />
-            </div>
+            // Carries the shell so the navbar does not disappear while suspending.
+            <PageShell>
+                <SkeletonPageHeader className="mb-6" />
+                <SkeletonCard>
+                    <div className="space-y-4">
+                        <Skeleton className="h-11 w-full" />
+                        <Skeleton className="h-11 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-10 w-32" />
+                    </div>
+                </SkeletonCard>
+            </PageShell>
         }>
             <StudySetup />
         </Suspense>

@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import {
     Brain,
     Sparkles,
-    ArrowLeft,
     LogOut,
     RefreshCw,
 } from 'lucide-react';
@@ -16,6 +15,9 @@ import WeakSkillsCard from './WeakSkillsCard';
 import RoadmapTimeline from './RoadmapTimeline';
 import BadgesGrid from './BadgesGrid';
 import ProgressChart from './ProgressChart';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import EmptyState from '@/components/layout/EmptyState';
 
 // ============================================
 // Type Definitions
@@ -112,78 +114,53 @@ const CoachDashboard: React.FC = () => {
     // Error state
     if (error && !data) {
         return (
-            <div className="app-shell min-h-screen flex items-center justify-center p-6">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center max-w-md"
-                >
-                    <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                        <Sparkles className="w-6 h-6 text-red-400" />
-                    </div>
-                    <h2 className="text-xl font-serif text-white mb-2">Unable to Load Dashboard</h2>
-                    <p className="text-sm text-slate-400 mb-6">{error}</p>
-                    <button
-                        onClick={loadData}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition-colors"
-                    >
-                        <RefreshCw className="w-4 h-4" /> Retry
-                    </button>
-                </motion.div>
-            </div>
+            <PageShell showFooter={false}>
+                <EmptyState
+                    icon={<Sparkles size={30} />}
+                    title="Unable to Load Dashboard"
+                    description={error}
+                    action={
+                        <button onClick={loadData} className="btn-primary sheen px-5 py-2.5">
+                            <RefreshCw className="w-4 h-4" /> Retry
+                        </button>
+                    }
+                />
+            </PageShell>
         );
     }
 
     return (
-        <div className="app-shell min-h-screen">
-            {/* ── Header ── */}
-            <header className="sticky top-0 z-40 backdrop-blur-xl bg-slate-950/80 border-b border-slate-800/50">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => router.push('/dashboard')}
-                            className="p-2 rounded-xl hover:bg-slate-800/60 transition-colors"
-                            title="Back to main dashboard"
-                        >
-                            <ArrowLeft className="w-4 h-4 text-slate-400" />
-                        </button>
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-                                <Brain className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-base font-semibold text-white tracking-tight leading-none">
-                                    Interview Coach
-                                </h1>
-                                <p className="text-[10px] text-slate-500 tracking-wider uppercase mt-0.5">
-                                    AI-Powered Intelligence
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
+        <PageShell showFooter={false}>
+            <PageHeader
+                back="/dashboard"
+                icon={<Brain size={20} />}
+                title="Interview Coach"
+                subtitle="AI-Powered Intelligence"
+                actions={
+                    <>
                         <button
                             onClick={loadData}
                             disabled={loading}
-                            className="p-2 rounded-xl hover:bg-slate-800/60 transition-colors disabled:opacity-40"
+                            className="btn-secondary p-2 disabled:opacity-40"
                             title="Refresh data"
+                            aria-label="Refresh data"
                         >
-                            <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="p-2 rounded-xl hover:bg-slate-800/60 transition-colors"
+                            className="btn-ghost p-2"
                             title="Log out"
+                            aria-label="Log out"
                         >
-                            <LogOut className="w-4 h-4 text-slate-400" />
+                            <LogOut className="w-4 h-4" />
                         </button>
-                    </div>
-                </div>
-            </header>
+                    </>
+                }
+            />
 
             {/* ── Main Content ── */}
-            <main className="max-w-6xl mx-auto px-6 py-10">
+            <div>
                 {/* ── Hero: Readiness Gauge ── */}
                 <section className="flex justify-center mb-14">
                     <div className="w-full max-w-lg rounded-3xl surface p-10">
@@ -225,15 +202,8 @@ const CoachDashboard: React.FC = () => {
                 <section className="mb-10">
                     <ProgressChart data={data?.progressData} />
                 </section>
-
-                {/* ── Footer tag ── */}
-                <footer className="text-center pb-8">
-                    <p className="text-xs text-slate-600">
-                        Adaptive Interview Intelligence Platform • Powered by AI
-                    </p>
-                </footer>
-            </main>
-        </div>
+            </div>
+        </PageShell>
     );
 };
 

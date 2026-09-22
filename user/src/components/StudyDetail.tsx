@@ -8,7 +8,6 @@ import { StoredStudy, StoredInterview, AggregateSynthesisResult } from '@/types'
 import { getStudy, getStudyInterviews } from '@/services/storageService';
 import {
   Loader2,
-  ArrowLeft,
   BookOpen,
   Users,
   Settings,
@@ -22,13 +21,16 @@ import {
   Lightbulb,
   Sparkles,
   AlertCircle,
-  GitBranch,
-  Link as LinkIcon,
+  GitBranch,  Link as LinkIcon,
   ToggleLeft,
   ToggleRight,
   Copy,
   Check
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import EmptyState from '@/components/layout/EmptyState';
+import { SkeletonList, SkeletonPageHeader, SkeletonStatRow } from '@/components/ui/Skeleton';
 
 interface StudyDetailProps {
   studyId: string;
@@ -222,58 +224,28 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
 
   if (loading) {
     return (
-      <div className="kalpira-light min-h-screen p-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="skeleton mb-6 h-10 w-36 rounded-xl" />
-          <div className="skeleton-card mb-6 rounded-2xl border border-stone-700 p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 space-y-3">
-                <div className="skeleton h-8 w-2/3" />
-                <div className="skeleton h-4 w-full" />
-                <div className="skeleton h-4 w-3/4" />
-              </div>
-              <div className="skeleton h-10 w-32 rounded-xl" />
-            </div>
-          </div>
-          <div className="mb-6 flex gap-3">
-            <div className="skeleton h-10 w-28 rounded-xl" />
-            <div className="skeleton h-10 w-28 rounded-xl" />
-            <div className="skeleton h-10 w-28 rounded-xl" />
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="skeleton-card rounded-xl p-5">
-              <div className="skeleton mb-4 h-5 w-24" />
-              <div className="skeleton h-8 w-16" />
-            </div>
-            <div className="skeleton-card rounded-xl p-5">
-              <div className="skeleton mb-4 h-5 w-24" />
-              <div className="skeleton h-8 w-16" />
-            </div>
-            <div className="skeleton-card rounded-xl p-5">
-              <div className="skeleton mb-4 h-5 w-24" />
-              <div className="skeleton h-8 w-16" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageShell>
+        <SkeletonPageHeader className="mb-6" />
+        <SkeletonStatRow className="mb-6" />
+        <SkeletonList rows={3} />
+      </PageShell>
     );
   }
 
   if (!study) {
     return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle size={48} className="text-stone-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Study Not Found</h2>
-          <p className="text-stone-400 mb-4">The study you're looking for doesn't exist.</p>
-          <button
-            onClick={() => router.push('/studies')}
-            className="px-4 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded-xl"
-          >
-            Back to Studies
-          </button>
-        </div>
-      </div>
+      <PageShell>
+        <EmptyState
+          icon={<AlertCircle size={32} />}
+          title="Study Not Found"
+          description="The study you're looking for doesn't exist."
+          action={
+            <button onClick={() => router.push('/studies')} className="btn-primary sheen px-5 py-2.5">
+              Back to Studies
+            </button>
+          }
+        />
+      </PageShell>
     );
   }
 
@@ -284,53 +256,35 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
   ];
 
   return (
-    <div className="kalpira-light min-h-screen p-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <button
-            onClick={() => router.push('/studies')}
-            className="text-stone-400 hover:text-stone-300 flex items-center gap-2 mb-4"
-          >
-            <ArrowLeft size={16} />
-            Back to Studies
-          </button>
-
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-stone-700 flex items-center justify-center">
-                <BookOpen className="text-stone-300" size={24} />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white">{study.config.name}</h1>
-                <div className="flex items-center gap-3 mt-1 text-sm text-stone-400">
-                  <span className="flex items-center gap-1">
-                    <Users size={14} />
-                    {study.interviewCount} interviews
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar size={14} />
-                    Created {formatDate(study.createdAt)}
-                  </span>
-                  <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${
-                    study.isLocked
-                      ? 'bg-stone-700 text-stone-400'
-                      : 'bg-green-900/50 text-green-400'
-                  }`}>
-                    {study.isLocked ? <Lock size={10} /> : <Unlock size={10} />}
-                    {study.isLocked ? 'Locked' : 'Editable'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Tabs */}
+    <PageShell>
+      <PageHeader
+        back="/studies"
+        icon={<BookOpen size={20} />}
+        title={study.config.name}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-3">
+            <span className="flex items-center gap-1">
+              <Users size={14} />
+              {study.interviewCount} interviews
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar size={14} />
+              Created {formatDate(study.createdAt)}
+            </span>
+          </span>
+        }
+        actions={
+          <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${
+            study.isLocked
+              ? 'bg-stone-700 text-stone-400'
+              : 'bg-green-900/50 text-green-400'
+          }`}>
+            {study.isLocked ? <Lock size={10} /> : <Unlock size={10} />}
+            {study.isLocked ? 'Locked' : 'Editable'}
+          </span>
+        }
+      >
+        {/* Tabs — the page's own sub-navigation, in the header's secondary row. */}
         <div className="flex gap-2 mb-6 border-b border-stone-700">
           {tabs.map((tab) => (
             <button
@@ -347,6 +301,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
             </button>
           ))}
         </div>
+      </PageHeader>
 
         {/* Tab Content */}
         <motion.div
@@ -685,8 +640,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
             </div>
           )}
         </motion.div>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

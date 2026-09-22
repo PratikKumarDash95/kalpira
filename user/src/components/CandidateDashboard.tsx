@@ -16,7 +16,11 @@ import {
   XCircle,
 } from 'lucide-react';
 import InterviewFeedbackWidget from '@/components/InterviewFeedbackWidget';
-import { Skeleton, SkeletonList } from '@/components/ui/Skeleton';
+import PageShell from '@/components/layout/PageShell';
+import PageHeader from '@/components/layout/PageHeader';
+import PageSection from '@/components/layout/PageSection';
+import EmptyState from '@/components/layout/EmptyState';
+import { SkeletonList, SkeletonPageHeader } from '@/components/ui/Skeleton';
 
 interface CandidateInfo {
   id: string;
@@ -136,67 +140,44 @@ const CandidateDashboard: React.FC = () => {
     // Shape-matched placeholder instead of a centred spinner: the header and the
     // assigned-interview list are already in place when the data lands.
     return (
-      <div className="app-shell min-h-screen" role="status">
-        <span className="sr-only">Loading your dashboard…</span>
-        <div className="relative max-w-[1500px] mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <Skeleton className="w-10 h-10" />
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-32" />
-                <Skeleton className="h-4 w-40" />
-              </div>
-            </div>
-            <Skeleton className="h-9 w-24" />
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <Skeleton className="h-8 w-56" />
-            <Skeleton className="h-4 w-44" />
-          </div>
+      <PageShell width="wide" showFooter={false}>
+        <div role="status">
+          <span className="sr-only">Loading your dashboard…</span>
+          <SkeletonPageHeader className="mb-6" />
           <SkeletonList rows={4} />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="app-shell min-h-screen">
+    <PageShell width="wide" showFooter={false}>
+      <PageHeader
+        icon={<User size={20} />}
+        title="Assigned Interviews"
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            {candidate?.name && <span className="font-semibold">{candidate.name}</span>}
+            <span className="flex items-center gap-1">
+              <Mail size={14} /> {candidate?.email}
+            </span>
+          </span>
+        }
+      />
 
-      <div className="relative max-w-[1500px] mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center">
-              <User size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wider">Candidate Dashboard</p>
-              <p className="text-sm font-semibold text-slate-200">{candidate?.name || candidate?.email}</p>
-            </div>
-          </div>
-          <button onClick={() => router.push('/studies')} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition-colors border border-slate-700">
-            <ArrowRight size={15} className="rotate-180" /> Studies
-          </button>
+      {error && (
+        <div className="mb-6 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm">
+          {error}
         </div>
+      )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <h1 className="text-2xl font-bold">Assigned Interviews</h1>
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <Mail size={14} /> {candidate?.email}
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm">
-            {error}
-          </div>
-        )}
-
+      <PageSection>
         {sortedSessions.length === 0 ? (
-          <div className="bg-slate-900/40 border border-slate-800 border-dashed rounded-2xl p-12 text-center">
-            <Briefcase size={40} className="text-slate-700 mx-auto mb-4" />
-            <h2 className="text-slate-300 font-medium mb-2">No assigned interviews</h2>
-            <p className="text-slate-600 text-sm">When an interviewer assigns an interview to this email, it will appear here.</p>
-          </div>
+          <EmptyState
+            icon={<Briefcase size={32} />}
+            title="No assigned interviews"
+            description="When an interviewer assigns an interview to this email, it will appear here."
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
             {sortedSessions.map((session, index) => (
@@ -274,8 +255,8 @@ const CandidateDashboard: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 };
 

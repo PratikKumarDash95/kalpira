@@ -9,6 +9,7 @@ import {
     Loader2, AlertTriangle, Mail, Clock, CheckCircle, XCircle,
     TrendingUp, MessageSquare, Brain, Zap, Target, BookOpen
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
 
 interface ScoreBreakdown {
     overallScore: number;
@@ -123,12 +124,12 @@ const InterviewerStudyDetail: React.FC = () => {
         : 0;
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <PageShell>
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
             </div>
 
-            <div className="relative max-w-4xl mx-auto px-4 py-8">
+            <div className="relative">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
                     <button onClick={() => router.push(portalPath('/dashboard'))}
@@ -308,7 +309,7 @@ const InterviewerStudyDetail: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </PageShell>
     );
 };
 

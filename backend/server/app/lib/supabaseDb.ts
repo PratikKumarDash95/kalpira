@@ -168,6 +168,12 @@ const tables = {
   readinessIndex: 'ReadinessIndex',
   interviewFeedback: 'InterviewFeedback',
   payment: 'Payment',
+  // Feature 1 — Competency Measurement Engine
+  competency: 'Competency',
+  competencyEdge: 'CompetencyEdge',
+  itemParameter: 'ItemParameter',
+  abilityEstimate: 'AbilityEstimate',
+  abilityHistory: 'AbilityHistory',
 } as const;
 
 type ModelName = keyof typeof tables;
@@ -201,6 +207,12 @@ type SupabaseDb = {
   readinessIndex: Delegate;
   interviewFeedback: Delegate;
   payment: Delegate;
+  // Feature 1 — Competency Measurement Engine
+  competency: Delegate;
+  competencyEdge: Delegate;
+  itemParameter: Delegate;
+  abilityEstimate: Delegate;
+  abilityHistory: Delegate;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -220,6 +232,9 @@ const dateFields = new Set([
   'generatedAt',
   'awardedAt',
   'calculatedAt',
+  // Feature 1 — Competency Measurement Engine
+  'calibratedAt',
+  'recordedAt',
 ]);
 
 function normalizeRow<T>(row: T): T {
@@ -477,6 +492,12 @@ const db: SupabaseDb = {
   readinessIndex: delegate('readinessIndex'),
   interviewFeedback: delegate('interviewFeedback'),
   payment: delegate('payment'),
+  // Feature 1 — Competency Measurement Engine
+  competency: delegate('competency'),
+  competencyEdge: delegate('competencyEdge'),
+  itemParameter: delegate('itemParameter'),
+  abilityEstimate: delegate('abilityEstimate'),
+  abilityHistory: delegate('abilityHistory'),
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);
   },

@@ -17,6 +17,7 @@ import {
   Clock, AlertTriangle, ExternalLink, Brain, MessageSquare,
   Settings, ChevronRight, Zap, CreditCard
 } from 'lucide-react';
+import PageShell from '@/components/layout/PageShell';
 
 const PROFILE_PRESETS: ProfileField[] = [
   { id: 'role', label: 'Current Role', extractionHint: 'Their job title or position', required: true },
@@ -435,14 +436,14 @@ const StudySetup: React.FC = () => {
   const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors text-sm";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <PageShell width="narrow" showFooter={false}>
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative max-w-2xl mx-auto px-4 py-8">
+      <div className="relative">
 
         {/* ── Top Bar ── */}
         <div className="flex items-center justify-between mb-8">
@@ -975,7 +976,7 @@ const StudySetup: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </PageShell>
   );
 };
 
