@@ -13,7 +13,7 @@ export const formatDateTime = (d: string | null) =>
 
 // ─── Role badge ───────────────────────────────────────────────────────────
 const roleColors: Record<Role, string> = {
-    admin: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
+    admin: 'bg-brand-500/10 text-brand-700 border-brand-500/20',
     interviewer: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
     candidate: 'bg-slate-700/50 text-slate-300 border-slate-600/20',
 };

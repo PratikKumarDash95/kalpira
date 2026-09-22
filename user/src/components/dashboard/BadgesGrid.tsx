@@ -31,8 +31,8 @@ interface BadgeVisual {
 const BADGE_VISUALS: Record<string, BadgeVisual> = {
     'DSA Master': {
         icon: <Code2 className="w-6 h-6" />,
-        gradient: 'from-violet-500 to-purple-600',
-        glow: 'shadow-violet-500/25',
+        gradient: 'from-brand-500 to-brand-600',
+        glow: 'shadow-brand-500/25',
     },
     'Communication Pro': {
         icon: <MessageCircle className="w-6 h-6" />,

@@ -432,14 +432,14 @@ const StudySetup: React.FC = () => {
   ];
 
   // ── Input class ──────────────────────────────────────────────────────────────
-  const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
+  const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors text-sm";
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-2xl mx-auto px-4 py-8">
@@ -476,13 +476,13 @@ const StudySetup: React.FC = () => {
               <React.Fragment key={step.id}>
                 <button
                   onClick={() => isDone && setCurrentStep(step.id)}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all ${isActive ? 'bg-violet-600/20 border border-violet-500/30' : isDone ? 'cursor-pointer hover:bg-slate-800/50' : 'opacity-40 cursor-default'}`}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all ${isActive ? 'bg-brand-600/20 border border-brand-500/30' : isDone ? 'cursor-pointer hover:bg-slate-800/50' : 'opacity-40 cursor-default'}`}
                 >
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${isActive ? 'bg-violet-600 text-white' : isDone ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${isActive ? 'bg-brand-600 text-white' : isDone ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
                     {isDone ? <Check size={14} /> : <Icon size={14} />}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <p className={`text-xs font-semibold ${isActive ? 'text-violet-300' : isDone ? 'text-emerald-400' : 'text-slate-500'}`}>{step.label}</p>
+                    <p className={`text-xs font-semibold ${isActive ? 'text-brand-700' : isDone ? 'text-emerald-400' : 'text-slate-500'}`}>{step.label}</p>
                     <p className="text-xs text-slate-600">{step.desc}</p>
                   </div>
                 </button>
@@ -516,7 +516,7 @@ const StudySetup: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => router.push(isInterviewerFlow ? interviewerPath('/billing') : '/subscription')}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-600/20 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-600/30"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-brand-500/30 bg-brand-600/20 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-600/30"
                 >
                   <CreditCard size={13} /> Upgrade plan
                 </button>
@@ -536,11 +536,11 @@ const StudySetup: React.FC = () => {
               {/* Study Info */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles size={14} className="text-violet-400" /> Study Info
+                  <Sparkles size={14} className="text-brand-700" /> Study Info
                 </h2>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Study Name <span className="text-violet-400">*</span></label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Study Name <span className="text-brand-700">*</span></label>
                   <input
                     type="text" value={name}
                     onChange={e => { setName(e.target.value); setIsDirty(true); }}
@@ -563,7 +563,7 @@ const StudySetup: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Research Question <span className="text-violet-400">*</span></label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Research Question <span className="text-brand-700">*</span></label>
                   <textarea
                     value={researchQuestion}
                     onChange={e => { setResearchQuestion(e.target.value); setIsDirty(true); }}
@@ -589,9 +589,9 @@ const StudySetup: React.FC = () => {
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <MessageSquare size={14} className="text-violet-400" /> Core Questions
+                    <MessageSquare size={14} className="text-brand-700" /> Core Questions
                   </h2>
-                  <button onClick={addQuestion} className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10">
+                  <button onClick={addQuestion} className="flex items-center gap-1 text-xs text-brand-700 hover:text-brand-700 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
                     <Plus size={14} /> Add
                   </button>
                 </div>
@@ -621,9 +621,9 @@ const StudySetup: React.FC = () => {
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <Lightbulb size={14} className="text-violet-400" /> Topic Areas
+                    <Lightbulb size={14} className="text-brand-700" /> Topic Areas
                   </h2>
-                  <button onClick={addTopic} className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10">
+                  <button onClick={addTopic} className="flex items-center gap-1 text-xs text-brand-700 hover:text-brand-700 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
                     <Plus size={14} /> Add
                   </button>
                 </div>
@@ -653,9 +653,9 @@ const StudySetup: React.FC = () => {
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <User size={14} className="text-violet-400" /> Participant Profile
+                    <User size={14} className="text-brand-700" /> Participant Profile
                   </h2>
-                  <button onClick={() => addProfileField()} className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10">
+                  <button onClick={() => addProfileField()} className="flex items-center gap-1 text-xs text-brand-700 hover:text-brand-700 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
                     <Plus size={14} /> Custom
                   </button>
                 </div>
@@ -683,7 +683,7 @@ const StudySetup: React.FC = () => {
                           placeholder="Hint for AI" className={`${inputCls} py-2`} />
                       </div>
                       <button onClick={() => toggleFieldRequired(field.id)}
-                        className={`px-2 py-1 text-xs rounded-lg flex-shrink-0 border transition-colors ${field.required ? 'bg-violet-500/20 text-violet-300 border-violet-500/30' : 'bg-slate-700 text-slate-500 border-slate-600'}`}>
+                        className={`px-2 py-1 text-xs rounded-lg flex-shrink-0 border transition-colors ${field.required ? 'bg-brand-500/20 text-brand-700 border-brand-500/30' : 'bg-slate-700 text-slate-500 border-slate-600'}`}>
                         {field.required ? 'REQ' : 'OPT'}
                       </button>
                       <button onClick={() => removeProfileField(field.id)} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors flex-shrink-0">
@@ -701,7 +701,7 @@ const StudySetup: React.FC = () => {
               <button
                 onClick={() => setCurrentStep(2)}
                 disabled={!name.trim() || !researchQuestion.trim()}
-                className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 Continue to AI Settings <ChevronRight size={18} />
               </button>
@@ -715,26 +715,26 @@ const StudySetup: React.FC = () => {
               {/* AI Provider */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <Brain size={14} className="text-violet-400" /> AI Provider
+                  <Brain size={14} className="text-brand-700" /> AI Provider
                 </h2>
                 {isInterviewerFlow ? (
-                  <div className="rounded-xl border-2 border-violet-500 bg-violet-500/10 p-4">
+                  <div className="rounded-xl border-2 border-brand-500 bg-brand-500/10 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-violet-300">Gemini 2.5 Flash</p>
+                        <p className="text-sm font-semibold text-brand-700">Gemini 2.5 Flash</p>
                         <p className="text-xs text-slate-500 mt-0.5">Used for interviewer AI responses with voice input and voice playback enabled.</p>
                       </div>
-                      <span className="text-xs bg-violet-600 text-white px-2 py-1 rounded-full flex-shrink-0">Locked</span>
+                      <span className="text-xs bg-brand-600 text-white px-2 py-1 rounded-full flex-shrink-0">Locked</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border-2 border-violet-500 bg-violet-500/10 p-4">
+                  <div className="rounded-xl border-2 border-brand-500 bg-brand-500/10 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-violet-300">Platform AI</p>
+                        <p className="text-sm font-semibold text-brand-700">Platform AI</p>
                         <p className="text-xs text-slate-500 mt-0.5">Your studies run on our platform&apos;s AI — no API keys needed. Usage is covered by your subscription.</p>
                       </div>
-                      <span className="text-xs bg-violet-600 text-white px-2 py-1 rounded-full flex-shrink-0">Included</span>
+                      <span className="text-xs bg-brand-600 text-white px-2 py-1 rounded-full flex-shrink-0">Included</span>
                     </div>
                   </div>
                 )}
@@ -756,17 +756,17 @@ const StudySetup: React.FC = () => {
               {/* Interview Style */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <Settings size={14} className="text-violet-400" /> Interview Style
+                  <Settings size={14} className="text-brand-700" /> Interview Style
                 </h2>
                 <div className="grid grid-cols-3 gap-3">
                   {behaviorOptions.map(opt => (
                     <button
                       key={opt.id}
                       onClick={() => { setAiBehavior(opt.id); setIsDirty(true); }}
-                      className={`p-4 rounded-xl border-2 text-left transition-all ${aiBehavior === opt.id ? 'border-violet-500 bg-violet-500/10' : 'border-slate-700 hover:border-slate-600 bg-slate-800/30'}`}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${aiBehavior === opt.id ? 'border-brand-500 bg-brand-500/10' : 'border-slate-700 hover:border-slate-600 bg-slate-800/30'}`}
                     >
-                      <div className={`mb-2 ${aiBehavior === opt.id ? 'text-violet-400' : 'text-slate-500'}`}>{opt.icon}</div>
-                      <p className={`text-sm font-semibold mb-0.5 ${aiBehavior === opt.id ? 'text-violet-300' : 'text-slate-300'}`}>{opt.label}</p>
+                      <div className={`mb-2 ${aiBehavior === opt.id ? 'text-brand-700' : 'text-slate-500'}`}>{opt.icon}</div>
+                      <p className={`text-sm font-semibold mb-0.5 ${aiBehavior === opt.id ? 'text-brand-700' : 'text-slate-300'}`}>{opt.label}</p>
                       <p className="text-xs text-slate-500">{opt.desc}</p>
                     </button>
                   ))}
@@ -777,7 +777,7 @@ const StudySetup: React.FC = () => {
                 <button onClick={() => setCurrentStep(1)} className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition-all flex items-center justify-center gap-2">
                   <ArrowLeft size={16} /> Back
                 </button>
-                <button onClick={() => setCurrentStep(3)} className="flex-1 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
+                <button onClick={() => setCurrentStep(3)} className="flex-1 py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
                   Continue <ChevronRight size={18} />
                 </button>
               </div>
@@ -791,7 +791,7 @@ const StudySetup: React.FC = () => {
               {isInterviewerFlow && (
                 <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                   <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <User size={14} className="text-violet-400" /> Participant Details
+                    <User size={14} className="text-brand-700" /> Participant Details
                   </h2>
                   <p className="text-xs text-slate-500">Required before publishing the interview.</p>
                   <div className="grid gap-3">
@@ -836,7 +836,7 @@ const StudySetup: React.FC = () => {
               {/* Link Settings */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <Clock size={14} className="text-violet-400" /> Link Settings
+                  <Clock size={14} className="text-brand-700" /> Link Settings
                 </h2>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Link Expiration</label>
@@ -849,7 +849,7 @@ const StudySetup: React.FC = () => {
                 {isInterviewerFlow && (
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                      Interview Ending Date <span className="text-violet-400">*</span>
+                      Interview Ending Date <span className="text-brand-700">*</span>
                     </label>
                     <input
                       type="date"
@@ -869,7 +869,7 @@ const StudySetup: React.FC = () => {
                 {isValid && !isInterviewerFlow && (
                   <div className="pt-2">
                     <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
-                      <LinkIcon size={14} className="text-violet-400" /> Participant Link
+                      <LinkIcon size={14} className="text-brand-700" /> Participant Link
                     </label>
                     {participantLink ? (
                       <div className="space-y-2">
@@ -925,8 +925,8 @@ const StudySetup: React.FC = () => {
               </div>
 
               {/* Summary Card */}
-              <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl p-5 space-y-3">
-                <h3 className="text-sm font-semibold text-violet-300 flex items-center gap-2"><CheckCircle size={14} /> Ready to launch</h3>
+              <div className="bg-brand-500/5 border border-brand-500/20 rounded-2xl p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-brand-700 flex items-center gap-2"><CheckCircle size={14} /> Ready to launch</h3>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="text-slate-400"><span className="text-slate-500">Study:</span> <span className="text-slate-200">{name || '—'}</span></div>
                   <div className="text-slate-400"><span className="text-slate-500">Provider:</span> <span className="text-slate-200 capitalize">{aiProvider}</span></div>
@@ -943,7 +943,7 @@ const StudySetup: React.FC = () => {
                 <button
                   onClick={isInterviewerFlow ? handlePublishInterview : handleSubmit}
                   disabled={!isValid || isPublishing || (isInterviewerFlow && !canPublish)}
-                  className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-900/30"
+                  className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-900/30"
                 >
                   <Zap size={18} /> {isInterviewerFlow ? (isPublishing ? 'Publishing...' : 'Publish Interview') : 'Start Interview Now'}
                 </button>

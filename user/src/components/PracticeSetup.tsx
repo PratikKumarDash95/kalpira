@@ -141,20 +141,20 @@ const PracticeSetup: React.FC = () => {
         }
     };
 
-    const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
+    const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors text-sm";
     const labelCls = "block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2";
 
     return (
         <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8">
             {/* Background */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
-                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/5 rounded-full blur-3xl opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-brand-600/5 rounded-full blur-3xl opacity-50" />
             </div>
 
             <div className="relative max-w-3xl mx-auto">
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-900/40">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-900/40">
                         <Briefcase size={32} className="text-white" />
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-2">Practice Interview</h1>
@@ -170,11 +170,11 @@ const PracticeSetup: React.FC = () => {
                         <div className="space-y-6">
                             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                                    <FileText size={14} className="text-violet-400" /> Job Details
+                                    <FileText size={14} className="text-brand-700" /> Job Details
                                 </h2>
 
                                 <div>
-                                    <label className={labelCls}>Job Role <span className="text-violet-400">*</span></label>
+                                    <label className={labelCls}>Job Role <span className="text-brand-700">*</span></label>
                                     <input
                                         type="text" value={role} onChange={e => setRole(e.target.value)}
                                         placeholder="e.g. Senior Frontend Engineer"
@@ -208,7 +208,7 @@ const PracticeSetup: React.FC = () => {
                             {/* Settings */}
                             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                                    <Layers size={14} className="text-violet-400" /> Session Settings
+                                    <Layers size={14} className="text-brand-700" /> Session Settings
                                 </h2>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -219,7 +219,7 @@ const PracticeSetup: React.FC = () => {
                                                 <button
                                                     key={d}
                                                     onClick={() => setDifficulty(d)}
-                                                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg capitalize transition-colors ${difficulty === d ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg capitalize transition-colors ${difficulty === d ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
                                                 >
                                                     {d}
                                                 </button>
@@ -247,9 +247,9 @@ const PracticeSetup: React.FC = () => {
                             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                                        <Sparkles size={14} className="text-violet-400" /> Topic Areas
+                                        <Sparkles size={14} className="text-brand-700" /> Topic Areas
                                     </h2>
-                                    <button onClick={addTopic} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1">
+                                    <button onClick={addTopic} className="text-xs text-brand-700 hover:text-brand-700 flex items-center gap-1">
                                         <Plus size={12} /> Add
                                     </button>
                                 </div>
@@ -285,7 +285,7 @@ const PracticeSetup: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => router.push('/subscription')}
-                                    className="self-start inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-600/20 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-600/30"
+                                    className="self-start inline-flex items-center gap-1.5 rounded-lg border border-brand-500/30 bg-brand-600/20 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-600/30"
                                 >
                                     <CreditCard size={13} /> Upgrade plan
                                 </button>
@@ -296,7 +296,7 @@ const PracticeSetup: React.FC = () => {
                     <button
                         onClick={handleSubmit}
                         disabled={!role.trim() || isGenerating}
-                        className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-2xl transition-all shadow-lg shadow-violet-900/30 flex items-center justify-center gap-3"
+                        className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-2xl transition-all shadow-lg shadow-brand-900/30 flex items-center justify-center gap-3"
                     >
                         {isGenerating ? <Loader2 size={24} className="animate-spin" /> : <Zap size={24} />}
                         {isGenerating ? 'Setting up...' : 'Start Interview'}

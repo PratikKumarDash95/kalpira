@@ -182,7 +182,7 @@ const InterviewerLogin: React.FC = () => {
         }
     };
 
-    const inputCls = "w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
+    const inputCls = "w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors text-sm";
 
     return (
         <div className="app-shell min-h-screen flex items-center justify-center p-4">
@@ -347,7 +347,7 @@ const InterviewerLogin: React.FC = () => {
                     {authView === 'login' && (
                     <p className="text-center text-sm text-slate-500 mt-6">
                         New interviewer?{' '}
-                        <button onClick={() => router.push(portalPath('/register'))} className="text-violet-400 hover:text-violet-300 transition-colors">
+                        <button onClick={() => router.push(portalPath('/register'))} className="text-brand-700 hover:text-brand-700 transition-colors">
                             Create account
                         </button>
                     </p>

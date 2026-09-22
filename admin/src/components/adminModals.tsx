@@ -42,7 +42,7 @@ export function CreateUserModal({ defaultRole, onClose, onCreated }: {
                     </select>
                 </Field>
                 {error && <p className="text-xs text-red-400">{error}</p>}
-                <button onClick={submit} disabled={busy} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium disabled:opacity-50">
+                <button onClick={submit} disabled={busy} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium disabled:opacity-50">
                     {busy && <Loader2 size={14} className="animate-spin" />} Create user
                 </button>
             </div>
@@ -81,7 +81,7 @@ export function EditUserModal({ user, onClose, onSaved }: {
                     </select>
                 </Field>
                 {error && <p className="text-xs text-red-400">{error}</p>}
-                <button onClick={submit} disabled={busy} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium disabled:opacity-50">
+                <button onClick={submit} disabled={busy} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium disabled:opacity-50">
                     {busy && <Loader2 size={14} className="animate-spin" />} Save changes
                 </button>
             </div>
@@ -106,12 +106,12 @@ export function UserDetailModal({ userId, onClose }: { userId: string; onClose: 
         <Modal title="User detail" onClose={onClose} wide>
             {error && <p className="text-sm text-red-400">{error}</p>}
             {!detail && !error && (
-                <div className="flex items-center justify-center py-10"><Loader2 size={22} className="animate-spin text-violet-400" /></div>
+                <div className="flex items-center justify-center py-10"><Loader2 size={22} className="animate-spin text-brand-700" /></div>
             )}
             {detail && (
                 <div className="space-y-5">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-lg font-bold">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-lg font-bold">
                             {(detail.user.name?.[0] || detail.user.email?.[0] || '?').toUpperCase()}
                         </div>
                         <div>

@@ -405,7 +405,7 @@ const InterviewChat: React.FC = () => {
             animate={{ opacity: 1 }}
             className="flex justify-end"
           >
-            <div className="bg-stone-800 border border-blue-500/50 rounded-2xl rounded-br-md p-4 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+            <div className="bg-stone-800 border border-blue-500/50 rounded-2xl rounded-br-md p-4 shadow-[0_0_15px_rgba(250,204,21,0.28)]">
               <div className="flex items-center gap-3 text-blue-400 text-sm font-medium">
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>

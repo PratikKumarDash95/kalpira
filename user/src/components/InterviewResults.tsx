@@ -62,14 +62,14 @@ const ScoreRing: React.FC<{ score: number; size?: number }> = ({ score, size = 1
         return () => clearTimeout(t);
     }, [pct]);
 
-    const color = pct >= 80 ? '#10b981' : pct >= 60 ? '#3b82f6' : pct >= 40 ? '#f59e0b' : '#ef4444';
+    const color = pct >= 80 ? '#0ca30c' : pct >= 60 ? '#fab219' : pct >= 40 ? '#ec835a' : '#d03b3b';
     const label = pct >= 80 ? 'Excellent' : pct >= 60 ? 'Good' : pct >= 40 ? 'Fair' : 'Needs Work';
 
     return (
         <div className="flex flex-col items-center gap-2 w-full max-w-[160px]">
             <div className="relative w-full aspect-square">
                 <svg viewBox={`0 0 ${size} ${size}`} className="-rotate-90 w-full h-full">
-                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#1e293b" strokeWidth={12} />
+                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f2ecda" strokeWidth={12} />
                     <motion.circle
                         cx={size / 2} cy={size / 2} r={radius}
                         fill="none" stroke={color} strokeWidth={12}
@@ -124,18 +124,18 @@ const RadarChart: React.FC<{ scores: ScoreBreakdown }> = ({ scores }) => {
                         const angle = i * angleStep - Math.PI / 2;
                         return `${cx + r * level * Math.cos(angle)},${cy + r * level * Math.sin(angle)}`;
                     }).join(' ');
-                    return <polygon key={level} points={pts} fill="none" stroke="#1e293b" strokeWidth={1} />;
+                    return <polygon key={level} points={pts} fill="none" stroke="#efead5" strokeWidth={1} />;
                 })}
                 {/* Axes */}
                 {dims.map((_, i) => {
                     const angle = i * angleStep - Math.PI / 2;
-                    return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(angle)} y2={cy + r * Math.sin(angle)} stroke="#1e293b" strokeWidth={1} />;
+                    return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(angle)} y2={cy + r * Math.sin(angle)} stroke="#efead5" strokeWidth={1} />;
                 })}
                 {/* Data polygon */}
                 <motion.polygon
                     points={polyPoints}
-                    fill="rgba(139,92,246,0.15)"
-                    stroke="#8b5cf6"
+                    fill="rgba(237,161,0,0.16)"
+                    stroke="#a16207"
                     strokeWidth={2}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -143,13 +143,13 @@ const RadarChart: React.FC<{ scores: ScoreBreakdown }> = ({ scores }) => {
                 />
                 {/* Data points */}
                 {dataPoints.map((p, i) => (
-                    <motion.circle key={i} cx={p.x} cy={p.y} r={4} fill="#8b5cf6" initial={{ r: 0 }} animate={{ r: 4 }} transition={{ delay: 0.8 + i * 0.1 }} />
+                    <motion.circle key={i} cx={p.x} cy={p.y} r={4} fill="#eda100" initial={{ r: 0 }} animate={{ r: 4 }} transition={{ delay: 0.8 + i * 0.1 }} />
                 ))}
                 {/* Labels */}
                 {dims.map((d, i) => {
                     const lp = getLabelPoint(i);
                     return (
-                        <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="#94a3b8" fontWeight={500}>
+                        <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="#78716c" fontWeight={500}>
                             {labels[i]}
                         </text>
                     );
@@ -274,7 +274,7 @@ const QACard: React.FC<{ item: QAItem; index: number }> = ({ item, index }) => {
                                         </div>
                                         <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                             <motion.div
-                                                className="h-full rounded-full bg-violet-500"
+                                                className="h-full rounded-full bg-brand-500"
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${val}%` }}
                                                 transition={{ duration: 0.8 }}
@@ -405,7 +405,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
         return (
             <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}>
-                    <BarChart2 size={40} className="text-violet-500" />
+                    <BarChart2 size={40} className="text-brand-700" />
                 </motion.div>
                 <p className="text-slate-400 text-sm">Analyzing your performance...</p>
             </div>
@@ -418,7 +418,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                 <div className="text-center space-y-4">
                     <AlertCircle size={48} className="text-slate-600 mx-auto" />
                     <p className="text-slate-400">Results not available</p>
-                    <button onClick={() => router.push('/dashboard')} className="px-4 py-2 bg-violet-600 text-white rounded-xl text-sm">
+                    <button onClick={() => router.push('/dashboard')} className="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm">
                         Go to Dashboard
                     </button>
                 </div>
@@ -428,7 +428,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
 
     const score = data.overallScore;
     const breakdown = data.scoreBreakdown || { technical: 0, communication: 0, confidence: 0, logic: 0, depth: 0 };
-    const scoreColor = score >= 80 ? '#10b981' : score >= 60 ? '#3b82f6' : score >= 40 ? '#f59e0b' : '#ef4444';
+    const scoreColor = score >= 80 ? '#0ca30c' : score >= 60 ? '#fab219' : score >= 40 ? '#ec835a' : '#d03b3b';
     const scoreLabel = score >= 80 ? '🏆 Excellent Performance' : score >= 60 ? '👍 Good Performance' : score >= 40 ? '📈 Keep Practicing' : '💪 Room to Grow';
 
     const tabs = [
@@ -442,8 +442,8 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
             {/* ── Hero Header ── */}
             <div className="relative overflow-hidden">
                 {/* Background gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-950/50 via-slate-950 to-indigo-950/30" />
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(139,92,246,0.08) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(99,102,241,0.06) 0%, transparent 60%)' }} />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-950/50 via-slate-950 to-brand-950/30" />
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(250,204,21,0.10) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(234,179,8,0.08) 0%, transparent 60%)' }} />
 
                 <div className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-8">
                     {/* Top row */}
@@ -456,7 +456,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                             <button onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition-colors border border-slate-700">
                                 <Home size={14} /> Dashboard
                             </button>
-                            <button onClick={() => router.push('/')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm transition-colors">
+                            <button onClick={() => router.push('/')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm transition-colors">
                                 <RefreshCw size={14} /> New Interview
                             </button>
                         </div>
@@ -487,7 +487,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                     </span>
                                 )}
                                 {breakdown.technical >= 70 && (
-                                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 text-violet-400 text-xs border border-violet-500/20">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 text-brand-700 text-xs border border-brand-500/20">
                                         <Code size={12} /> Technical Strength
                                     </span>
                                 )}
@@ -505,7 +505,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-violet-500 text-violet-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-brand-500 text-brand-700' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
                             >
                                 {tab.icon} {tab.label}
                             </button>
@@ -524,7 +524,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 {/* Radar Chart */}
                                 <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
                                     <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
-                                        <TrendingUp size={16} className="text-violet-400" /> Skill Radar
+                                        <TrendingUp size={16} className="text-brand-700" /> Skill Radar
                                     </h3>
                                     <div className="flex justify-center">
                                         <RadarChart scores={breakdown} />
@@ -534,14 +534,14 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 {/* Score Bars */}
                                 <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
                                     <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
-                                        <BarChart2 size={16} className="text-violet-400" /> Score Breakdown
+                                        <BarChart2 size={16} className="text-brand-700" /> Score Breakdown
                                     </h3>
                                     <div className="space-y-4">
-                                        <ScoreBar label="Technical" value={breakdown.technical} color="#8b5cf6" icon={<Code size={14} />} />
-                                        <ScoreBar label="Communication" value={breakdown.communication} color="#3b82f6" icon={<MessageSquare size={14} />} />
-                                        <ScoreBar label="Confidence" value={breakdown.confidence} color="#10b981" icon={<Zap size={14} />} />
-                                        <ScoreBar label="Logic" value={breakdown.logic} color="#f59e0b" icon={<Brain size={14} />} />
-                                        <ScoreBar label="Depth" value={breakdown.depth} color="#ec4899" icon={<Layers size={14} />} />
+                                        <ScoreBar label="Technical" value={breakdown.technical} color="#eda100" icon={<Code size={14} />} />
+                                        <ScoreBar label="Communication" value={breakdown.communication} color="#eda100" icon={<MessageSquare size={14} />} />
+                                        <ScoreBar label="Confidence" value={breakdown.confidence} color="#eda100" icon={<Zap size={14} />} />
+                                        <ScoreBar label="Logic" value={breakdown.logic} color="#eda100" icon={<Brain size={14} />} />
+                                        <ScoreBar label="Depth" value={breakdown.depth} color="#eda100" icon={<Layers size={14} />} />
                                     </div>
                                 </div>
                             </div>
@@ -551,8 +551,8 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 {[
                                     { label: 'Overall Score', value: `${Math.round(score)}%`, icon: <Trophy size={18} className="text-amber-400" />, color: 'text-amber-400' },
                                     { label: 'Questions', value: data.qaItems.length, icon: <MessageSquare size={18} className="text-blue-400" />, color: 'text-blue-400' },
-                                    { label: 'Best Skill', value: Object.entries(breakdown).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A', icon: <Star size={18} className="text-violet-400" />, color: 'text-violet-400' },
-                                    { label: 'Needs Work', value: Object.entries(breakdown).sort(([, a], [, b]) => a - b)[0]?.[0] || 'N/A', icon: <Target size={18} className="text-rose-400" />, color: 'text-rose-400' },
+                                    { label: 'Best Skill', value: Object.entries(breakdown).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A', icon: <Star size={18} className="text-brand-700" />, color: 'text-brand-700' },
+                                    { label: 'Needs Work', value: Object.entries(breakdown).sort(([, a], [, b]) => a - b)[0]?.[0] || 'N/A', icon: <Target size={18} className="text-brand-700" />, color: 'text-brand-700' },
                                 ].map((stat, i) => (
                                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
                                         <div className="flex justify-center mb-2">{stat.icon}</div>
@@ -587,7 +587,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 <div>
                                     <p className="text-sm font-medium text-slate-200">Your 4-Week Interview Prep Roadmap</p>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Based on your performance, focus on: <span className="text-violet-400 capitalize">{Object.entries(breakdown).sort(([, a], [, b]) => a - b)[0]?.[0]}</span> and <span className="text-violet-400 capitalize">{Object.entries(breakdown).sort(([, a], [, b]) => a - b)[1]?.[0]}</span>
+                                        Based on your performance, focus on: <span className="text-brand-700 capitalize">{Object.entries(breakdown).sort(([, a], [, b]) => a - b)[0]?.[0]}</span> and <span className="text-brand-700 capitalize">{Object.entries(breakdown).sort(([, a], [, b]) => a - b)[1]?.[0]}</span>
                                     </p>
                                 </div>
                             </div>
@@ -596,24 +596,24 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 {roadmap ? (
                                     <>
                                         <RoadmapWeek week={roadmap.week1} title="Foundation" color="from-blue-600 to-cyan-600" index={0} />
-                                        <RoadmapWeek week={roadmap.week2} title="Deep Dive" color="from-violet-600 to-purple-600" index={1} />
+                                        <RoadmapWeek week={roadmap.week2} title="Deep Dive" color="from-brand-600 to-brand-600" index={1} />
                                         <RoadmapWeek week={roadmap.week3} title="Practice" color="from-emerald-600 to-teal-600" index={2} />
                                         <RoadmapWeek week={roadmap.week4} title="Polish" color="from-amber-600 to-orange-600" index={3} />
                                     </>
                                 ) : (
                                     <div className="col-span-2 text-center py-10 text-slate-500">
-                                        <div className="animate-spin w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full mx-auto mb-2" />
+                                        <div className="animate-spin w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full mx-auto mb-2" />
                                         Generating your personal roadmap...
                                     </div>
                                 )}
                             </div>
 
                             {/* CTA */}
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 p-6 bg-gradient-to-r from-violet-900/30 to-indigo-900/30 border border-violet-500/20 rounded-2xl text-center">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 p-6 bg-gradient-to-r from-brand-900/30 to-brand-900/30 border border-brand-500/20 rounded-2xl text-center">
                                 <Trophy size={32} className="text-amber-400 mx-auto mb-3" />
                                 <h3 className="text-lg font-bold text-white mb-1">Ready for the next round?</h3>
                                 <p className="text-slate-400 text-sm mb-4">Practice makes perfect. Start another interview to track your progress.</p>
-                                <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl transition-colors">
+                                <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-colors">
                                     Start New Interview <ArrowRight size={16} />
                                 </button>
                             </motion.div>

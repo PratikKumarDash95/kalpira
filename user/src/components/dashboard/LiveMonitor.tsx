@@ -105,25 +105,26 @@ const LiveMonitor: React.FC = () => {
                                 <AreaChart data={data}>
                                     <defs>
                                         <linearGradient id="colorConf" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#eda100" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#eda100" stopOpacity={0} />
                                         </linearGradient>
                                         <linearGradient id="colorTech" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#2a78d6" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#2a78d6" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#efead5" />
                                     <XAxis dataKey="time" hide />
                                     <YAxis domain={[0, 100]} hide />
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: '#1c1917', borderColor: '#444' }}
-                                        itemStyle={{ color: '#fff' }}
+                                        contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e6dcc2', borderRadius: 12, color: '#171717' }}
+                                        itemStyle={{ color: '#171717' }}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="confidence"
-                                        stroke="#8b5cf6"
+                                        stroke="#eda100"
+                                        strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#colorConf)"
                                         name="Confidence"
@@ -131,7 +132,8 @@ const LiveMonitor: React.FC = () => {
                                     <Area
                                         type="monotone"
                                         dataKey="technicalDepth"
-                                        stroke="#10b981"
+                                        stroke="#2a78d6"
+                                        strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#colorTech)"
                                         name="Tech Depth"

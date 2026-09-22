@@ -34,8 +34,8 @@ const WEEK_META: { key: keyof Roadmap; title: string; subtitle: string; accent: 
         key: 'week2',
         title: 'Week 2',
         subtitle: 'Intermediate Practice',
-        accent: 'bg-violet-500',
-        border: 'border-l-violet-500',
+        accent: 'bg-brand-500',
+        border: 'border-l-brand-500',
     },
     {
         key: 'week3',

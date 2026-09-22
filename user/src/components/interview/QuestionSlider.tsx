@@ -65,7 +65,7 @@ const QuestionSlider: React.FC<QuestionSliderProps> = ({
                     onChange={(e) => onChange(Number(e.target.value))}
                     className="w-full h-2 bg-slate-800 rounded-full appearance-none cursor-pointer slider-input"
                     style={{
-                        background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${percentage}%, #1e293b ${percentage}%, #1e293b 100%)`,
+                        background: `linear-gradient(to right, #eda100 0%, #eda100 ${percentage}%, #efead5 ${percentage}%, #efead5 100%)`,
                     }}
                 />
             </div>

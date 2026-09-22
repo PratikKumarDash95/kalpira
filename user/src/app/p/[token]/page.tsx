@@ -49,18 +49,18 @@ function CandidateInfoForm({
     onSubmit(name.trim(), normalizeEmail(email));
   };
 
-  const inputCls = "w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm";
+  const inputCls = "w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors text-sm";
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
-        <div className="absolute top-0 left-1/3 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
+        <div className="absolute top-0 left-1/3 w-96 h-96 bg-brand-600/5 rounded-full blur-3xl" />
       </div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-900/40">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-900/40">
             <Briefcase size={26} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">You're Invited</h1>
@@ -90,7 +90,7 @@ function CandidateInfoForm({
             )}
 
             <button type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
+              className="w-full py-3.5 bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 mt-2">
               <ArrowRight size={18} /> Start Interview
             </button>
           </form>
@@ -176,7 +176,7 @@ export default function ParticipantPage() {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={48} className="animate-spin text-violet-400 mx-auto mb-4" />
+          <Loader2 size={48} className="animate-spin text-brand-700 mx-auto mb-4" />
           <p className="text-slate-400">Loading interview...</p>
         </div>
       </div>

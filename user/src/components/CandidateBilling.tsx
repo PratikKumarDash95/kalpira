@@ -105,7 +105,7 @@ const CandidateBilling: React.FC = () => {
                     name: 'Kalpira',
                     description: `${CANDIDATE_PLAN_LABELS[plan]} practice plan`,
                     prefill: {},
-                    theme: { color: '#7c3aed' },
+                    theme: { color: '#eda100' },
                     handler: async (response) => {
                         try {
                             const verifyRes = await apiFetch('/api/candidate/billing/verify', {
@@ -139,7 +139,7 @@ const CandidateBilling: React.FC = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <Loader2 size={36} className="animate-spin text-violet-400" />
+                <Loader2 size={36} className="animate-spin text-brand-700" />
             </div>
         );
     }
@@ -150,7 +150,7 @@ const CandidateBilling: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white">
-            <div className="fixed inset-0 pointer-events-none bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
+            <div className="fixed inset-0 pointer-events-none bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
             <main className="relative mx-auto max-w-6xl px-4 py-8">
                 <button
                     onClick={() => router.push('/dashboard')}
@@ -161,7 +161,7 @@ const CandidateBilling: React.FC = () => {
 
                 <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div>
-                        <p className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-violet-300">
+                        <p className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-brand-700">
                             <CreditCard size={14} /> Subscription
                         </p>
                         <h1 className="text-3xl font-bold">Choose your practice plan</h1>
@@ -174,7 +174,7 @@ const CandidateBilling: React.FC = () => {
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
                         <p className="text-xs uppercase tracking-wider text-slate-500">Current Usage</p>
                         <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-300">
-                            <BookOpen size={14} className="text-violet-300" />
+                            <BookOpen size={14} className="text-brand-700" />
                             {billing?.usage.studiesUsed ?? 0} / {billing?.limits.maxStudies ?? 1} studies
                         </p>
                         <p className="flex items-center gap-1.5 text-sm text-slate-300">
@@ -207,7 +207,7 @@ const CandidateBilling: React.FC = () => {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.04 }}
-                                className={`flex min-h-[300px] flex-col rounded-2xl border p-5 ${isCurrent ? 'border-violet-500/50 bg-violet-500/10' : 'border-slate-800 bg-slate-900/70'}`}
+                                className={`flex min-h-[300px] flex-col rounded-2xl border p-5 ${isCurrent ? 'border-brand-500/50 bg-brand-500/10' : 'border-slate-800 bg-slate-900/70'}`}
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
@@ -215,7 +215,7 @@ const CandidateBilling: React.FC = () => {
                                         <p className="mt-1 text-xs text-slate-400">{plan.tagline}</p>
                                     </div>
                                     {isCurrent && (
-                                        <span className="rounded-full bg-violet-500/20 px-2.5 py-1 text-xs text-violet-200">Active</span>
+                                        <span className="rounded-full bg-brand-500/20 px-2.5 py-1 text-xs text-brand-700">Active</span>
                                     )}
                                 </div>
 
@@ -228,7 +228,7 @@ const CandidateBilling: React.FC = () => {
                                 </div>
 
                                 <div className="mt-6 space-y-3 text-sm text-slate-300">
-                                    <p className="flex items-center gap-2"><BookOpen size={15} className="text-violet-300" /> {plan.maxStudies} custom studies</p>
+                                    <p className="flex items-center gap-2"><BookOpen size={15} className="text-brand-700" /> {plan.maxStudies} custom studies</p>
                                     <p className="flex items-center gap-2"><Dumbbell size={15} className="text-blue-300" /> {plan.maxPractices} practice sessions</p>
                                     <p className="flex items-center gap-2"><ShieldCheck size={15} className="text-emerald-300" /> Runs on platform AI</p>
                                 </div>
@@ -237,7 +237,7 @@ const CandidateBilling: React.FC = () => {
                                     type="button"
                                     onClick={() => handleBuyPlan(plan.key)}
                                     disabled={!isPaid || isCurrent || !paymentsEnabled || !!buyingPlan}
-                                    className="mt-auto flex min-h-11 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+                                    className="mt-auto flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
                                 >
                                     {buyingPlan === plan.key ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
                                     {isCurrent ? 'Current Plan' : isPaid ? 'Upgrade' : 'Included'}

@@ -87,7 +87,7 @@ const Settings: React.FC = () => {
             className="flex w-full items-center justify-between rounded-xl border border-stone-600 bg-stone-800 px-4 py-3 text-left transition-colors hover:bg-stone-700"
           >
             <span className="flex items-center gap-2 text-sm font-medium text-stone-200">
-              <Sparkles size={16} className="text-violet-400" /> Manage plan &amp; usage
+              <Sparkles size={16} className="text-brand-700" /> Manage plan &amp; usage
             </span>
             <ChevronRight size={18} className="text-stone-400" />
           </button>

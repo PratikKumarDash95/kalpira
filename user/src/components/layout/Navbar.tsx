@@ -70,7 +70,7 @@ export default function Navbar({
               <button
                 key={l.label}
                 onClick={l.onClick}
-                className="rounded-lg px-3.5 py-2 text-[color:var(--muted)] transition-colors hover:bg-[color:var(--brand-soft)] hover:text-[color:var(--brand-strong)]"
+                className="link-sweep rounded-lg px-3.5 py-2 text-[color:var(--muted)] transition-colors hover:text-[color:var(--brand-strong)]"
               >
                 {l.label}
               </button>
@@ -87,12 +87,12 @@ export default function Navbar({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.avatarUrl} alt={profile.name || 'Profile'} className="h-6 w-6 rounded-full object-cover" />
             ) : (
-              <UserCircle size={20} className="text-brand-500" />
+              <UserCircle size={20} className="text-brand-700" />
             )}
             <span className="hidden sm:inline max-w-[120px] truncate">{profile.name || profile.email}</span>
           </button>
         ) : (
-          <button onClick={() => router.push('/login')} className="btn-primary px-4 py-2 text-sm">
+          <button onClick={() => router.push('/login')} className="btn-primary sheen px-4 py-2 text-sm">
             Sign in <ArrowRight size={16} />
           </button>
         )}

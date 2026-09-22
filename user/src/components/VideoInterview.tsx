@@ -594,15 +594,15 @@ const VideoInterview: React.FC = () => {
                                     {/* Outer pulse rings */}
                                     {aiSpeaking && (
                                         <>
-                                            <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 rounded-full bg-violet-500/20" style={{ width: 160, height: 160, margin: 'auto', top: -40, left: -40 }} />
-                                            <motion.div animate={{ scale: [1, 1.6, 1], opacity: [0.2, 0, 0.2] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }} className="absolute inset-0 rounded-full bg-indigo-500/20" style={{ width: 160, height: 160, margin: 'auto', top: -40, left: -40 }} />
+                                            <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 rounded-full bg-brand-500/20" style={{ width: 160, height: 160, margin: 'auto', top: -40, left: -40 }} />
+                                            <motion.div animate={{ scale: [1, 1.6, 1], opacity: [0.2, 0, 0.2] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }} className="absolute inset-0 rounded-full bg-brand-500/20" style={{ width: 160, height: 160, margin: 'auto', top: -40, left: -40 }} />
                                         </>
                                     )}
                                     {/* AI Avatar circle */}
                                     <motion.div
                                         animate={aiSpeaking ? { scale: [1, 1.05, 1] } : { scale: 1 }}
                                         transition={{ duration: 0.6, repeat: aiSpeaking ? Infinity : 0 }}
-                                        className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-2xl shadow-violet-900/50 border-2 border-violet-500/30"
+                                        className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center shadow-2xl shadow-brand-900/50 border-2 border-brand-500/30"
                                     >
                                         <Bot size={40} className="text-white" />
                                     </motion.div>
@@ -626,7 +626,7 @@ const VideoInterview: React.FC = () => {
                             {/* Thinking indicator */}
                             {isAiThinking && (
                                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700">
-                                    <Loader2 size={12} className="animate-spin text-violet-400" />
+                                    <Loader2 size={12} className="animate-spin text-brand-700" />
                                     <span className="text-xs text-slate-400">Thinking...</span>
                                 </div>
                             )}
@@ -726,10 +726,10 @@ const VideoInterview: React.FC = () => {
                                         animate={{ opacity: 1, y: 0 }}
                                         className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                                     >
-                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'ai' ? 'bg-violet-600' : 'bg-slate-700'}`}>
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'ai' ? 'bg-brand-600' : 'bg-slate-700'}`}>
                                             {msg.role === 'ai' ? <Bot size={14} className="text-white" /> : <User size={14} className="text-slate-300" />}
                                         </div>
-                                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${msg.role === 'ai' ? 'bg-slate-800 text-slate-200 rounded-tl-sm' : 'bg-violet-600/20 text-slate-200 border border-violet-500/20 rounded-tr-sm'}`}>
+                                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${msg.role === 'ai' ? 'bg-slate-800 text-slate-200 rounded-tl-sm' : 'bg-brand-600/20 text-slate-200 border border-brand-500/20 rounded-tr-sm'}`}>
                                             <ReactMarkdown className="prose prose-invert prose-sm max-w-none">{msg.content}</ReactMarkdown>
                                         </div>
                                     </motion.div>
@@ -738,7 +738,7 @@ const VideoInterview: React.FC = () => {
 
                             {isAiThinking && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2">
-                                    <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center">
+                                    <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center">
                                         <Bot size={14} className="text-white" />
                                     </div>
                                     <div className="bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
@@ -805,12 +805,12 @@ const VideoInterview: React.FC = () => {
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                                     placeholder={isListening ? 'Listening...' : 'Type or speak your answer...'}
-                                    className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500"
+                                    className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
                                 />
                                 <button
                                     onClick={() => handleSend()}
                                     disabled={!input.trim() || isAiThinking}
-                                    className="p-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                                    className="p-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                                 >
                                     <Send size={18} />
                                 </button>

@@ -209,7 +209,7 @@ export default function AdminPanel() {
                             {/* Logo */}
                             <div className="p-6 border-b border-slate-800">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
                                         <Shield size={18} className="text-white" />
                                     </div>
                                     <div>
@@ -226,7 +226,7 @@ export default function AdminPanel() {
                                         key={item.id}
                                         onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
                                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === item.id
-                                            ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                                            ? 'bg-brand-600/20 text-brand-700 border border-brand-500/30'
                                             : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                                             }`}
                                     >
@@ -290,7 +290,7 @@ export default function AdminPanel() {
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                                <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
                                 <p className="text-slate-400 text-sm">Loading admin data...</p>
                             </div>
                         </div>
@@ -301,7 +301,7 @@ export default function AdminPanel() {
                                 <div className="space-y-6">
                                     {/* Stats Grid */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <StatCard icon={Users} label="Total Users" value={stats?.totalUsers ?? 0} color="border-violet-500/20" delay={0} />
+                                        <StatCard icon={Users} label="Total Users" value={stats?.totalUsers ?? 0} color="border-brand-500/20" delay={0} />
                                         <StatCard icon={BookOpen} label="Studies Created" value={stats?.totalStudies ?? 0} color="border-blue-500/20" delay={0.1} />
                                         <StatCard icon={Activity} label="Interview Sessions" value={stats?.totalSessions ?? 0} color="border-emerald-500/20" delay={0.2} />
                                     </div>
@@ -314,7 +314,7 @@ export default function AdminPanel() {
                                         className="rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm overflow-hidden"
                                     >
                                         <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-                                            <TrendingUp size={16} className="text-violet-400" />
+                                            <TrendingUp size={16} className="text-brand-700" />
                                             <h2 className="font-semibold text-white text-sm">Recent Signups</h2>
                                         </div>
                                         <div className="divide-y divide-slate-800">
@@ -323,7 +323,7 @@ export default function AdminPanel() {
                                             )}
                                             {stats?.recentUsers.map(u => (
                                                 <div key={u.id} className="flex items-center gap-4 p-4 hover:bg-slate-800/40 transition-colors">
-                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
                                                         {(u.name?.[0] || u.email?.[0] || '?').toUpperCase()}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
@@ -419,7 +419,7 @@ export default function AdminPanel() {
                                             placeholder="Search by name or email..."
                                             value={search}
                                             onChange={e => setSearch(e.target.value)}
-                                            className="w-full pl-9 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
+                                            className="w-full pl-9 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50"
                                         />
                                     </div>
 
@@ -448,7 +448,7 @@ export default function AdminPanel() {
                                                         <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
                                                                         {(user.name?.[0] || user.email?.[0] || '?').toUpperCase()}
                                                                     </div>
                                                                     <div className="min-w-0">

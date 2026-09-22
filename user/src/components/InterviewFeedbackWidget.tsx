@@ -94,14 +94,14 @@ const InterviewFeedbackWidget: React.FC<Props> = ({ sessionId, interviewerName }
         placeholder="Optional comment…"
         rows={2}
         maxLength={2000}
-        className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+        className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
       />
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex items-center gap-2">
         <button
           onClick={submit}
           disabled={submitting}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium disabled:opacity-50 transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium disabled:opacity-50 transition-colors"
         >
           {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
           Submit

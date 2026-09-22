@@ -66,7 +66,7 @@ export default function CandidateInterviewPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 size={40} className="animate-spin text-violet-400" />
+        <Loader2 size={40} className="animate-spin text-brand-700" />
       </div>
     );
   }

@@ -184,7 +184,7 @@ const StudyList: React.FC = () => {
               <button
                 onClick={handleInterviewerPractice}
                 title="Open assigned interviews"
-                className="relative px-3 py-2 text-sm border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
+                className="relative px-3 py-2 text-sm border border-brand-700/50 text-brand-700 hover:bg-brand-900/30 rounded-xl transition-colors flex items-center gap-2"
               >
                 <Briefcase size={16} />
                 Interview Practice
@@ -232,7 +232,7 @@ const StudyList: React.FC = () => {
                 <button
                   onClick={handleInterviewerPractice}
                   title="Open assigned interviews"
-                  className="relative px-3 py-2 text-sm bg-violet-900/50 text-violet-200 rounded-xl flex items-center gap-2 justify-center"
+                  className="relative px-3 py-2 text-sm bg-brand-900/50 text-brand-700 rounded-xl flex items-center gap-2 justify-center"
                 >
                   <Briefcase size={14} /> Interview Practice
                   {renderAssignedBadge()}
@@ -295,7 +295,7 @@ const StudyList: React.FC = () => {
               <button
                 onClick={handleInterviewerPractice}
                 title="Open assigned interviews"
-                className="relative px-6 py-3 border border-violet-700/50 text-violet-400 hover:bg-violet-900/30 rounded-xl transition-colors flex items-center gap-2"
+                className="relative px-6 py-3 border border-brand-700/50 text-brand-700 hover:bg-brand-900/30 rounded-xl transition-colors flex items-center gap-2"
               >
                 <Briefcase size={18} />
                 Interview Practice

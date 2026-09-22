@@ -110,7 +110,7 @@ const InterviewerStudyDetail: React.FC = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <Loader2 size={40} className="animate-spin text-violet-400" />
+                <Loader2 size={40} className="animate-spin text-brand-700" />
             </div>
         );
     }
@@ -125,7 +125,7 @@ const InterviewerStudyDetail: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-950 text-white">
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-slate-950 to-indigo-950/10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-slate-950 to-brand-950/10" />
             </div>
 
             <div className="relative max-w-4xl mx-auto px-4 py-8">
@@ -147,10 +147,10 @@ const InterviewerStudyDetail: React.FC = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     {[
-                        { label: 'Total Candidates', value: candidates.length, icon: Users, color: 'text-violet-400' },
+                        { label: 'Total Candidates', value: candidates.length, icon: Users, color: 'text-brand-700' },
                         { label: 'Completed', value: completed.length, icon: CheckCircle, color: 'text-emerald-400' },
                         { label: 'Absent', value: absent.length, icon: XCircle, color: 'text-red-400' },
-                        { label: 'Rejected', value: rejected.length, icon: XCircle, color: 'text-rose-400' },
+                        { label: 'Rejected', value: rejected.length, icon: XCircle, color: 'text-brand-700' },
                         { label: 'Avg Score', value: avgScore > 0 ? `${avgScore}%` : '—', icon: TrendingUp, color: 'text-blue-400' },
                     ].map(stat => (
                         <div key={stat.label} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
@@ -195,7 +195,7 @@ const InterviewerStudyDetail: React.FC = () => {
                                     className="w-full p-5 flex items-center justify-between gap-4 hover:bg-slate-800/30 transition-colors text-left"
                                     onClick={() => setExpandedId(expandedId === candidate.sessionId ? null : candidate.sessionId)}>
                                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center flex-shrink-0 text-sm font-bold">
                                             {(candidate.candidateName?.charAt(0) || '?').toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
@@ -211,7 +211,7 @@ const InterviewerStudyDetail: React.FC = () => {
                                     <div className="flex items-center gap-4 flex-shrink-0">
                                         {/* Status */}
                                         {candidate.status === 'rejected' ? (
-                                            <span className="flex items-center gap-1 text-xs text-rose-400">
+                                            <span className="flex items-center gap-1 text-xs text-brand-700">
                                                 <XCircle size={13} /> Rejected
                                             </span>
                                         ) : candidate.status === 'absent' ? (
@@ -286,7 +286,7 @@ const InterviewerStudyDetail: React.FC = () => {
                                                                     )}
                                                                     {qa.feedback && (
                                                                         <div className="pt-2 border-t border-slate-700">
-                                                                            <p className="text-xs text-violet-400 font-medium mb-1">AI Feedback</p>
+                                                                            <p className="text-xs text-brand-700 font-medium mb-1">AI Feedback</p>
                                                                             <p className="text-xs text-slate-500">{qa.feedback}</p>
                                                                         </div>
                                                                     )}

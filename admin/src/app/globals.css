@@ -1,54 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================================
-   Kalpira design system — "Merra" flat light theme
-   Solid purple brand, white cards, soft shadows, no animation.
+   Kalpira design system — "Lumen"
+   Yellow + white. Bright lemon (#FACC15) accents on warm white,
+   near-black ink on yellow fills, soft warm shadows, and a motion
+   kit shared by every role (candidate / interviewer / admin).
+
+   NOTE: this file is duplicated verbatim in all three apps
+   (user/, admin/, interviewer/). Keep them in sync.
    ============================================================ */
 
 @layer base {
   :root {
     color-scheme: light;
 
-    /* Brand */
-    --brand: #6d4aff;
-    --brand-strong: #5a38e8;
-    --brand-soft: #efebff;
-    --brand-softer: #f6f3ff;
-    --brand-ring: rgba(109, 74, 255, 0.35);
+    /* ---- Brand: bright lemon ---- */
+    --brand: #facc15;         /* solid fills: buttons, tiles, active pills */
+    --brand-hover: #eab308;   /* deeper lemon: hover fill */
+    --brand-strong: #a16207;  /* dark amber: brand TEXT / links / icons on white */
+    --brand-ink: #1a1608;     /* near-black: text placed ON yellow fills */
+    --brand-soft: #fef9c3;    /* soft tint bg */
+    --brand-softer: #fefce8;  /* faintest tint bg */
+    --brand-ring: rgba(234, 179, 8, 0.45);
 
-    /* Surfaces */
-    --bg: #fafaff;
-    --bg-soft: #f5f3ff;
+    /* ---- Surfaces: warm white ---- */
+    --bg: #fdfcf3;
+    --bg-soft: #faf6e6;
     --surface: #ffffff;
-    --surface-soft: #f7f6fc;
-    --line: #eceaf5;
-    --line-strong: #ded9ef;
+    --surface-soft: #fbf8ee;
+    --line: #efead5;
+    --line-strong: #e6dcc2;
 
-    /* Text */
-    --text: #171326;
-    --text-soft: #3a3752;
-    --muted: #6b6785;
-    --faint: #a4a0bd;
+    /* ---- Text: warm neutrals ---- */
+    --text: #171717;
+    --text-soft: #3f3a2e;
+    --muted: #78716c;
+    --faint: #a8a29e;
 
-    /* Semantic */
+    /* ---- Semantic (kept distinct from brand yellow) ---- */
     --success: #16a34a;
-    --success-soft: #eafaf0;
-    --warn: #d97706;
-    --warn-soft: #fdf3e6;
+    --success-soft: #e9f9ef;
+    --warn: #ea580c;
+    --warn-soft: #fdeee2;
     --danger: #e11d48;
     --danger-soft: #fdecef;
+    --info: #0369a1;
+    --info-soft: #e8f3fb;
 
-    /* Shape / shadow */
+    /* ---- Shape / depth ---- */
     --radius-card: 1rem;
     --radius-control: 0.75rem;
-    --shadow-card: 0 1px 2px rgba(23, 19, 38, 0.04), 0 8px 24px rgba(23, 19, 38, 0.06);
-    --shadow-pop: 0 2px 4px rgba(23, 19, 38, 0.05), 0 18px 48px rgba(23, 19, 38, 0.12);
+    --shadow-card: 0 1px 2px rgba(64, 50, 10, 0.05), 0 8px 24px rgba(64, 50, 10, 0.07);
+    --shadow-pop: 0 2px 4px rgba(64, 50, 10, 0.06), 0 18px 48px rgba(64, 50, 10, 0.12);
+    --shadow-glow: 0 6px 18px rgba(234, 179, 8, 0.30);
 
-    /* Legacy aliases — some components still reference these */
+    /* ---- Legacy aliases (older components still reference these) ---- */
     --app-bg: var(--bg);
     --app-panel: var(--surface);
     --app-line: var(--line);
@@ -61,30 +71,44 @@
   html {
     scroll-behavior: smooth;
     background: var(--bg);
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     background:
-      radial-gradient(circle at 12% -4%, rgba(109, 74, 255, 0.06), transparent 42%),
-      radial-gradient(circle at 96% 0%, rgba(109, 74, 255, 0.05), transparent 40%),
+      radial-gradient(circle at 12% -4%, rgba(250, 204, 21, 0.14), transparent 42%),
+      radial-gradient(circle at 96% 0%, rgba(234, 179, 8, 0.10), transparent 40%),
       var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings share the body family but tighten up for display use. */
+  h1, h2, h3, h4 {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
     color: var(--text);
   }
 
   * {
-    scrollbar-color: #d6d1ea #f4f3fb;
+    scrollbar-color: #e4d9b8 #f7f2e1;
   }
 }
 
 @layer components {
 
-  /* ---------- Layout scaffolding ---------- */
+  /* ============================================================
+     Layout scaffolding — the shared page grammar
+     ============================================================ */
   .app-shell {
     min-height: 100vh;
     background:
-      radial-gradient(circle at 12% -4%, rgba(109, 74, 255, 0.06), transparent 42%),
-      radial-gradient(circle at 96% 0%, rgba(109, 74, 255, 0.05), transparent 40%),
+      radial-gradient(circle at 12% -4%, rgba(250, 204, 21, 0.14), transparent 42%),
+      radial-gradient(circle at 96% 0%, rgba(234, 179, 8, 0.10), transparent 40%),
       var(--bg);
     color: var(--text);
   }
@@ -94,7 +118,54 @@
     margin-inline: auto;
   }
 
-  /* ---------- Cards / surfaces ---------- */
+  .app-container-wide {
+    width: min(1440px, calc(100% - 2rem));
+    margin-inline: auto;
+  }
+
+  /* Standard page rhythm: title block -> content. */
+  .page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .page-title {
+    font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--text);
+  }
+
+  .page-subtitle {
+    margin-top: 0.375rem;
+    font-size: 0.9375rem;
+    color: var(--muted);
+    max-width: 62ch;
+  }
+
+  .section-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--text);
+  }
+
+  .section-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ============================================================
+     Surfaces
+     ============================================================ */
   .surface {
     border: 1px solid var(--line);
     background: var(--surface);
@@ -102,7 +173,7 @@
     box-shadow: var(--shadow-card);
   }
 
-  /* glass-panel kept as an alias so existing markup still works */
+  /* Legacy alias kept so existing markup keeps working. */
   .glass-panel {
     border: 1px solid var(--line);
     background: var(--surface);
@@ -116,7 +187,16 @@
     border-radius: var(--radius-card);
   }
 
-  /* ---------- Buttons ---------- */
+  /* Lemon-tinted callout surface */
+  .surface-brand {
+    border: 1px solid rgba(234, 179, 8, 0.28);
+    background: linear-gradient(135deg, var(--brand-softer), var(--brand-soft));
+    border-radius: var(--radius-card);
+  }
+
+  /* ============================================================
+     Buttons
+     ============================================================ */
   .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -124,16 +204,27 @@
     gap: 0.5rem;
     border-radius: var(--radius-control);
     background: var(--brand);
-    color: #ffffff;
-    font-weight: 600;
-    box-shadow: 0 6px 16px rgba(109, 74, 255, 0.24);
+    color: var(--brand-ink);
+    font-weight: 700;
+    box-shadow: var(--shadow-glow);
     transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
   }
 
   .btn-primary:hover {
-    background: var(--brand-strong);
+    background: var(--brand-hover);
     transform: translateY(-1px);
-    box-shadow: 0 10px 22px rgba(109, 74, 255, 0.28);
+    box-shadow: 0 10px 26px rgba(234, 179, 8, 0.40);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.55;
+    box-shadow: none;
+    transform: none;
+    cursor: not-allowed;
   }
 
   .btn-secondary {
@@ -146,13 +237,14 @@
     color: var(--text);
     font-weight: 600;
     border: 1px solid var(--line-strong);
-    box-shadow: 0 1px 2px rgba(23, 19, 38, 0.04);
-    transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    box-shadow: 0 1px 2px rgba(64, 50, 10, 0.04);
+    transition: border-color 150ms ease, background 150ms ease, transform 150ms ease, color 150ms ease;
   }
 
   .btn-secondary:hover {
     border-color: var(--brand);
     color: var(--brand-strong);
+    background: var(--brand-softer);
     transform: translateY(-1px);
   }
 
@@ -172,15 +264,34 @@
     color: var(--brand-strong);
   }
 
-  /* legacy soft button */
+  /* Legacy soft button */
   .btn-soft {
     border: 1px solid var(--line-strong);
     background: var(--surface);
     border-radius: var(--radius-control);
-    box-shadow: 0 1px 2px rgba(23, 19, 38, 0.04);
+    box-shadow: 0 1px 2px rgba(64, 50, 10, 0.04);
   }
 
-  /* ---------- Badges / chips ---------- */
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-control);
+    background: var(--danger);
+    color: #ffffff;
+    font-weight: 600;
+    transition: filter 150ms ease, transform 150ms ease;
+  }
+
+  .btn-danger:hover {
+    filter: brightness(1.07);
+    transform: translateY(-1px);
+  }
+
+  /* ============================================================
+     Badges / chips / pills
+     ============================================================ */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -200,6 +311,24 @@
     border-color: transparent;
   }
 
+  .badge-success {
+    background: var(--success-soft);
+    color: var(--success);
+    border-color: transparent;
+  }
+
+  .badge-warn {
+    background: var(--warn-soft);
+    color: var(--warn);
+    border-color: transparent;
+  }
+
+  .badge-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: transparent;
+  }
+
   .chip {
     display: inline-flex;
     align-items: center;
@@ -211,9 +340,42 @@
     background: var(--surface);
     color: var(--text-soft);
     border: 1px solid var(--line-strong);
+    transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
   }
 
-  /* ---------- Inputs ---------- */
+  .chip:hover {
+    border-color: var(--brand);
+    color: var(--brand-strong);
+  }
+
+  /* Selectable pill (filters, toggles) */
+  .pill-selectable {
+    border-radius: 9999px;
+    padding: 0.375rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--muted);
+    transition: all 160ms ease;
+  }
+
+  .pill-selectable:hover {
+    border-color: var(--brand);
+    color: var(--brand-strong);
+  }
+
+  .pill-selectable[data-active='true'],
+  .pill-selectable.is-active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: var(--brand-ink);
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* ============================================================
+     Forms
+     ============================================================ */
   .input {
     width: 100%;
     border-radius: var(--radius-control);
@@ -234,12 +396,56 @@
     box-shadow: 0 0 0 3px var(--brand-ring);
   }
 
-  /* ---------- Skeleton loaders ---------- */
+  .label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-soft);
+  }
+
+  /* ============================================================
+     Stat tiles — the dashboard workhorse
+     ============================================================ */
+  .stat-tile {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    padding: 1.125rem 1.25rem;
+    box-shadow: var(--shadow-card);
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  }
+
+  .stat-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-pop);
+    border-color: var(--line-strong);
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ============================================================
+     Skeletons
+     ============================================================ */
   .skeleton {
     position: relative;
     overflow: hidden;
     border-radius: 0.75rem;
-    background: linear-gradient(90deg, #f1eff9, #f7f6fc, #f1eff9);
+    background: linear-gradient(90deg, #f4efdd, #fbf8ee, #f4efdd);
     background-size: 220% 100%;
     animation: kalpira-skeleton 1.45s ease-in-out infinite;
   }
@@ -250,6 +456,103 @@
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-card);
   }
+
+  /* ============================================================
+     Tables — consistent chrome across all three consoles
+     ============================================================ */
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+  }
+
+  .data-table thead th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface-soft);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  .data-table tbody td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--text-soft);
+    vertical-align: middle;
+  }
+
+  .data-table tbody tr {
+    transition: background 140ms ease;
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--brand-softer);
+  }
+
+  .data-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+/* ============================================================
+   Contrast guards
+   Bright lemon (#FACC15) is illegible as text/icons on white, so
+   brand-colored TEXT renders in dark amber. Solid FILLS stay lemon.
+   ============================================================ */
+.text-brand-300,
+.text-brand-400,
+.text-brand-500,
+.text-brand-600 {
+  color: var(--brand-strong) !important;
+}
+
+/* A bright lemon FILL must carry dark ink — the legacy markup paired
+   those fills with `text-white`, which is illegible on yellow. Doing
+   this in CSS (rather than rewriting the markup) is deliberate: where a
+   class list switches fills at runtime — e.g. `bg-brand-600 text-white`
+   vs `bg-emerald-500 text-white` — only the lemon branch is repainted
+   and the semantic green keeps its white text. */
+.bg-brand-300, .bg-brand-400, .bg-brand-500, .bg-brand-600,
+.from-brand-300, .from-brand-400, .from-brand-500, .from-brand-600,
+.to-brand-300, .to-brand-400, .to-brand-500, .to-brand-600,
+.via-brand-300, .via-brand-400, .via-brand-500, .via-brand-600,
+.hover\:bg-brand-400:hover, .hover\:bg-brand-500:hover, .hover\:bg-brand-600:hover,
+.hover\:from-brand-400:hover, .hover\:from-brand-500:hover, .hover\:from-brand-600:hover,
+.hover\:to-brand-400:hover, .hover\:to-brand-500:hover, .hover\:to-brand-600:hover {
+  color: var(--brand-ink) !important;
+}
+
+/* ...including white text nested inside a lemon-filled panel. */
+.bg-brand-400 .text-white, .bg-brand-500 .text-white, .bg-brand-600 .text-white,
+.bg-brand-400 [class*='text-white/'], .bg-brand-500 [class*='text-white/'],
+.bg-brand-600 [class*='text-white/'] {
+  color: var(--brand-ink) !important;
+}
+
+/* Yellow "highlighter" accent for headline words — legible + on-brand */
+.text-highlight {
+  background-image: linear-gradient(180deg, transparent 60%, rgba(250, 204, 21, 0.85) 60%);
+  padding: 0 0.12em;
+  border-radius: 0.1em;
+  color: var(--text);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Gradient text for hero headlines — dark enough to stay readable */
+.text-gradient-brand {
+  background: linear-gradient(120deg, #a16207 0%, #eab308 55%, #a16207 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 /* Custom scrollbar */
@@ -259,24 +562,25 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f4f3fb;
+  background: #f7f2e1;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d6d1ea;
+  background: #e4d9b8;
   border-radius: 6px;
-  border: 2px solid #f4f3fb;
+  border: 2px solid #f7f2e1;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #c2bce0;
+  background: #d6c896;
 }
 
 /* Preview mode banner */
 .preview-banner {
-  background: linear-gradient(90deg, #4b2cc4 0%, #6d4aff 50%, #4b2cc4 100%);
+  background: linear-gradient(90deg, #eab308 0%, #facc15 50%, #eab308 100%);
   background-size: 200% 100%;
   animation: shimmer 3s infinite;
+  color: var(--brand-ink);
 }
 
 .preview-banner-pulse {
@@ -327,7 +631,7 @@ select:focus {
 }
 
 .slider-input::-webkit-slider-thumb:hover {
-  box-shadow: 0 0 0 5px rgba(109, 74, 255, 0.22);
+  box-shadow: 0 0 0 5px rgba(234, 179, 8, 0.25);
   transform: scale(1.1);
 }
 
@@ -345,105 +649,371 @@ select:focus {
 }
 
 .slider-input::-moz-range-thumb:hover {
-  box-shadow: 0 0 0 5px rgba(109, 74, 255, 0.22);
+  box-shadow: 0 0 0 5px rgba(234, 179, 8, 0.25);
 }
 
 ::selection {
-  background: rgba(109, 74, 255, 0.22);
+  background: rgba(250, 204, 21, 0.35);
   color: var(--text);
 }
 
 /* ============================================================
-   .kalpira-light — runtime repaint layer
-   Most screens are authored in a DARK palette (bg-slate-*, bg-stone-*,
-   text-white). This layer flattens all of them to the Merra light look
-   without editing every file. Covers BOTH slate and stone.
+   Motion kit
+   Entrance, stagger and hover motion shared by every page.
+   All of it collapses under prefers-reduced-motion at the bottom.
+   ============================================================ */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.8); }
+  60% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+  50% { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0.16); }
+}
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* Sweeping sheen used on primary CTAs and avatars */
+@keyframes sheen-sweep {
+  0% { transform: translateX(-120%) skewX(-18deg); }
+  60%, 100% { transform: translateX(220%) skewX(-18deg); }
+}
+
+.animate-fade-in-up { animation: fade-in-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-in-down { animation: fade-in-down 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-in { animation: fade-in 0.5s ease both; }
+.animate-scale-in { animation: scale-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-in-left { animation: slide-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-in-right { animation: slide-in-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-float { animation: float-y 6s ease-in-out infinite; }
+.animate-glow { animation: glow-pulse 2.4s ease-in-out infinite; }
+.animate-gradient { background-size: 200% auto; animation: gradient-pan 6s ease infinite; }
+.animate-marquee { animation: marquee-x 28s linear infinite; }
+.animate-spin-slow { animation: spin-slow 1.4s linear infinite; }
+
+/* Stagger — apply to a grid/list and children cascade in. */
+.stagger > * { animation: fade-in-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.stagger > *:nth-child(4) { animation-delay: 0.19s; }
+.stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.stagger > *:nth-child(6) { animation-delay: 0.29s; }
+.stagger > *:nth-child(7) { animation-delay: 0.34s; }
+.stagger > *:nth-child(8) { animation-delay: 0.39s; }
+.stagger > *:nth-child(9) { animation-delay: 0.44s; }
+.stagger > *:nth-child(10) { animation-delay: 0.49s; }
+.stagger > *:nth-child(11) { animation-delay: 0.54s; }
+.stagger > *:nth-child(12) { animation-delay: 0.59s; }
+
+/* Card hover lift — tactile surfaces */
+.hover-lift {
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-pop);
+  border-color: var(--line-strong);
+}
+
+/* Hover glow for primary tiles */
+.hover-glow {
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+.hover-glow:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-glow);
+  border-color: rgba(234, 179, 8, 0.45);
+}
+
+/* Underline that sweeps in on hover (nav links, inline links) */
+.link-sweep {
+  position: relative;
+}
+.link-sweep::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 2px;
+  width: 100%;
+  background: var(--brand);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.link-sweep:hover::after {
+  transform: scaleX(1);
+}
+
+/* Sheen sweep on primary buttons — add alongside .btn-primary */
+.sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+  pointer-events: none;
+}
+.sheen:hover::after {
+  animation: sheen-sweep 900ms ease;
+}
+
+/* Decorative animated dot grid for hero/auth backdrops */
+.dot-grid {
+  background-image: radial-gradient(rgba(234, 179, 8, 0.28) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-fade-in-up,
+  .animate-fade-in-down,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-pop-in,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-float,
+  .animate-glow,
+  .animate-gradient,
+  .animate-marquee,
+  .animate-spin-slow,
+  .stagger > *,
+  .preview-banner,
+  .preview-banner-pulse,
+  .skeleton,
+  .sheen::after {
+    animation: none !important;
+  }
+  .hover-lift,
+  .hover-glow,
+  .stat-tile,
+  .data-table tbody tr {
+    transition: none;
+  }
+  .hover-lift:hover,
+  .hover-glow:hover,
+  .stat-tile:hover {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   .kalpira-light — legacy repaint safety net
+   ------------------------------------------------------------
+   Large parts of the app were authored against a DARK, violet
+   palette (bg-slate-900, text-white, bg-violet-600, plus stray
+   pink/rose/fuchsia accents). This layer flattens all of it onto
+   the Lumen light look so nothing off-palette can survive.
+
+   Substring attribute selectors are used deliberately: they catch
+   EVERY shade and opacity variant (bg-pink-500/20, border-rose-400,
+   ...) rather than an enumerated list that silently misses one.
    ============================================================ */
 .kalpira-light {
   background:
-    radial-gradient(circle at 12% -4%, rgba(109, 74, 255, 0.06), transparent 42%),
-    radial-gradient(circle at 96% 0%, rgba(109, 74, 255, 0.05), transparent 40%),
+    radial-gradient(circle at 12% -4%, rgba(250, 204, 21, 0.14), transparent 42%),
+    radial-gradient(circle at 96% 0%, rgba(234, 179, 8, 0.10), transparent 40%),
     var(--bg) !important;
   color: var(--text);
 }
 
-/* Dark panel fills -> white cards */
-.kalpira-light .bg-slate-950,
-.kalpira-light .bg-slate-900,
-.kalpira-light .bg-slate-900\/95,
-.kalpira-light .bg-slate-900\/90,
-.kalpira-light .bg-slate-900\/80,
-.kalpira-light .bg-slate-900\/70,
-.kalpira-light .bg-slate-900\/60,
-.kalpira-light .bg-slate-900\/50,
-.kalpira-light .bg-slate-900\/40,
-.kalpira-light .bg-slate-800,
-.kalpira-light .bg-slate-800\/80,
-.kalpira-light .bg-slate-800\/60,
-.kalpira-light .bg-slate-800\/50,
-.kalpira-light .bg-slate-800\/40,
-.kalpira-light .bg-slate-800\/30,
-.kalpira-light .bg-stone-950,
-.kalpira-light .bg-stone-900,
-.kalpira-light .bg-stone-900\/95,
-.kalpira-light .bg-stone-900\/90,
-.kalpira-light .bg-stone-900\/80,
-.kalpira-light .bg-stone-900\/70,
-.kalpira-light .bg-stone-900\/60,
-.kalpira-light .bg-stone-900\/50,
-.kalpira-light .bg-stone-900\/40,
-.kalpira-light .bg-stone-850,
-.kalpira-light .bg-stone-800,
-.kalpira-light .bg-stone-800\/80,
-.kalpira-light .bg-stone-800\/60,
-.kalpira-light .bg-stone-800\/50,
-.kalpira-light .bg-stone-800\/40,
-.kalpira-light .bg-stone-800\/30 {
+/* ---- Pass 1: dark neutrals -> white cards ---- */
+.kalpira-light [class*='bg-slate-'],
+.kalpira-light [class*='bg-stone-'],
+.kalpira-light [class*='bg-gray-'],
+.kalpira-light [class*='bg-zinc-'],
+.kalpira-light [class*='bg-neutral-'] {
   background: var(--surface) !important;
-  box-shadow: var(--shadow-card);
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
 
-/* Full-screen dark roots -> flat page background (no card shadow) */
-.kalpira-light .min-h-screen.bg-slate-950,
-.kalpira-light .min-h-screen.bg-stone-950,
-.kalpira-light .min-h-screen.bg-slate-900,
-.kalpira-light .min-h-screen.bg-stone-900 {
+/* ...except the lightest steps, which are genuine tints, not panels. */
+.kalpira-light [class*='bg-slate-50']:not([class*='bg-slate-500']),
+.kalpira-light [class*='bg-stone-50']:not([class*='bg-stone-500']),
+.kalpira-light [class*='bg-gray-50']:not([class*='bg-gray-500']),
+.kalpira-light [class*='bg-slate-100'],
+.kalpira-light [class*='bg-stone-100'],
+.kalpira-light [class*='bg-gray-100'] {
+  background: var(--surface-soft) !important;
+}
+
+/* Full-screen dark roots -> flat page background (no card chrome). */
+.kalpira-light .min-h-screen[class*='bg-slate-'],
+.kalpira-light .min-h-screen[class*='bg-stone-'],
+.kalpira-light .min-h-screen[class*='bg-gray-'],
+.kalpira-light .min-h-screen[class*='bg-zinc-'] {
   background: transparent !important;
   box-shadow: none !important;
+  border-color: transparent !important;
 }
 
-/* Borders */
-.kalpira-light .border-slate-800,
-.kalpira-light .border-slate-700,
-.kalpira-light .border-slate-600,
-.kalpira-light .border-stone-800,
-.kalpira-light .border-stone-700,
-.kalpira-light .border-stone-600 {
+/* ---- Pass 2: legacy accent tints -> soft brand lemon ---- */
+.kalpira-light [class*='bg-pink-'],
+.kalpira-light [class*='bg-rose-'],
+.kalpira-light [class*='bg-fuchsia-'],
+.kalpira-light [class*='bg-purple-'],
+.kalpira-light [class*='bg-violet-'],
+.kalpira-light [class*='bg-indigo-'] {
+  background: var(--brand-soft) !important;
+}
+
+/* ---- Pass 3: legacy accent fills -> solid brand lemon + dark ink.
+   The `:not([class*='-50'])` guards matter: a substring match on
+   "bg-pink-5" would otherwise also swallow the pale "bg-pink-50" tint
+   and flatten it into a solid fill. ---- */
+.kalpira-light [class*='bg-pink-4'],
+.kalpira-light [class*='bg-pink-5']:not([class*='bg-pink-50']),
+.kalpira-light [class*='bg-pink-6'],
+.kalpira-light [class*='bg-rose-4'],
+.kalpira-light [class*='bg-rose-5']:not([class*='bg-rose-50']),
+.kalpira-light [class*='bg-rose-6'],
+.kalpira-light [class*='bg-fuchsia-4'],
+.kalpira-light [class*='bg-fuchsia-5']:not([class*='bg-fuchsia-50']),
+.kalpira-light [class*='bg-fuchsia-6'],
+.kalpira-light [class*='bg-purple-4'],
+.kalpira-light [class*='bg-purple-5']:not([class*='bg-purple-50']),
+.kalpira-light [class*='bg-purple-6'],
+.kalpira-light [class*='bg-violet-4'],
+.kalpira-light [class*='bg-violet-5']:not([class*='bg-violet-50']),
+.kalpira-light [class*='bg-violet-6'],
+.kalpira-light [class*='bg-indigo-4'],
+.kalpira-light [class*='bg-indigo-5']:not([class*='bg-indigo-50']),
+.kalpira-light [class*='bg-indigo-6'] {
+  background: var(--brand) !important;
+  color: var(--brand-ink) !important;
+  border-color: var(--brand) !important;
+}
+
+/* Gradient stops authored in legacy accents -> brand gradient */
+.kalpira-light [class*='from-pink-'],
+.kalpira-light [class*='from-rose-'],
+.kalpira-light [class*='from-fuchsia-'],
+.kalpira-light [class*='from-purple-'],
+.kalpira-light [class*='from-violet-'],
+.kalpira-light [class*='from-indigo-'] {
+  --tw-gradient-from: var(--brand) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(250, 204, 21, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+.kalpira-light [class*='to-pink-'],
+.kalpira-light [class*='to-rose-'],
+.kalpira-light [class*='to-fuchsia-'],
+.kalpira-light [class*='to-purple-'],
+.kalpira-light [class*='to-violet-'],
+.kalpira-light [class*='to-indigo-'] {
+  --tw-gradient-to: var(--brand-hover) var(--tw-gradient-to-position) !important;
+}
+.kalpira-light [class*='via-pink-'],
+.kalpira-light [class*='via-rose-'],
+.kalpira-light [class*='via-fuchsia-'],
+.kalpira-light [class*='via-purple-'],
+.kalpira-light [class*='via-violet-'],
+.kalpira-light [class*='via-indigo-'] {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--brand) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+/* Legacy accent text/border/ring -> dark amber (readable on white) */
+.kalpira-light [class*='text-pink-'],
+.kalpira-light [class*='text-rose-'],
+.kalpira-light [class*='text-fuchsia-'],
+.kalpira-light [class*='text-purple-'],
+.kalpira-light [class*='text-violet-'],
+.kalpira-light [class*='text-indigo-'] {
+  color: var(--brand-strong) !important;
+}
+
+.kalpira-light [class*='border-pink-'],
+.kalpira-light [class*='border-rose-'],
+.kalpira-light [class*='border-fuchsia-'],
+.kalpira-light [class*='border-purple-'],
+.kalpira-light [class*='border-violet-'],
+.kalpira-light [class*='border-indigo-'] {
+  border-color: rgba(234, 179, 8, 0.45) !important;
+}
+
+.kalpira-light [class*='ring-pink-'],
+.kalpira-light [class*='ring-rose-'],
+.kalpira-light [class*='ring-fuchsia-'],
+.kalpira-light [class*='ring-purple-'],
+.kalpira-light [class*='ring-violet-'],
+.kalpira-light [class*='ring-indigo-'] {
+  --tw-ring-color: var(--brand-ring) !important;
+}
+
+.kalpira-light [class*='shadow-pink-'],
+.kalpira-light [class*='shadow-rose-'],
+.kalpira-light [class*='shadow-fuchsia-'],
+.kalpira-light [class*='shadow-purple-'],
+.kalpira-light [class*='shadow-violet-'],
+.kalpira-light [class*='shadow-indigo-'] {
+  --tw-shadow-color: rgba(234, 179, 8, 0.28) !important;
+}
+
+/* ---- Neutral borders -> warm hairlines ---- */
+.kalpira-light [class*='border-slate-'],
+.kalpira-light [class*='border-stone-'],
+.kalpira-light [class*='border-gray-'],
+.kalpira-light [class*='border-zinc-'],
+.kalpira-light [class*='border-white'] {
   border-color: var(--line) !important;
 }
 
-.kalpira-light .border-white\/80,
-.kalpira-light .border-white\/70,
-.kalpira-light .border-white\/60,
-.kalpira-light .border-white {
-  border-color: var(--line) !important;
-}
-
-/* White translucent fills -> solid white cards */
+/* ---- White translucent fills -> solid white ---- */
 .kalpira-light .bg-white,
-.kalpira-light .bg-white\/90,
-.kalpira-light .bg-white\/80,
-.kalpira-light .bg-white\/75,
-.kalpira-light .bg-white\/70,
-.kalpira-light .bg-white\/65,
-.kalpira-light .bg-white\/60 {
+.kalpira-light [class*='bg-white/'] {
   background: var(--surface) !important;
   border-color: var(--line);
 }
 
-/* Inputs */
+/* ---- Inputs ---- */
 .kalpira-light input,
 .kalpira-light select,
 .kalpira-light textarea {
@@ -457,106 +1027,98 @@ select:focus {
   color: var(--faint) !important;
 }
 
-/* Text — light/white text becomes dark ink */
+/* ---- Text: light-on-dark becomes dark ink ---- */
 .kalpira-light .text-white,
-.kalpira-light .text-slate-100,
-.kalpira-light .text-slate-200,
-.kalpira-light .text-slate-300,
-.kalpira-light .text-stone-100,
-.kalpira-light .text-stone-200,
-.kalpira-light .text-stone-300 {
+.kalpira-light [class*='text-slate-1'],
+.kalpira-light [class*='text-slate-2'],
+.kalpira-light [class*='text-slate-3'],
+.kalpira-light [class*='text-stone-1'],
+.kalpira-light [class*='text-stone-2'],
+.kalpira-light [class*='text-stone-3'],
+.kalpira-light [class*='text-gray-1'],
+.kalpira-light [class*='text-gray-2'],
+.kalpira-light [class*='text-gray-3'],
+.kalpira-light [class*='text-zinc-1'],
+.kalpira-light [class*='text-zinc-2'],
+.kalpira-light [class*='text-zinc-3'] {
   color: var(--text) !important;
 }
 
-.kalpira-light .text-slate-400,
-.kalpira-light .text-slate-500,
-.kalpira-light .text-slate-600,
-.kalpira-light .text-stone-400,
-.kalpira-light .text-stone-500,
-.kalpira-light .text-stone-600 {
+.kalpira-light [class*='text-slate-4'],
+.kalpira-light [class*='text-slate-5'],
+.kalpira-light [class*='text-slate-6'],
+.kalpira-light [class*='text-stone-4'],
+.kalpira-light [class*='text-stone-5'],
+.kalpira-light [class*='text-stone-6'],
+.kalpira-light [class*='text-gray-4'],
+.kalpira-light [class*='text-gray-5'],
+.kalpira-light [class*='text-gray-6'],
+.kalpira-light [class*='text-zinc-4'],
+.kalpira-light [class*='text-zinc-5'],
+.kalpira-light [class*='text-zinc-6'] {
   color: var(--muted) !important;
 }
 
-.kalpira-light .placeholder-slate-500::placeholder,
-.kalpira-light .placeholder-stone-500::placeholder {
+.kalpira-light [class*='placeholder-slate-'],
+.kalpira-light [class*='placeholder-stone-'],
+.kalpira-light [class*='placeholder-gray-']::placeholder {
   color: var(--faint) !important;
 }
 
-/* Neutral "solid" buttons on dark screens -> soft surface */
-.kalpira-light .bg-slate-700,
-.kalpira-light .bg-slate-600,
-.kalpira-light .bg-stone-600,
-.kalpira-light .bg-stone-700,
-.kalpira-light .hover\:bg-slate-500:hover,
-.kalpira-light .hover\:bg-slate-600:hover,
-.kalpira-light .hover\:bg-slate-700:hover,
-.kalpira-light .hover\:bg-stone-500:hover,
-.kalpira-light .hover\:bg-stone-600:hover,
-.kalpira-light .hover\:bg-stone-700:hover {
+/* ---- Neutral solid buttons on dark screens -> soft surface ---- */
+.kalpira-light [class*='hover:bg-slate-']:hover,
+.kalpira-light [class*='hover:bg-stone-']:hover,
+.kalpira-light [class*='hover:bg-gray-']:hover,
+.kalpira-light [class*='hover:bg-white/']:hover {
   background: var(--surface-soft) !important;
-  border-color: var(--line-strong) !important;
   color: var(--text) !important;
 }
 
-/* Accent tints (violet/indigo were the old accent) -> brand */
-.kalpira-light .bg-violet-900\/50,
-.kalpira-light .bg-violet-900\/30,
-.kalpira-light .bg-violet-600\/20,
-.kalpira-light .bg-violet-500\/10,
-.kalpira-light .bg-violet-500\/5,
-.kalpira-light .bg-indigo-500\/15,
-.kalpira-light .bg-indigo-500\/10 {
-  background: var(--brand-soft) !important;
-}
-
-.kalpira-light .border-violet-700\/50,
-.kalpira-light .border-violet-500\/30,
-.kalpira-light .border-violet-500\/20,
-.kalpira-light .border-indigo-400\/30 {
-  border-color: var(--brand-ring) !important;
-}
-
-.kalpira-light .text-violet-200,
-.kalpira-light .text-violet-300,
-.kalpira-light .text-violet-400,
-.kalpira-light .text-indigo-400,
-.kalpira-light .text-indigo-500 {
-  color: var(--brand-strong) !important;
-}
-
-/* Success tints */
-.kalpira-light .bg-green-900\/50,
-.kalpira-light .bg-emerald-500\/10 {
+/* ---- Semantic status colors stay semantic ---- */
+.kalpira-light [class*='bg-green-9'],
+.kalpira-light [class*='bg-green-5'],
+.kalpira-light [class*='bg-green-1'],
+.kalpira-light [class*='bg-emerald-9'],
+.kalpira-light [class*='bg-emerald-5'],
+.kalpira-light [class*='bg-emerald-1'] {
   background: var(--success-soft) !important;
 }
 
-.kalpira-light .text-green-400,
-.kalpira-light .text-emerald-300,
-.kalpira-light .text-emerald-400 {
+.kalpira-light [class*='text-green-'],
+.kalpira-light [class*='text-emerald-'] {
   color: var(--success) !important;
 }
 
-.kalpira-light .shadow-violet-900\/30,
-.kalpira-light .shadow-violet-900\/40 {
-  --tw-shadow-color: rgba(109, 74, 255, 0.22) !important;
+.kalpira-light [class*='bg-red-9'],
+.kalpira-light [class*='bg-red-5'],
+.kalpira-light [class*='bg-red-1'],
+.kalpira-light [class*='bg-rose-9'] {
+  background: var(--danger-soft) !important;
 }
 
-/* Solid brand / status buttons keep white text */
-.kalpira-light .bg-violet-600,
-.kalpira-light .bg-indigo-600,
+.kalpira-light [class*='text-red-'],
+.kalpira-light [class*='text-rose-9'] {
+  color: var(--danger) !important;
+}
+
+.kalpira-light [class*='bg-amber-9'],
+.kalpira-light [class*='bg-orange-9'],
+.kalpira-light [class*='bg-yellow-9'] {
+  background: var(--warn-soft) !important;
+}
+
+.kalpira-light [class*='text-orange-'],
+.kalpira-light [class*='text-amber-9'] {
+  color: var(--warn) !important;
+}
+
+/* Solid semantic fills keep white text (they are status, not brand). */
 .kalpira-light .bg-red-500,
+.kalpira-light .bg-red-600,
+.kalpira-light .bg-green-600,
 .kalpira-light .bg-emerald-500,
-.kalpira-light .from-violet-600,
-.kalpira-light .to-indigo-600 {
-  color: #ffffff !important;
-}
-
-.kalpira-light .bg-violet-600.text-white,
-.kalpira-light .bg-indigo-600.text-white,
-.kalpira-light .bg-red-500.text-white,
-.kalpira-light .bg-emerald-500.text-white,
-.kalpira-light .bg-gradient-to-r.text-white,
-.kalpira-light .bg-gradient-to-br.text-white {
+.kalpira-light .bg-rose-500,
+.kalpira-light .bg-rose-600 {
   color: #ffffff !important;
 }
 

@@ -58,7 +58,7 @@ export function StatCard({ icon: Icon, label, value, sub, color, delay }: {
 
 export function Avatar({ name, email }: { name: string | null; email: string | null }) {
     return (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
             {(name?.[0] || email?.[0] || '?').toUpperCase()}
         </div>
     );
@@ -86,10 +86,10 @@ export function Toolbar({ search, setSearch, onCreate, createLabel }: {
             <div className="relative flex-1">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input type="text" placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50" />
+                    className="w-full pl-9 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50" />
             </div>
             {onCreate && (
-                <button type="button" onClick={onCreate} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium">
+                <button type="button" onClick={onCreate} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium">
                     <UserPlus size={16} /> {createLabel || 'Create'}
                 </button>
             )}
@@ -100,7 +100,7 @@ export function Toolbar({ search, setSearch, onCreate, createLabel }: {
 export function IconBtn({ onClick, title, children, danger }: { onClick: () => void; title: string; children: React.ReactNode; danger?: boolean }) {
     return (
         <button type="button" onClick={onClick} title={title} aria-label={title}
-            className={`p-2 rounded-lg transition-all ${danger ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-violet-300 hover:bg-violet-500/10'}`}>
+            className={`p-2 rounded-lg transition-all ${danger ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-brand-700 hover:bg-brand-500/10'}`}>
             {children}
         </button>
     );
@@ -113,7 +113,7 @@ export function Overview({ stats, avgRating, feedbackCount }: {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard icon={Users} label="Candidates" value={stats?.totalCandidates ?? 0} color="border-violet-500/20" delay={0} />
+                <StatCard icon={Users} label="Candidates" value={stats?.totalCandidates ?? 0} color="border-brand-500/20" delay={0} />
                 <StatCard icon={UserCog} label="Interviewers" value={stats?.totalInterviewers ?? 0} color="border-blue-500/20" delay={0.05} />
                 <StatCard icon={BookOpen} label="Studies" value={stats?.totalStudies ?? 0} sub={`${stats?.activeStudies ?? 0} active`} color="border-emerald-500/20" delay={0.1} />
                 <StatCard icon={Activity} label="Interviews" value={stats?.totalSessions ?? 0} sub={`${stats?.activeInterviews ?? 0} active`} color="border-amber-500/20" delay={0.15} />
@@ -122,7 +122,7 @@ export function Overview({ stats, avgRating, feedbackCount }: {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
                     <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-                        <UserPlus size={16} className="text-violet-400" />
+                        <UserPlus size={16} className="text-brand-700" />
                         <h2 className="font-semibold text-white text-sm">Recent signups</h2>
                     </div>
                     <div className="divide-y divide-slate-800">
@@ -146,7 +146,7 @@ export function Overview({ stats, avgRating, feedbackCount }: {
                         <div className="flex items-center gap-2 mb-3"><Star size={16} className="text-amber-400" /><h3 className="text-sm font-semibold text-white">Interviewer feedback</h3></div>
                         <p className="text-3xl font-bold text-white">{avgRating ? avgRating.toFixed(1) : '—'}<span className="text-sm text-slate-500"> / 5</span></p>
                         <p className="text-xs text-slate-500 mt-1">{feedbackCount} review{feedbackCount !== 1 ? 's' : ''}</p>
-                        <Link href="/feedback" className="mt-3 text-xs text-violet-300 hover:text-violet-200 flex items-center gap-1">View all <ChevronRight size={12} /></Link>
+                        <Link href="/feedback" className="mt-3 text-xs text-brand-700 hover:text-brand-700 flex items-center gap-1">View all <ChevronRight size={12} /></Link>
                     </div>
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
                         <div className="flex items-center gap-2 mb-3"><Zap size={16} className="text-yellow-400" /><h3 className="text-sm font-semibold text-white">Platform health</h3></div>

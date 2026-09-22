@@ -112,7 +112,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 flex-shrink-0 bg-[color:var(--surface)] border-r border-[color:var(--line)] flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="p-6 border-b border-[color:var(--line)]">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center shadow-[0_6px_16px_rgba(109,74,255,0.28)]">
+                        <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center shadow-[0_6px_16px_rgba(234,179,8,0.32)]">
                             <Shield size={18} className="text-white" />
                         </div>
                         <div>

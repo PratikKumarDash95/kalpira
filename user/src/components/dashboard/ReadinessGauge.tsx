@@ -19,29 +19,32 @@ function getColorScheme(score: number): {
     bg: string;
     label: string;
 } {
+    // Status scale (good -> warning -> critical). Reserved for state, never
+    // reused as series color, and always paired with the text label below so
+    // the reading never depends on hue alone.
     if (score >= 85) {
         return {
-            ring: '#10b981',
-            glow: 'rgba(16, 185, 129, 0.25)',
-            text: 'text-emerald-400',
+            ring: '#0ca30c',
+            glow: 'rgba(12, 163, 12, 0.22)',
+            text: 'text-[color:var(--success)]',
             bg: 'from-emerald-500/10 to-emerald-500/5',
             label: 'Excellent',
         };
     }
     if (score >= 60) {
         return {
-            ring: '#3b82f6',
-            glow: 'rgba(59, 130, 246, 0.25)',
-            text: 'text-blue-400',
-            bg: 'from-blue-500/10 to-blue-500/5',
+            ring: '#fab219',
+            glow: 'rgba(250, 178, 25, 0.22)',
+            text: 'text-brand-700',
+            bg: 'from-brand-500/10 to-brand-500/5',
             label: 'Good Progress',
         };
     }
     return {
-        ring: '#f97316',
-        glow: 'rgba(249, 115, 22, 0.25)',
-        text: 'text-orange-400',
-        bg: 'from-orange-500/10 to-orange-500/5',
+        ring: '#d03b3b',
+        glow: 'rgba(208, 59, 59, 0.22)',
+        text: 'text-[color:var(--danger)]',
+        bg: 'from-red-500/10 to-red-500/5',
         label: 'Needs Work',
     };
 }

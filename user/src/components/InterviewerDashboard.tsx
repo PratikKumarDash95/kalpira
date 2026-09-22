@@ -328,7 +328,7 @@ const InterviewerDashboard: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-4">
                     {[
                         { label: 'Plan', value: planLabel, detail: planMeta, icon: CreditCard, color: 'text-amber-400' },
-                        { label: 'Total Interviews', value: studies.length, icon: FileText, color: 'text-violet-400' },
+                        { label: 'Total Interviews', value: studies.length, icon: FileText, color: 'text-brand-700' },
                         { label: 'Total Candidates', value: studies.reduce((s, st) => s + st.candidateCount, 0), icon: Users, color: 'text-blue-400' },
                         {
                             label: 'Avg Score',
@@ -537,7 +537,7 @@ const InterviewerDashboard: React.FC = () => {
                                                     type="text"
                                                     value={candidate.name}
                                                     onChange={event => updateCandidate(candidate.id, 'name', event.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
+                                                    className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors text-sm"
                                                     placeholder={`Candidate ${index + 1}`}
                                                     autoFocus={index === 0}
                                                 />
@@ -551,7 +551,7 @@ const InterviewerDashboard: React.FC = () => {
                                                     type="email"
                                                     value={candidate.email}
                                                     onChange={event => updateCandidate(candidate.id, 'email', event.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-colors text-sm"
+                                                    className="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors text-sm"
                                                     placeholder="candidate@example.com"
                                                 />
                                             </label>

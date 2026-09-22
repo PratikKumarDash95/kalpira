@@ -41,8 +41,8 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ data }) => {
         >
             {/* Header */}
             <div className="flex items-center gap-3 mb-1">
-                <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-500/10">
-                    <BarChart3 className="w-4 h-4 text-indigo-400" />
+                <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-500/10">
+                    <BarChart3 className="w-4 h-4 text-brand-700" />
                 </div>
                 <h3 className="text-lg font-serif text-white">Progress Trend</h3>
             </div>
