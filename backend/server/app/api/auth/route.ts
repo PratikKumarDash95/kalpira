@@ -17,6 +17,7 @@ import {
 } from '@/lib/auth';
 import { isHostedMode } from '@/lib/mode';
 import supabaseDb from '@/lib/supabaseDb';
+import { assertTrustedOrigin } from '@/lib/csrf';
 
 export async function POST(request: Request) {
   try {
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
 
     // Scenario 1: Email + Password Login (New User Flow)
     if (email) {
-      const { verifyPassword } = await import('@/lib/auth');
+      const { verifyPassword, hashPassword, needsPasswordRehash } = await import('@/lib/auth');
 
       // One email can own separate candidate + interviewer accounts, so the
       // login MUST be scoped to the role the user picked. Map the UI's 'user'
@@ -70,6 +71,21 @@ export async function POST(request: Request) {
 
       // Create session for this specific user (role controls token lifetime)
       const sessionRole = user.role || 'candidate';
+
+      // Transparently upgrade a pre-migration legacy hash (1000-iteration
+      // PBKDF2, "salt:hash") now that the plaintext is in hand. Best-effort —
+      // a failure here must never block a valid login.
+      if (needsPasswordRehash(user.password)) {
+        try {
+          await supabaseDb.user.update({
+            where: { id: user.id },
+            data: { password: await hashPassword(password) },
+          });
+        } catch (rehashError) {
+          console.error('Password rehash on login failed:', rehashError);
+        }
+      }
+
       const sessionToken = await createSessionToken(user.id, sessionRole);
 
       const cookieStore = await cookies();
@@ -149,8 +165,14 @@ export async function GET() {
 }
 
 // DELETE /api/auth - Logout
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
+    // CSRF: /api/auth/logout re-exports this handler as POST, and a body-less
+    // POST is a CORS "simple request" (no preflight) — without this check a
+    // cross-site page could force a logout.
+    const csrfError = assertTrustedOrigin(request);
+    if (csrfError) return csrfError;
+
     const cookieStore = await cookies();
     // Clear with the SAME domain/path/sameSite the cookie was set with, or the
     // domain-scoped (.kalpira.in) cookie survives and the session never ends.

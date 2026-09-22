@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 // Dynamic import to avoid SSR issues with Recharts
 const RechartsLineChart = dynamic(
@@ -21,11 +22,8 @@ interface ProgressChartProps {
 }
 
 function ChartSkeleton() {
-    return (
-        <div className="flex items-center justify-center h-[240px] rounded-xl bg-slate-800/30 border border-slate-700/20">
-            <div className="text-sm text-slate-600 animate-pulse">Loading chart...</div>
-        </div>
-    );
+    // Matches the chart's own height so the card does not resize when it lands.
+    return <Skeleton className="h-[240px] w-full" />;
 }
 
 const ProgressChart: React.FC<ProgressChartProps> = ({ data }) => {

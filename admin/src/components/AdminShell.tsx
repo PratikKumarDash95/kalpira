@@ -14,6 +14,7 @@ import {
     Database, UserCog, GraduationCap, MessageSquare,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/apiClient';
+import { AdminShellSkeleton } from '@/components/ui/Skeleton';
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
 
@@ -74,14 +75,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     }, [mainAppUrl]);
 
     if (authState !== 'ok') {
-        return (
-            <div className="app-shell min-h-screen flex items-center justify-center">
-                <div className="flex items-center gap-3 text-[color:var(--muted)] text-sm">
-                    <Shield size={16} className="text-brand-500" />
-                    {authState === 'denied' ? 'Redirecting to sign in…' : 'Verifying admin access…'}
-                </div>
-            </div>
-        );
+        return <AdminShellSkeleton />;
     }
 
     const active = NAV.reduce((best, item) => {

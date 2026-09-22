@@ -4,12 +4,19 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { getRequestContext } from '@/lib/researcherContext';
+import { assertTrustedOrigin } from '@/lib/csrf';
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
 
 export async function POST(request: Request) {
   try {
+    // CSRF: a multipart/form-data upload is a CORS "simple request" (no
+    // preflight), so without this a cross-site page could overwrite the
+    // signed-in user's avatar/cover.
+    const csrfError = assertTrustedOrigin(request);
+    if (csrfError) return csrfError;
+
     const { authorized, context, researcherId, error } = await getRequestContext();
     if (!authorized || !context) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });

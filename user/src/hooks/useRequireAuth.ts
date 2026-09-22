@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch } from '@/lib/apiClient';
+import { getAuthStatus } from '@/lib/authStatus';
 
 export type AuthGuardStatus = 'checking' | 'authed' | 'guest';
 
 /**
  * Client-side auth guard for pages that require a logged-in session.
- * Checks /api/auth on mount; redirects to `redirectTo` if not authenticated.
+ * Resolves the session through getAuthStatus(), which reuses a recent signed-in
+ * answer — so moving between protected pages no longer costs a fresh /api/auth
+ * round trip before anything can render. Redirects to `redirectTo` if not
+ * authenticated.
  *
  * Note: this only gates rendering in the browser. Any data these pages fetch
  * must still be protected server-side — this hook does not replace that.
@@ -20,8 +23,7 @@ export function useRequireAuth(redirectTo: string = '/login'): { status: AuthGua
   useEffect(() => {
     let cancelled = false;
 
-    apiFetch('/api/auth')
-      .then(res => res.json())
+    getAuthStatus()
       .then(data => {
         if (cancelled) return;
         if (data?.authenticated) {
@@ -40,8 +42,7 @@ export function useRequireAuth(redirectTo: string = '/login'): { status: AuthGua
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [redirectTo]);
+  }, [redirectTo, router]);
 
   return { status };
 }

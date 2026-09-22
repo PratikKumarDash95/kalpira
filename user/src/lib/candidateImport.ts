@@ -1,7 +1,6 @@
 // Shared helpers for collecting/importing interview candidates.
 // Used by both the interviewer Dashboard "Assign" modal and the Setup "Launch" step
 // so the multi-candidate + Excel/CSV import behavior stays identical in both places.
-import JSZip from 'jszip';
 
 export interface AssignmentCandidate {
     id: string;
@@ -85,6 +84,9 @@ export const parseCsvRows = (rawText: string): string[][] => {
 };
 
 export const parseXlsxRows = async (file: File): Promise<string[][]> => {
+    // Imported here rather than at module scope: jszip is only needed when a
+    // spreadsheet is actually parsed, so it stays out of the page's initial JS.
+    const { default: JSZip } = await import('jszip');
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
     const sharedXml = await zip.file('xl/sharedStrings.xml')?.async('string');
     const sharedStrings = sharedXml

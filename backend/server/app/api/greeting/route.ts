@@ -7,6 +7,7 @@ import { getInterviewProvider } from '@/lib/providers';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { StudyConfig } from '@/types';
 import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
+import { withPlatformAiConfig } from '@/lib/platformAiConfig';
 
 export async function POST(request: Request) {
   try {
@@ -39,8 +40,12 @@ export async function POST(request: Request) {
       );
     }
 
+    // The request body must never choose the AI provider or model: force a
+    // server-controlled config on EVERY path (see /api/interview for details).
     if (studyConfig.interviewerAssignment || (studyConfig.id && !studyConfig.id.startsWith('study-'))) {
       studyConfig = withInterviewerAiConfig(studyConfig);
+    } else {
+      studyConfig = withPlatformAiConfig(studyConfig);
     }
 
     // Get the configured AI provider with researcher's API keys

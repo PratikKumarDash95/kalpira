@@ -169,7 +169,9 @@ export class GeminiProvider implements AIProvider {
       };
     } catch (error) {
       console.error('Gemini interview response error:', error);
-      return { ...defaultInterviewResponse, message: `(Gemini Error: ${error instanceof Error ? error.message : String(error)}) I appreciate you sharing that. What else comes to mind?` };
+      // Never surface the raw provider/SDK error to the participant: upstream
+      // error bodies can carry request context. Detail is logged above only.
+      return defaultInterviewResponse;
     }
   }
 

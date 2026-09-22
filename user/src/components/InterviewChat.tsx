@@ -9,7 +9,7 @@ import {
   getInterviewGreeting
 } from '@/services/geminiService';
 import { InterviewMessage, InterviewPhase } from '@/types';
-import ReactMarkdown from 'react-markdown';
+import { Markdown } from '@/components/ui/Markdown';
 import {
   Send,
   Loader2,
@@ -369,7 +369,7 @@ const InterviewChat: React.FC = () => {
                   </div>
                 )}
                 <div className={`prose prose-sm max-w-none prose-invert`}>
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <Markdown>{msg.content}</Markdown>
                 </div>
               </div>
             </motion.div>

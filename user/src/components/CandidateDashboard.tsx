@@ -10,13 +10,13 @@ import {
   Building2,
   CheckCircle,
   Clock,
-  Loader2,
   Mail,
   User,
   Users,
   XCircle,
 } from 'lucide-react';
 import InterviewFeedbackWidget from '@/components/InterviewFeedbackWidget';
+import { Skeleton, SkeletonList } from '@/components/ui/Skeleton';
 
 interface CandidateInfo {
   id: string;
@@ -133,9 +133,28 @@ const CandidateDashboard: React.FC = () => {
   };
 
   if (loading) {
+    // Shape-matched placeholder instead of a centred spinner: the header and the
+    // assigned-interview list are already in place when the data lands.
     return (
-      <div className="app-shell min-h-screen flex items-center justify-center">
-        <Loader2 size={40} className="animate-spin text-brand-500" />
+      <div className="app-shell min-h-screen" role="status">
+        <span className="sr-only">Loading your dashboard…</span>
+        <div className="relative max-w-[1500px] mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-10 h-10" />
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-24" />
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-4 w-44" />
+          </div>
+          <SkeletonList rows={4} />
+        </div>
       </div>
     );
   }

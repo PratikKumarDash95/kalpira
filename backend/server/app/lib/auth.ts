@@ -352,6 +352,10 @@ const pbkdf2Async = promisify(pbkdf2);
 const PASSWORD_HASH_ALGORITHM = 'pbkdf2_sha512';
 const PASSWORD_HASH_ITERATIONS = 310000;
 const PASSWORD_HASH_BYTES = 64;
+// Pre-migration hashes ("salt:hash", no algorithm prefix) used this iteration
+// count. They are still accepted so existing accounts can sign in, but callers
+// should re-hash on a successful login — see needsPasswordRehash().
+const LEGACY_PBKDF2_ITERATIONS = 1000;
 
 /**
  * Hash a password using a versioned PBKDF2 format.
@@ -361,6 +365,16 @@ export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString('hex');
   const derivedKey = await pbkdf2Async(password, salt, PASSWORD_HASH_ITERATIONS, PASSWORD_HASH_BYTES, 'sha512');
   return `${PASSWORD_HASH_ALGORITHM}$${PASSWORD_HASH_ITERATIONS}$${salt}$${derivedKey.toString('hex')}`;
+}
+
+/**
+ * True when a stored hash predates the current versioned format — i.e. the
+ * legacy "salt:hash" form, which only verifies with 1000 PBKDF2 iterations and
+ * is cheap to crack if the hashes ever leak. On a successful password check the
+ * caller should re-hash with hashPassword() so the account migrates to 310k.
+ */
+export function needsPasswordRehash(storedHash: string): boolean {
+  return !storedHash.startsWith(`${PASSWORD_HASH_ALGORITHM}$`);
 }
 
 /**
@@ -390,10 +404,14 @@ export async function verifyPassword(password: string, storedHash: string): Prom
     return expected.length === actual.length && timingSafeEqual(expected, actual);
   }
 
+  // Legacy format ("salt:hash"), kept only so pre-migration accounts can still
+  // sign in. Login re-hashes these to the current format — see
+  // needsPasswordRehash(). All of these accounts have a password that predates
+  // the migration, so this branch can be dropped once none remain.
   const [salt, key] = storedHash.split(':');
   if (!salt || !key) return false;
 
-  const derivedKey = await pbkdf2Async(password, salt, 1000, PASSWORD_HASH_BYTES, 'sha512');
+  const derivedKey = await pbkdf2Async(password, salt, LEGACY_PBKDF2_ITERATIONS, PASSWORD_HASH_BYTES, 'sha512');
   const expected = Buffer.from(key, 'hex');
   const actual = Buffer.from(derivedKey.toString('hex'), 'hex');
 

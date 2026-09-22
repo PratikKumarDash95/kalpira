@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fonts are self-hosted by next/font in layout.tsx (see --font-sans/--font-mono
+   in tailwind.config.ts). They used to be loaded with an @import here, which the
+   browser had to resolve from fonts.googleapis.com BEFORE it could paint anything
+   — a third-party round trip on every page load of every page. */
 
 @tailwind base;
 @tailwind components;
@@ -1120,6 +1123,55 @@ select:focus {
 .kalpira-light .bg-rose-500,
 .kalpira-light .bg-rose-600 {
   color: #ffffff !important;
+}
+
+/* ============================================================
+   Pass 4: restore elevation on flattened panels
+   ------------------------------------------------------------
+   Pass 1 repaints the old dark panels onto a white surface but
+   leaves them with nothing but a hairline border, so every card
+   authored against the dark palette reads as a flat white box
+   with no sense of depth. This gives the page-level panels the
+   standard card shadow back.
+
+   Deliberately narrow — it covers the panel tier only, because
+   this app has ~200 bubble- and tile-shaped elements and giving
+   every one a shadow reads as noise and stacks shadows inside
+   the cards that contain them:
+     • rounded-2xl / 3xl / card only. The rounded-xl tier is left
+       flat: it is shared by small tiles, table rows, inputs and
+       chat bubbles.
+     • bubble corners (rounded-tl/tr/bl/br-*) are excluded — those
+       are speech bubbles carrying a tail.
+     • dashed empty states are excluded; a shadow beneath a dashed
+       placeholder box looks like a mistake.
+     • :not([class*='shadow-']) — any element that already asked
+       for its own shadow (shadow-glow, shadow-lg, or the .surface
+       and .stat-tile utilities) keeps it. An attribute selector
+       outranks Tailwind's single-class utilities, so without this
+       an intentional glow would be silently replaced.
+     • form controls can never match — the element list is
+       div/section/article/li only. */
+.kalpira-light
+  :is(div, section, article, li):is(
+    [class*='bg-slate-'], [class*='bg-stone-'], [class*='bg-gray-'],
+    [class*='bg-zinc-'], [class*='bg-neutral-']
+  ):is([class*='rounded-2xl'], [class*='rounded-3xl'], [class*='rounded-card'])
+  :not([class*='shadow-'])
+  :not([class*='rounded-tl-']):not([class*='rounded-tr-'])
+  :not([class*='rounded-bl-']):not([class*='rounded-br-'])
+  :not([class*='border-dashed'])
+  /* The elevation utilities carry their own shadow — and .stat-tile animates it
+     on hover, which this rule's specificity would otherwise freeze. */
+  :not(.surface):not(.stat-tile):not(.skeleton-card) {
+  box-shadow: var(--shadow-card);
+}
+
+/* Full-bleed page roots are deliberately flat — see the .min-h-screen rule in
+   Pass 1. Restated here so the panel rule above cannot re-elevate them. */
+.kalpira-light .min-h-screen[class*='rounded-2xl'],
+.kalpira-light .min-h-screen[class*='rounded-3xl'] {
+  box-shadow: none !important;
 }
 
 @keyframes kalpira-skeleton {

@@ -1,5 +1,6 @@
 'use client';
 import { apiFetch, apiUrl } from '@/lib/apiClient';
+import { invalidateAuthStatus } from '@/lib/authStatus';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -172,6 +173,8 @@ const Login: React.FC = () => {
           return;
         }
 
+        // A session now exists, so the cached auth answer must not outlive it.
+        invalidateAuthStatus();
         clearEmailDraft();
         clearRoleDraft();
         router.push('/admin');
@@ -203,6 +206,8 @@ const Login: React.FC = () => {
         }
       }
 
+      // A session now exists, so the cached auth answer must not outlive it.
+      invalidateAuthStatus();
       const defaultRedirect = selectedRole === 'interviewer' ? '/interviewer/dashboard' : '/studies';
       const rawRedirect = searchParams.get('redirect') || defaultRedirect;
       const redirect = isSafeRoleRedirect(rawRedirect, selectedRole) ? rawRedirect : defaultRedirect;

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store';
 import { generateInterviewResponse, getInterviewGreeting } from '@/services/geminiService';
 import { InterviewMessage, InterviewPhase } from '@/types';
-import ReactMarkdown from 'react-markdown';
+import { Markdown } from '@/components/ui/Markdown';
 import {
     Mic, MicOff, Video, VideoOff, Phone, Send, Bot, User,
     Loader2, CheckCircle, MessageSquare, Volume2, VolumeX,
@@ -730,7 +730,7 @@ const VideoInterview: React.FC = () => {
                                             {msg.role === 'ai' ? <Bot size={14} className="text-white" /> : <User size={14} className="text-slate-300" />}
                                         </div>
                                         <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${msg.role === 'ai' ? 'bg-slate-800 text-slate-200 rounded-tl-sm' : 'bg-brand-600/20 text-slate-200 border border-brand-500/20 rounded-tr-sm'}`}>
-                                            <ReactMarkdown className="prose prose-invert prose-sm max-w-none">{msg.content}</ReactMarkdown>
+                                            <Markdown className="prose prose-invert prose-sm max-w-none">{msg.content}</Markdown>
                                         </div>
                                     </motion.div>
                                 ))}

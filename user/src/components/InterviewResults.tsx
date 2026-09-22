@@ -10,6 +10,7 @@ import {
     Target, TrendingUp, Brain, Zap, MessageSquare, Clock,
     BarChart2, Award, BookOpen, Code, Users, Layers
 } from 'lucide-react';
+import { Skeleton, SkeletonList, SkeletonStatRow } from '@/components/ui/Skeleton';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ScoreBreakdown {
@@ -402,12 +403,31 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
     };
 
     if (loading) {
+        // Scoring can take a while, so show the results layout (hero ring, score
+        // tiles, panels) rather than a spinner — the page reads as nearly there.
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}>
-                    <BarChart2 size={40} className="text-brand-700" />
-                </motion.div>
-                <p className="text-slate-400 text-sm">Analyzing your performance...</p>
+            <div className="min-h-screen bg-slate-950 text-white" role="status">
+                <span className="sr-only">Analyzing your performance…</span>
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-8">
+                    <div className="flex items-center justify-between mb-8">
+                        <Skeleton className="h-4 w-40" />
+                        <div className="flex gap-2">
+                            <Skeleton className="h-8 w-28" />
+                            <Skeleton className="h-8 w-32" />
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-8 w-full justify-center sm:justify-start">
+                        <Skeleton className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 rounded-full" />
+                        <div className="space-y-3 w-full">
+                            <Skeleton className="h-9 w-64" />
+                            <Skeleton className="h-4 w-48" />
+                        </div>
+                    </div>
+                </div>
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-10">
+                    <SkeletonStatRow count={3} className="mb-6" />
+                    <SkeletonList rows={3} />
+                </div>
             </div>
         );
     }

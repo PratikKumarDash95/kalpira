@@ -13,6 +13,7 @@ import {
   AIInterviewResponse
 } from '@/types';
 import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
+import { withPlatformAiConfig } from '@/lib/platformAiConfig';
 
 // Payload size limits to prevent abuse
 const MAX_HISTORY_MESSAGES = 100;
@@ -96,8 +97,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // The request body must never choose the AI provider or model: force a
+    // server-controlled config on EVERY path. Persisted studies (and assignment
+    // links) use the interviewer config; practice/self-service studies use the
+    // platform config. Practice ids are `study-…`, which used to fall through
+    // here with the client's aiProvider/aiModel untouched.
     if (studyConfig.interviewerAssignment || (studyConfig.id && !studyConfig.id.startsWith('study-'))) {
       studyConfig = withInterviewerAiConfig(studyConfig);
+    } else {
+      studyConfig = withPlatformAiConfig(studyConfig);
     }
 
     // Get the configured AI provider with researcher's API keys

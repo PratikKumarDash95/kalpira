@@ -485,7 +485,7 @@ const InterviewerDashboard: React.FC = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 12, scale: 0.98 }}
                             onSubmit={handleAssignCandidate}
-                            className="w-full max-w-3xl surface p-5 shadow-2xl shadow-black/40"
+                            className="w-full max-w-3xl surface p-5 shadow-card-lg"
                         >
                             <div className="flex items-start justify-between gap-4 mb-5">
                                 <div className="min-w-0">

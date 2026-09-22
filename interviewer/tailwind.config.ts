@@ -60,10 +60,13 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        // One family across every Kalpira surface (all roles/apps).
-        sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        // One family across every Kalpira surface (all roles/apps). The leading
+        // var() is injected by next/font in layout.tsx — self-hosted, so there is
+        // no render-blocking request to fonts.googleapis.com. The literal family
+        // names stay as fallbacks for any surface rendered without that class.
+        sans: ['var(--font-sans)', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        display: ['var(--font-sans)', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
         brand,

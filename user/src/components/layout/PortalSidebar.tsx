@@ -14,6 +14,7 @@ import {
   LogOut, Menu, X, ChevronRight,
 } from 'lucide-react';
 import { apiFetch, clearSessionDrafts } from '@/lib/apiClient';
+import { invalidateAuthStatus } from '@/lib/authStatus';
 import { BrandMark } from './BrandMark';
 
 export type PortalNavKey = 'dashboard' | 'studies' | 'billing' | 'profile';
@@ -47,6 +48,9 @@ export default function PortalSidebar({
     try {
       await apiFetch('/api/auth', { method: 'DELETE' });
     } finally {
+      // The session just ended, so drop the cached auth answer — otherwise the
+      // next protected page would render from a stale "signed in" result.
+      invalidateAuthStatus();
       clearSessionDrafts();
       router.push(portalPath('/login'));
     }

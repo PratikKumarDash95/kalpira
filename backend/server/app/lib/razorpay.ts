@@ -63,9 +63,12 @@ export async function createRazorpayOrder(params: {
     });
 
     if (!response.ok) {
+        // Log the upstream body for diagnosis, but keep it out of the message:
+        // PaymentError.message is returned verbatim to the API caller.
         const data = await response.text().catch(() => '');
+        console.error(`Razorpay order creation failed (${response.status}):`, data || 'Unknown error');
         throw new PaymentError(
-            `Razorpay order creation failed (${response.status}): ${data || 'Unknown error'}`,
+            'Could not start the payment. Please try again.',
             response.status,
         );
     }

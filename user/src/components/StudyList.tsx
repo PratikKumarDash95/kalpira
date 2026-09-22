@@ -322,7 +322,7 @@ const StudyList: React.FC = () => {
                     <MoreVertical size={16} />
                   </button>
                   {menuOpenId === study.id && (
-                    <div className="absolute right-0 mt-1 w-48 bg-stone-800 border border-stone-700 rounded-xl shadow-lg z-10 overflow-hidden">
+                    <div className="absolute right-0 mt-1 w-48 bg-stone-800 border border-stone-700 rounded-xl shadow-card-lg z-10 overflow-hidden">
                       <button
                         onClick={() => {
                           router.push(`/studies/${study.id}`);

@@ -12,6 +12,7 @@ import { getRequestContext } from '@/lib/researcherContext';
 import supabaseDb from '@/lib/supabaseDb';
 import { isInterviewClosed } from '@/lib/interviewDeadline';
 import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
+import { withPlatformAiConfig } from '@/lib/platformAiConfig';
 import { TOKEN_DURATION_DAYS, TOKEN_DURATION_SECONDS } from '@/lib/auth';
 
 // Get signing secret from environment
@@ -59,8 +60,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Force a server-controlled AI provider/model before the config is signed
+    // into the token: the request body must never choose them. Persisted studies
+    // (and assignments) use the interviewer config, practice studies the platform
+    // config — previously practice ids (`study-…`) kept the client's values.
     if (assignment || studyConfig.interviewerAssignment || (studyConfig.id && !studyConfig.id.startsWith('study-'))) {
       studyConfig = withInterviewerAiConfig(studyConfig);
+    } else {
+      studyConfig = withPlatformAiConfig(studyConfig);
     }
 
     const ownerId = researcherId || context.userId;

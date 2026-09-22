@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { StoredInterview } from '@/types';
 import { getInterview } from '@/services/storageService';
-import ReactMarkdown from 'react-markdown';
+import { Markdown } from '@/components/ui/Markdown';
 import {
   ArrowLeft,
   Download,
@@ -307,7 +307,7 @@ const InterviewDetail: React.FC<InterviewDetailProps> = ({ interviewId }) => {
                       </span>
                     </div>
                     <div className="prose prose-sm max-w-none prose-invert">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <Markdown>{msg.content}</Markdown>
                     </div>
                   </div>
                 </div>

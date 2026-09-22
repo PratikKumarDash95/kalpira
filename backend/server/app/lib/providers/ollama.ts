@@ -122,7 +122,8 @@ export class OllamaProvider implements AIProvider {
             };
         } catch (error) {
             console.error('Ollama interview response error:', error);
-            return { ...defaultInterviewResponse, message: `(Ollama Error: ${error instanceof Error ? error.message : String(error)}) I appreciate you sharing that. What else comes to mind?` };
+            // Never surface the raw provider error to the participant. Logged above only.
+            return defaultInterviewResponse;
         }
     }
 
