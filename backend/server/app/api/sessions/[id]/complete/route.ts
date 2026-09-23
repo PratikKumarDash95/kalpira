@@ -27,21 +27,47 @@ export async function POST(
             return NextResponse.json({ success: true, skipped: true });
         }
 
+        // ── Who may complete this session ────────────────────────────────────
+        // Same rule as `save-response`, and the same reasoning: every persisted
+        // session has an owner, because `sessions/start` hands an anonymous caller a
+        // `guest-…` id rather than a row, and those are short-circuited above.
+        //
+        // This route does more than its name suggests. It closes the session, writes
+        // the ScoreBreakdown, and asks the measurement engine to recompute the
+        // owner's ability profile. Leaving it open meant an unauthenticated caller
+        // who knew a practice session's id could end a live interview early and
+        // move a real person's measured competencies using responses they had not
+        // written. It was wrapped in `if (session.studyId)`, so that was exactly the
+        // shape of session it did not guard.
+        //
+        // Ownership alone, with no role test, for the same reason as the sibling
+        // route: a self-practice session is most often owned by an interviewer, and
+        // requiring role 'candidate' here would lock out the people who use it.
+        const authUser = await getAuthUser();
+        const isSessionOwner = Boolean(authUser?.id && session.userId && session.userId === authUser.id);
+
         if (session.studyId) {
-            const authUser = await getAuthUser();
-            if (authUser?.id && authUser.role === 'candidate' && session.userId === authUser.id) {
+            if (isSessionOwner && authUser?.role === 'candidate') {
                 // Authenticated candidate owns this assigned session.
             } else {
-            const participantAuth = await getParticipantRequestContext(request);
-            if (
-                !participantAuth.valid ||
-                !participantAuth.context ||
-                participantAuth.studyId !== session.studyId ||
-                participantAuth.context.userId !== session.study?.userId
-            ) {
-                return NextResponse.json({ error: 'Valid participant link required for this session' }, { status: 401 });
+                const participantAuth = await getParticipantRequestContext(request);
+                if (
+                    !participantAuth.valid ||
+                    !participantAuth.context ||
+                    participantAuth.studyId !== session.studyId ||
+                    participantAuth.context.userId !== session.study?.userId
+                ) {
+                    return NextResponse.json(
+                        { error: 'Valid participant link required for this session' },
+                        { status: 401 }
+                    );
+                }
             }
-            }
+        } else if (!isSessionOwner) {
+            return NextResponse.json(
+                { error: 'This session belongs to another user' },
+                { status: 401 }
+            );
         }
 
         const responses = session.responses;
