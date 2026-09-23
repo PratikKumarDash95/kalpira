@@ -1,6 +1,6 @@
 // ============================================
-// guards.ts — who may see or do what, for the integrity routes
-// Feature 3 — Integrity & Authenticity Suite
+// sessionAccess.ts — who may see or do what, for any route that addresses one session
+// The rule itself predates Feature 3; the paths it serves now do not.
 // ============================================
 //
 // One implementation of the ownership rule, shared by six routes. Writing it once is
@@ -36,10 +36,10 @@
 // not exist or the caller simply may not see it — so probing cannot enumerate.
 
 import { NextResponse } from 'next/server';
-import supabaseDb from '../supabaseDb';
-import { getAuthUser } from '../accessControl';
-import { getAdminUser, requireAdmin } from '../adminAuth';
-import { getParticipantRequestContext } from '../researcherContext';
+import supabaseDb from './supabaseDb';
+import { getAuthUser } from './accessControl';
+import { getAdminUser, requireAdmin } from './adminAuth';
+import { getParticipantRequestContext } from './researcherContext';
 
 export interface SessionAccess {
     /** String discriminant, not a boolean: this repo compiles with `strict: false`, where

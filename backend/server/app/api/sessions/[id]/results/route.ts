@@ -1,11 +1,12 @@
 // GET /api/sessions/[id]/results — Return full session data for results page
 import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
+import { resolveSessionAccess } from '@/lib/sessionAccess';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-    _request: Request,
+    request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -14,6 +15,22 @@ export async function GET(
         if (sessionId.startsWith('guest-') || sessionId.startsWith('fallback-')) {
             return NextResponse.json({ error: 'Guest session — no DB data' }, { status: 404 });
         }
+
+        // ── Who may read these results ───────────────────────────────────────
+        // This route had NO authorization at all: anyone holding a session id got
+        // the candidate's verbatim answers, all five scores, the AI feedback and
+        // the ideal answers. Session ids are UUIDv4 so they cannot be guessed, but
+        // they travel — in the address bar of a page the candidate is told to
+        // share, in browser history on a shared machine, in a proxy log.
+        //
+        // No participant link is accepted here, deliberately. The link flow ends at
+        // synthesis and export and never reaches this page; `VideoInterview`
+        // navigates to `/dashboard` on completion. The only navigations to
+        // `/results/:id` come from `CandidateDashboard` and `allinterviews`, both of
+        // which are signed-in screens. A link would also grant read on every session
+        // in its study, which is broader than "your own results".
+        const access = await resolveSessionAccess(request, sessionId);
+        if (access.state === 'denied') return access.response;
 
         const session = await supabaseDb.interviewSession.findUnique({
             where: { id: sessionId },

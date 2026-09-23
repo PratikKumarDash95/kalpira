@@ -35,7 +35,7 @@
 // ============================================
 
 import { NextResponse } from 'next/server';
-import { resolveSessionAccess } from '@/lib/integrity/guards';
+import { resolveSessionAccess } from '@/lib/sessionAccess';
 import { recordEvents } from '@/lib/integrity/integrityService';
 import type { RawIntegrityEvent } from '@/lib/integrity/proctoringMath';
 

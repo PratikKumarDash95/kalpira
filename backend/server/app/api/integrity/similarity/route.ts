@@ -32,7 +32,7 @@
 // ============================================
 
 import { NextResponse } from 'next/server';
-import { resolveStudyAccess } from '@/lib/integrity/guards';
+import { resolveStudyAccess } from '@/lib/sessionAccess';
 import supabaseDb from '@/lib/supabaseDb';
 import { SIMILARITY_THRESHOLD, runStudySimilarity } from '@/lib/integrity/integrityService';
 

@@ -67,29 +67,44 @@ export async function GET(request: Request) {
     const limit = Math.min(Math.max(Number(searchParams.get('limit') || 50), 1), 100);
     const offset = Math.max(Number(searchParams.get('offset') || 0), 0);
 
-    // Build strict query based on role
     const where: any = {};
 
-    if (studyId) {
-      where.studyId = studyId;
+    // Build strict query based on role.
+    //
+    // The ownership scope is not optional. This block used to run only `if (ownerId)`,
+    // so a caller whose identity did not resolve left `where` empty and the query
+    // returned every session in the database — the "no filter means everything"
+    // trap. A missing owner is now a refusal rather than a fall-through.
+    const ownerId = researcherId || context.userId;
+    if (!ownerId) {
+      return NextResponse.json({ interviews: [] });
     }
 
-    const ownerId = researcherId || context.userId;
-    if (ownerId) {
-      // The Supabase shim cannot evaluate nested relation filters before includes load.
-      // Resolve owned study IDs first, then constrain sessions by studyId.
-      const ownedStudies = await supabaseDb.study.findMany({
-        where: { userId: ownerId },
-        select: { id: true },
-      });
+    // The Supabase shim cannot evaluate nested relation filters before includes load.
+    // Resolve owned study IDs first, then constrain sessions by studyId.
+    const ownedStudies = await supabaseDb.study.findMany({
+      where: { userId: ownerId },
+      select: { id: true },
+    });
 
-      const ownedStudyIds = ownedStudies.map((study: { id: string }) => study.id);
+    const ownedStudyIds = ownedStudies.map((study: { id: string }) => study.id);
 
-      if (ownedStudyIds.length === 0) {
+    if (ownedStudyIds.length === 0) {
+      return NextResponse.json({ interviews: [] });
+    }
+
+    // A caller-supplied studyId must NARROW this query, never replace the scope.
+    // It used to be assigned straight into `where`, which discarded the ownership
+    // filter entirely: any user owning one study could pass a stranger's studyId
+    // and read that study's full transcripts, names and emails. A foreign id is
+    // treated as "no such study for you", which leaks no more than an empty list.
+    if (studyId) {
+      if (!ownedStudyIds.includes(studyId)) {
         return NextResponse.json({ interviews: [] });
       }
-
-      where.studyId = studyId ? studyId : { in: ownedStudyIds };
+      where.studyId = studyId;
+    } else {
+      where.studyId = { in: ownedStudyIds };
     }
 
     await autoCompleteExpiredSessions(where);

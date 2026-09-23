@@ -34,7 +34,7 @@
 // ============================================
 
 import { NextResponse } from 'next/server';
-import { resolveSessionAccess } from '@/lib/integrity/guards';
+import { resolveSessionAccess } from '@/lib/sessionAccess';
 import { redactForCandidate, sessionIntegrity } from '@/lib/integrity/integrityService';
 
 export const dynamic = 'force-dynamic';

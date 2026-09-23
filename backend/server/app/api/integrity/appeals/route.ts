@@ -35,7 +35,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/accessControl';
 import { getAdminUser } from '@/lib/adminAuth';
-import { resolveSessionAccess } from '@/lib/integrity/guards';
+import { resolveSessionAccess } from '@/lib/sessionAccess';
 import { listAppeals, submitAppeal } from '@/lib/integrity/integrityService';
 import supabaseDb from '@/lib/supabaseDb';
 
