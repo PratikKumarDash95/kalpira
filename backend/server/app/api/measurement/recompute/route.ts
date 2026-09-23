@@ -22,6 +22,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAuthUser } from '@/lib/accessControl';
+import { assertTrustedOrigin } from '@/lib/csrf';
 import { recomputeUserAbilities } from '@/lib/measurement/abilityService';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,16 @@ const RecomputeRequestSchema = z.object({
     sessionId: z.string().min(1).optional(),
 });
 
+// The body is read with `request.text()` and an empty one is accepted (`{}`,
+// which then defaults to the caller's own id). That is what makes this a CORS
+// "simple request" in practice: a cross-site form POST with no fields parses
+// cleanly here, so the preflight that a JSON body would have forced never
+// happens, and the session cookie — SameSite=None in production — is attached.
+// The guard goes before the body is read, since the work itself is the cost.
 export async function POST(request: Request) {
+    const csrfError = assertTrustedOrigin(request);
+    if (csrfError) return csrfError;
+
     const authUser = await getAuthUser();
     if (!authUser) {
         return NextResponse.json({ error: 'Login required' }, { status: 401 });

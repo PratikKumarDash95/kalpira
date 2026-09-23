@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/accessControl';
+import { assertTrustedOrigin } from '@/lib/csrf';
 import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,15 @@ function parseConfig(configJSON?: string | null) {
   }
 }
 
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
+// Body-less POST, therefore a CORS "simple request" that never preflights —
+// see the note in candidate/sessions/[id]/reject for the full mechanism. The
+// session cookie rides along cross-site in production, so without this check a
+// page the candidate visits could claim their assigned interview and bind the
+// session row to their own account.
+export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const csrfError = assertTrustedOrigin(request);
+  if (csrfError) return csrfError;
+
   const authUser = await getAuthUser();
 
   if (!authUser?.id || authUser.role !== 'candidate') {

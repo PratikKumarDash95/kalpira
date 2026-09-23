@@ -3,15 +3,28 @@ import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
+import { assertTrustedOrigin } from '@/lib/csrf';
 import { recomputeUserAbilities } from '@/lib/measurement/abilityService';
 
 export const dynamic = 'force-dynamic';
 
+// No body is read here, which makes this a CORS "simple request": the browser
+// sends it without a preflight, and in production the session cookie is
+// SameSite=None (the API is on a different host from the frontends), so it is
+// attached cross-site. The ownership rules below stop a stranger from ending
+// someone else's interview, but they do nothing about a page that borrows the
+// *victim's own* cookie — which is the whole of CSRF. Left open, the failure is
+// the one the comment below describes: a live interview closed early, a
+// ScoreBreakdown written from partial responses, and a real person's measured
+// competencies recomputed from them — triggered by visiting a page.
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const csrfError = assertTrustedOrigin(request);
+        if (csrfError) return csrfError;
+
         const { id: sessionId } = await params;
 
         if (sessionId.startsWith('guest-') || sessionId.startsWith('fallback-')) {

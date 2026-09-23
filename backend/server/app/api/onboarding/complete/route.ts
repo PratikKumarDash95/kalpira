@@ -5,10 +5,18 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { getRequestContext } from '@/lib/researcherContext';
+import { assertTrustedOrigin } from '@/lib/csrf';
 import { updateResearcher } from '@/lib/platformDb';
 import { isHostedMode } from '@/lib/mode';
 
-export async function POST() {
+// Body-less POST, so it is a CORS "simple request" and never preflights; the
+// session cookie is SameSite=None in production and rides along cross-site.
+// Without the origin check, a page the researcher visits could flip their own
+// onboarding state with the researcher's own cookie.
+export async function POST(request: Request) {
+  const csrfError = assertTrustedOrigin(request);
+  if (csrfError) return csrfError;
+
   if (!isHostedMode()) {
     return NextResponse.json({ error: 'Only available in hosted mode' }, { status: 404 });
   }

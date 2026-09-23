@@ -35,13 +35,24 @@
 // ============================================
 
 import { NextResponse } from 'next/server';
+import { assertTrustedOrigin } from '@/lib/csrf';
 import { resolveSessionAccess } from '@/lib/sessionAccess';
 import { analyzeSessionIntegrity } from '@/lib/integrity/integrityService';
 
 export const dynamic = 'force-dynamic';
 
+// Body-less POST, so it is a CORS "simple request" that never preflights and
+// carries the caller's SameSite=None cookie cross-site. `resolveSessionAccess`
+// answers "may *this caller* recompute", which is the right question for
+// authorization and the wrong one for CSRF: the forged request comes with the
+// victim's cookie, so it passes. Recomputation is not free — it spends model
+// work and rewrites the stored report — so it is checked here, before the
+// access resolution does any work of its own.
 export async function POST(request: Request, { params }: { params: Promise<{ sessionId: string }> }) {
     try {
+        const csrfError = assertTrustedOrigin(request);
+        if (csrfError) return csrfError;
+
         const { sessionId } = await params;
 
         // No participant link: recomputation spends work, and a link holder sitting an

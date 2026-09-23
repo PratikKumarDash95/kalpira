@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/accessControl';
+import { assertTrustedOrigin } from '@/lib/csrf';
 import supabaseDb from '@/lib/supabaseDb';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,16 @@ export const dynamic = 'force-dynamic';
 // marked with mode: 'rejected' — a terminal state (see TERMINAL_SESSION_MODES
 // in lib/kv.ts) so the interviewer can clearly see the candidate rejected it,
 // and it no longer blocks study deletion or can be started/rejoined.
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
+//
+// The request is body-less, so a cross-site page can issue it as a CORS
+// "simple request" that never preflights, and in production the session cookie
+// is SameSite=None — the API is on another host from the frontends — so the
+// browser attaches it. Without the origin check below, any page a signed-in
+// candidate visits could push them into this terminal state.
+export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const csrfError = assertTrustedOrigin(request);
+  if (csrfError) return csrfError;
+
   const authUser = await getAuthUser();
 
   if (!authUser?.id || authUser.role !== 'candidate') {

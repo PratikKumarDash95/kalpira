@@ -22,6 +22,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/adminAuth';
+import { assertTrustedOrigin } from '@/lib/csrf';
 import { calibrateItemBank } from '@/lib/measurement/calibration';
 import { MIN_SAMPLE_SIZE } from '@/lib/measurement/calibrationMath';
 
@@ -32,7 +33,16 @@ const CalibrateRequestSchema = z.object({
     minSampleSize: z.number().int().min(2).max(10_000).optional(),
 });
 
+// Admin-only, but still CSRF-able, and the fix is the same one line. The body is
+// read with `request.text()` and an empty one is accepted (`{}` = calibrate the
+// whole bank), so a cross-site form POST with no fields makes it all the way
+// through — no preflight to refuse it, and the admin's own SameSite=None cookie
+// attached. Admin rights raise the stakes here rather than lowering them: this
+// rewrites item parameters that every candidate's score depends on.
 export async function POST(request: Request) {
+    const csrfError = assertTrustedOrigin(request);
+    if (csrfError) return csrfError;
+
     const denied = await requireAdmin();
     if (denied) return denied;
 
