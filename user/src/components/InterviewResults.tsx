@@ -8,7 +8,7 @@ import {
     Trophy, Star, ChevronDown, ChevronUp, ArrowRight,
     RefreshCw, Home, CheckCircle, AlertCircle, Lightbulb,
     Target, TrendingUp, Brain, Zap, MessageSquare, Clock,
-    BarChart2, Award, BookOpen, Code, Users, Layers
+    BarChart2, Award, BookOpen, Code, Users, Layers, Activity
 } from 'lucide-react';
 import { Skeleton, SkeletonList, SkeletonStatRow } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
@@ -482,6 +482,13 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                         <div className="flex gap-2">
                             <button onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition-colors border border-slate-700">
                                 <Home size={14} /> Dashboard
+                            </button>
+                            {/* Feature 2: the delivery report for this session. Shown
+                                unconditionally — an interview taken by typing has a
+                                report that says so, which is more use than a button
+                                that appears and disappears with no explanation. */}
+                            <button onClick={() => router.push(`/delivery/${sessionId}`)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition-colors border border-slate-700">
+                                <Activity size={14} /> How you delivered it
                             </button>
                             <button onClick={() => router.push('/')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm transition-colors">
                                 <RefreshCw size={14} /> New Interview

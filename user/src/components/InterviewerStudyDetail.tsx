@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Users, BarChart2, ChevronDown, ChevronUp,
     Loader2, AlertTriangle, Mail, Clock, CheckCircle, XCircle,
-    TrendingUp, MessageSquare, Brain, Zap, Target, BookOpen
+    TrendingUp, MessageSquare, Brain, Zap, Target, BookOpen, Activity
 } from 'lucide-react';
 import PageShell from '@/components/layout/PageShell';
 
@@ -296,6 +296,24 @@ const InterviewerStudyDetail: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 )}
+
+                                                {/* Feature 2: how the answers were actually delivered.
+                                                    Shown beside the score, not instead of it — the
+                                                    measurements are evidence, and the report behind
+                                                    this link is where each one can be checked. */}
+                                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-4">
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium text-slate-200">How they delivered it</p>
+                                                        <p className="text-xs text-slate-500">
+                                                            Pace, pauses, fillers and picture quality, each with the number of answers behind it.
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => router.push(`${portalPath('/delivery')}?sessionId=${encodeURIComponent(candidate.sessionId)}`)}
+                                                        className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700">
+                                                        <Activity size={14} /> Delivery profile
+                                                    </button>
+                                                </div>
 
                                                 {!candidate.scoreBreakdown && candidate.qaItems.length === 0 && (
                                                     <p className="text-sm text-slate-600 text-center py-4">No detailed results available yet.</p>

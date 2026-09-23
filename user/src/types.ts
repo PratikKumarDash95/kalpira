@@ -126,6 +126,11 @@ export interface StudyConfig {
   aiModel?: string;               // Optional, defaults to provider-specific env or default
   speechToTextEnabled?: boolean;  // Whether voice input is enabled for the interview UI
   textToSpeechEnabled?: boolean;  // Whether AI voice playback is enabled for the interview UI
+  // Feature 2 — whether how an answer was delivered is measured (pace, pauses,
+  // vocal variation, picture quality) alongside what it said. Absent means enabled,
+  // so existing studies keep working; a study owner who does not want it — or whose
+  // ethics approval does not cover it — turns it off here and no capture runs at all.
+  deliveryAnalysisEnabled?: boolean;
   consentText: string;
   createdAt: number;
   // Self-service kind: distinguishes a user's own custom study from a self-practice

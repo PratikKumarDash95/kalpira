@@ -8,6 +8,7 @@ import { useStore } from '@/store';
 import { generateInterviewResponse, getInterviewGreeting } from '@/services/geminiService';
 import { InterviewMessage, InterviewPhase } from '@/types';
 import { Markdown } from '@/components/ui/Markdown';
+import { createDeliveryCapture, type DeliveryCapture } from '@/lib/deliveryCapture';
 import {
     Mic, MicOff, Video, VideoOff, Phone, Send, Bot, User,
     Loader2, CheckCircle, MessageSquare, Volume2, VolumeX,
@@ -71,6 +72,8 @@ const VideoInterview: React.FC = () => {
     const [interviewError, setInterviewError] = useState<string | null>(null);
     const [hasValidAiExchange, setHasValidAiExchange] = useState(false);
     const speechToTextEnabled = studyConfig?.speechToTextEnabled !== false;
+    // Feature 2: absent means enabled, so existing studies are unaffected.
+    const deliveryAnalysisEnabled = studyConfig?.deliveryAnalysisEnabled !== false;
 
     // ── Refs ──────────────────────────────────────────────────────────────────────
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -89,6 +92,8 @@ const VideoInterview: React.FC = () => {
     // while TTS plays (otherwise the speaker audio loops back into the mic).
     const aiSpeakingRef = useRef(false);
     const listeningDesiredRef = useRef(false);
+    // Feature 2: raw delivery capture. Measures, never scores — see deliveryCapture.ts.
+    const deliveryCaptureRef = useRef<DeliveryCapture | null>(null);
 
     // ── Scroll chat to bottom ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -168,8 +173,30 @@ const VideoInterview: React.FC = () => {
         };
     }, []);
 
-    const toggleCamera = () => {
-        const videoTracks = streamRef.current?.getVideoTracks();
+    // ── Delivery Capture (Feature 2) ──────────────────────────────────────────────
+    // Created once and pointed at the live stream through getters, because the
+    // stream arrives asynchronously and the candidate can toggle the camera or
+    // microphone at any point. Nothing here touches the interview: the capture only
+    // reads, and every failure inside it is recorded as a note rather than thrown.
+    useEffect(() => {
+        // A study that has delivery analysis switched off gets no capture object at
+        // all, rather than one that is created and then ignored. Nothing to disable
+        // is a stronger guarantee than something disabled.
+        if (!deliveryAnalysisEnabled) return;
+
+        const capture = createDeliveryCapture({
+            getStream: () => streamRef.current,
+            getVideoElement: () => videoRef.current,
+            isAiSpeaking: () => aiSpeakingRef.current,
+        });
+        deliveryCaptureRef.current = capture;
+        return () => {
+            capture.dispose();
+            deliveryCaptureRef.current = null;
+        };
+    }, [deliveryAnalysisEnabled]);
+
+    const toggleCamera = () => {        const videoTracks = streamRef.current?.getVideoTracks();
         videoTracks?.forEach(t => { t.enabled = isCameraOff; });
         setIsCameraOff(!isCameraOff);
     };
@@ -372,6 +399,9 @@ const VideoInterview: React.FC = () => {
                 const msg: InterviewMessage = { id: `msg-${Date.now()}`, role: 'ai', content: greeting, timestamp: Date.now() };
                 addMessage(msg);
                 setLastAiQuestion(greeting);
+                // The answer window opens now. Whether the greeting is spoken decides
+                // whether response latency can be measured at all.
+                deliveryCaptureRef.current?.beginAnswer({ latencyMeasurable: isTTSEnabled });
                 speak(greeting);
             } catch { /* silent */ }
             finally { if (mounted) setAiThinking(false); }
@@ -388,6 +418,12 @@ const VideoInterview: React.FC = () => {
 
         const now = Date.now();
         if (lastSentTextRef.current === text && now - lastSentAtRef.current < 3000) return;
+
+        // Feature 2: the answer ended when the candidate submitted it, not when the
+        // server finished with it. Closing the window here keeps the several seconds
+        // spent generating the next question out of the recording — otherwise that
+        // wait would be counted as the candidate sitting in silence.
+        const delivery = deliveryCaptureRef.current?.endAnswer() ?? null;
 
         isSendingRef.current = true;
         lastSentTextRef.current = text;
@@ -411,6 +447,12 @@ const VideoInterview: React.FC = () => {
 
             if (response.errorCode === 'provider_unavailable') {
                 setInterviewError(response.message);
+                // The same question is still on screen and the candidate will answer
+                // it again, so the window is reopened. Latency is not claimed for a
+                // second attempt: after a failed turn there is no reliable moment at
+                // which the question ended, and an invented latency is worse than an
+                // absent one.
+                deliveryCaptureRef.current?.beginAnswer({ latencyMeasurable: false });
                 return;
             }
 
@@ -427,6 +469,8 @@ const VideoInterview: React.FC = () => {
             addMessage(aiMsg);
             setLastAiQuestion(response.message);
             setHasValidAiExchange(true);
+            // The next answer's window opens here, before the question is spoken.
+            deliveryCaptureRef.current?.beginAnswer({ latencyMeasurable: isTTSEnabled });
             speak(response.message);
 
             // Save to DB (fire-and-forget, non-blocking)
@@ -455,6 +499,11 @@ const VideoInterview: React.FC = () => {
                         feedback: `Good response. ${dbScores.communicationScore > 70 ? 'Clear communication.' : 'Try to be more structured.'}`,
                         idealAnswer: '',
                         improvementTip: dbScores.depthScore < 60 ? 'Add more specific examples to strengthen your answer.' : 'Well done! Keep up the depth.',
+                        // Feature 2: the raw microphone and camera signals for this
+                        // answer, measured in the browser but scored entirely on the
+                        // server. Null when nothing was captured — the interview is
+                        // unaffected either way.
+                        delivery,
                     }),
                 }).catch(() => { });
             }
@@ -700,6 +749,20 @@ const VideoInterview: React.FC = () => {
                                 </span>
                             </button>
                         </div>
+
+                        {/* Delivery disclosure (Feature 2) ────────────────────────────
+                            On screen for the whole interview, not buried in terms. A
+                            candidate whose voice and picture are being measured has to
+                            be able to see that they are — and the second sentence is a
+                            promise the delivery report keeps. */}
+                        {deliveryAnalysisEnabled && (
+                            <p className="text-[11px] leading-relaxed text-slate-500 text-center flex-shrink-0">
+                                Alongside your words, Kalpira measures{' '}
+                                <span className="text-slate-400">how</span> each answer was delivered —
+                                pace, pauses, vocal variation and picture quality. Every measurement is
+                                shown to you afterwards.
+                            </p>
+                        )}
                     </div>
 
                     {/* ── Chat Panel (right) ── */}

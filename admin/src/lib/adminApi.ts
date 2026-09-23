@@ -147,6 +147,49 @@ export interface CalibrationResult {
     note?: string;
 }
 
+// ─── Delivery analysis (Feature 2) ─────────────────────────────────────────
+// The operational half of multimodal delivery analysis.
+//
+// The distinction these types exist to preserve: a FAILED job is an operational
+// fault — the analysis could not run at all — while a muted microphone is a
+// SUCCESSFUL analysis that measured nothing, and appears in neither of these lists.
+// An operator who conflates them will go looking for a bug that is not there, and
+// miss a recording condition that is working exactly as designed.
+export interface DeliveryJobFailure {
+    id: string;
+    responseId: string | null;
+    sessionId: string | null;
+    attempts: number;
+    maxAttempts: number;
+    lastError: string | null;
+    createdAt: string | null;
+    /** Whether a retry could still help: attempts remain and the payload is intact. */
+    retryable: boolean;
+}
+
+export interface DeliveryJobHealth {
+    /** Jobs per status — queued, running, succeeded, failed. */
+    counts: Record<string, number>;
+    failed: DeliveryJobFailure[];
+    returned: number;
+    maxAttempts: number;
+}
+
+export interface DeliveryRetryOutcome {
+    jobId: string;
+    status: string;
+    error: string | null;
+    skippedReason: string | null;
+}
+
+export interface DeliveryRetryResult {
+    success: boolean;
+    attempted: number;
+    succeeded: number;
+    failed: number;
+    outcomes: DeliveryRetryOutcome[];
+}
+
 // ─── API helpers ────────────────────────────────────────────────────────────
 // Every call throws with a readable message on failure so the UI can surface it
 // instead of silently rendering zeros.
@@ -196,5 +239,15 @@ export const AdminApi = {
     calibrate: (body: { minSampleSize?: number } = {}) =>
         apiFetch('/api/measurement/calibrate', { method: 'POST', body: JSON.stringify(body) }).then(
             json<CalibrationResult>
+        ),
+
+    // ─── Delivery analysis (Feature 2) ──────────────────────────────────────
+    deliveryJobs: (limit = 50) =>
+        apiFetch(`/api/delivery/jobs?limit=${limit}`).then(json<DeliveryJobHealth>),
+
+    /** Re-runs the failed analyses that still have attempts and a payload left. */
+    retryDeliveryJobs: (body: { limit?: number } = {}) =>
+        apiFetch('/api/delivery/jobs', { method: 'POST', body: JSON.stringify(body) }).then(
+            json<DeliveryRetryResult>
         ),
 };

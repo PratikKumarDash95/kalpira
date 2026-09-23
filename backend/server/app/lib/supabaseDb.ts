@@ -174,6 +174,9 @@ const tables = {
   itemParameter: 'ItemParameter',
   abilityEstimate: 'AbilityEstimate',
   abilityHistory: 'AbilityHistory',
+  // Feature 2 — Multimodal Delivery Analysis
+  deliveryMetric: 'DeliveryMetric',
+  analysisJob: 'AnalysisJob',
 } as const;
 
 type ModelName = keyof typeof tables;
@@ -183,6 +186,7 @@ type Delegate = {
   findFirst(args?: Row): Promise<any | null>;
   findUnique(args: Row): Promise<any | null>;
   create(args: Row): Promise<any>;
+  createMany(args: Row): Promise<{ count: number }>;
   update(args: Row): Promise<any>;
   upsert(args: Row): Promise<any>;
   delete(args: Row): Promise<any>;
@@ -213,6 +217,9 @@ type SupabaseDb = {
   itemParameter: Delegate;
   abilityEstimate: Delegate;
   abilityHistory: Delegate;
+  // Feature 2 — Multimodal Delivery Analysis
+  deliveryMetric: Delegate;
+  analysisJob: Delegate;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -235,6 +242,10 @@ const dateFields = new Set([
   // Feature 1 — Competency Measurement Engine
   'calibratedAt',
   'recordedAt',
+  // Feature 2 — Multimodal Delivery Analysis
+  'deliveryAnalyzedAt',
+  'claimedAt',
+  'finishedAt',
 ]);
 
 function normalizeRow<T>(row: T): T {
@@ -434,6 +445,17 @@ function delegate(model: ModelName) {
       if (error) throw formatSupabaseError(error, model, 'insert');
       return normalizeRow(row);
     },
+    // One round trip for a whole set of rows. Used by the delivery layer, which
+    // writes a row per metric per answer — a dozen-plus inserts per response would
+    // otherwise be a dozen-plus sequential round trips inside a live interview.
+    async createMany(args: Row) {
+      const rows = Array.isArray(args.data) ? (args.data as Row[]) : [];
+      if (rows.length === 0) return { count: 0 };
+      const payload = rows.map((row) => ({ id: crypto.randomUUID(), ...toDbData(row) }));
+      const { data, error } = await supabase.from(tables[model]).insert(payload).select('*');
+      if (error) throw formatSupabaseError(error, model, 'insert');
+      return { count: (data || []).length };
+    },
     async update(args: Row) {
       const existing = await this.findFirst({ where: args.where });
       if (!existing) throw new Error(`${tables[model]} row not found`);
@@ -498,6 +520,9 @@ const db: SupabaseDb = {
   itemParameter: delegate('itemParameter'),
   abilityEstimate: delegate('abilityEstimate'),
   abilityHistory: delegate('abilityHistory'),
+  // Feature 2 — Multimodal Delivery Analysis
+  deliveryMetric: delegate('deliveryMetric'),
+  analysisJob: delegate('analysisJob'),
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);
   },

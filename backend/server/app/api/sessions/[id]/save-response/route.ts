@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
+import {
+    analyzeResponseDelivery,
+    type DeliveryCapturePayload,
+} from '@/lib/delivery/deliveryService';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +36,10 @@ export async function POST(
             feedback = '',
             idealAnswer = '',
             improvementTip = '',
+            // Feature 2 — the browser's raw capture for this answer, when it had
+            // one. Optional by design: a candidate without a microphone, or one
+            // who declined camera access, still gets a scored interview.
+            delivery = null,
         } = body as {
             questionText: string;
             category?: string;
@@ -45,6 +53,7 @@ export async function POST(
             feedback?: string;
             idealAnswer?: string;
             improvementTip?: string;
+            delivery?: DeliveryCapturePayload | null;
         };
 
         if (!questionText || !answerText) {
@@ -104,7 +113,39 @@ export async function POST(
             },
         });
 
-        return NextResponse.json({ success: true, questionId: question.id, responseId: response.id });
+        // ── Feature 2: delivery analysis ─────────────────────────────────────
+        // Runs after the answer is safely stored, and inside its own try/catch.
+        // The order matters: losing the analysis costs a session its delivery
+        // evidence, but losing the answer costs the candidate their interview. The
+        // outer catch would report `skipped: true` for a response that was in fact
+        // saved, so a delivery failure must never reach it.
+        let deliveryAnalyzed = false;
+        let deliveryNote: string | null = null;
+        if (delivery && typeof delivery === 'object') {
+            try {
+                const outcome = await analyzeResponseDelivery({
+                    responseId: response.id,
+                    sessionId,
+                    userId: session.userId ?? null,
+                    payload: delivery,
+                });
+                deliveryAnalyzed = outcome?.status === 'succeeded';
+                if (outcome && !deliveryAnalyzed) {
+                    deliveryNote = outcome.error ?? outcome.skippedReason ?? 'Delivery was not analysed.';
+                }
+            } catch (deliveryError) {
+                console.error('[sessions/save-response] Delivery analysis failed (answer still saved):', deliveryError);
+                deliveryNote = 'Delivery analysis could not be completed.';
+            }
+        }
+
+        return NextResponse.json({
+            success: true,
+            questionId: question.id,
+            responseId: response.id,
+            deliveryAnalyzed,
+            deliveryNote,
+        });
     } catch (error) {
         console.error('Save response error:', error);
         return NextResponse.json({ success: true, skipped: true }); // Never break the interview

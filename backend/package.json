@@ -10,6 +10,7 @@
     "dev": "tsx watch server/server.ts",
     "type-check": "tsc --noEmit",
     "verify:measurement": "tsx server/scripts/verify-measurement.ts",
+    "verify:delivery": "tsx server/scripts/verify-delivery.ts",
     "test": "echo \"No backend database test script. Supabase is the database layer.\""
   },
   "dependencies": {
