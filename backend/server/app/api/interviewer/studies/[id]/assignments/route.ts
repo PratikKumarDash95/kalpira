@@ -5,6 +5,7 @@ import { sendInterviewAssignmentEmail } from '@/lib/email';
 import { getInterviewerUser } from '@/lib/interviewerAuth';
 import { resolveEffectivePlan } from '@/lib/plans';
 import { excludeSelfPreviewSessions } from '@/lib/previewSession';
+import { BUDGETS, accountKey, checkBudget, penalize, tooManyRequests } from '@/lib/throttle';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,33 @@ export async function POST(request: Request, { params }: { params: { id: string 
     );
   }
 
+  // Bound the mail this route can generate, BEFORE anything is written, so a
+  // refusal leaves no half-done batch behind.
+  //
+  // This exists because of what the DB fix next to it unblocked. The candidate
+  // lookup below used to throw (a `completedAt: null` filter the shim turned
+  // into `completedAt=eq.null`, which PostgREST rejects), and it threw before
+  // the mail loop was reached — so this route had silently created nothing and
+  // sent nothing for a long time. Repairing the query restores both. Session
+  // creation is bounded by the seat check above; the mail is not bounded by
+  // anything: the loop below mails every unique candidate including the reused
+  // ones, to addresses the caller chooses, every time the caller asks. That is
+  // an inbox-flooding vector for any account that can create a study.
+  //
+  // Accounted per RECIPIENT, not per request: one request can carry thousands
+  // of addresses, so a per-request budget would not bound the volume at all.
+  const mailBudgetKey = accountKey('assignmentEmail', 'interviewer', interviewer.email || interviewerId);
+  const mailBudget = checkBudget(mailBudgetKey, BUDGETS.assignmentEmail);
+  if (mailBudget.remaining < uniqueCandidates.length) {
+    return NextResponse.json(
+      tooManyRequests(
+        mailBudget,
+        'Too many assignment emails have been sent from this account recently. Please wait and try again.'
+      ),
+      { status: 429, headers: { 'Retry-After': String(mailBudget.retryAfterSeconds) } }
+    );
+  }
+
   const assignments = [];
   let reusedCount = 0;
   let createdCount = 0;
@@ -118,6 +146,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   for (const candidate of uniqueCandidates) {
+    // Spent per recipient whether or not the send succeeds: the cost is the
+    // attempt, and a failed send is not a reason to hand the budget back to a
+    // caller working through a bad address list.
+    penalize(mailBudgetKey, BUDGETS.assignmentEmail);
     try {
       await sendInterviewAssignmentEmail({
         candidateEmail: candidate.candidateEmail,

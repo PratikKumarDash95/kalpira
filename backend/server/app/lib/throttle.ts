@@ -153,6 +153,11 @@ export const BUDGETS = {
   /** Sign-up attempts per address — stops scripted account creation and the
    *  verification-mail flood that rides on it. */
   register: { limit: 5, windowMs: 60 * 60 * 1000 },
+  /** Assignment mails per interviewer, counted per recipient. A real batch to
+   *  one study's candidates is tens; the loop that sends them re-mails the whole
+   *  list on every call, to addresses the caller names, so this is the only
+   *  thing standing between a self-service account and an inbox-flooding tool. */
+  assignmentEmail: { limit: 100, windowMs: 60 * 60 * 1000 },
 } as const satisfies Record<string, Budget>;
 
 /** A 429 in the shape the rest of the API uses. */

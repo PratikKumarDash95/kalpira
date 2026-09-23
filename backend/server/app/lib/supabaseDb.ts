@@ -310,6 +310,21 @@ function matchesWhere(row: Row, where: Row = {}): boolean {
     if (key === 'AND' && Array.isArray(expected)) return expected.every((item) => matchesWhere(row, item));
     if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
       if ('in' in expected) return expected.in.includes(row[key]);
+      // `notIn` has to be handled here or it matches NOTHING — silently. Without
+      // this branch the object falls through to the recursion below, which walks
+      // into the scalar cell (`matchesWhere('assigned', { notIn: [...] })`) and
+      // compares `undefined === [...]`, false for every row. A filter that
+      // matches nothing is worse than one that throws: `countPendingSessions`
+      // reported 0 pending assignments for every study, so the guard it feeds
+      // never refused a delete, and the adaptive selector returned no items at
+      // all once a candidate had exclusions to apply.
+      //
+      // An absent/non-array list means "exclude nothing" — the call sites pass
+      // `undefined` when they have no ids to exclude, and that must mean the
+      // same thing here as an empty list, not "reject everything".
+      if ('notIn' in expected) {
+        return !Array.isArray(expected.notIn) || !expected.notIn.includes(row[key]);
+      }
       if ('not' in expected) return row[key] !== expected.not;
       if ('equals' in expected) return row[key] === expected.equals;
       if (key === 'study' && expected.userId !== undefined) return row.study?.userId === expected.userId;
@@ -323,6 +338,7 @@ function canQueryWhere(where?: Row): boolean {
   if (!where || Object.keys(where).length === 0) return true;
 
   return Object.values(where).every((expected) => {
+    // `null` is queryable, but only through `.is()` — see applyWhereQuery.
     if (expected === null) return true;
     if (['string', 'number', 'boolean'].includes(typeof expected)) return true;
 
@@ -340,6 +356,18 @@ function applyWhereQuery(query: any, where?: Row) {
   if (!where) return query;
 
   return Object.entries(where).reduce((current, [key, expected]) => {
+    // `null` is a NULL *test* in PostgREST, not a comparison, and `.eq()` is the
+    // wrong operator for it. `.eq(key, null)` serialises to `key=eq.null`, which
+    // PostgREST hands to the column's type cast as the literal string "null" —
+    // a 400 on a timestamp column (`invalid input syntax for type timestamp:
+    // "null"`, which the adapter turns into a 500) and, on a text column, a
+    // query that silently matches nothing. Every `completedAt: null` filter in
+    // the codebase went through here, so one assignment POST, one "is this study
+    // closed?" check and the expired-session auto-close all failed on it.
+    // `.is(key, null)` is the NULL test PostgREST actually understands.
+    if (expected === null) {
+      return current.is(key, null);
+    }
     if (expected && typeof expected === 'object' && !Array.isArray(expected) && 'equals' in expected) {
       return current.eq(key, expected.equals);
     }
