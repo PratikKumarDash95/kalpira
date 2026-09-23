@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { createEmailVerificationToken, sendVerificationEmail } from '@/lib/email';
+import { BUDGETS, accountKey, checkBudget, penalize, tooManyRequests } from '@/lib/throttle';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,27 @@ export async function POST(request: Request) {
     if (!emailPattern.test(email)) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
+
+    // ── One mail budget per account ──────────────────────────────────────────
+    // Same shape as forgot-password, and for the same reason: this route sends
+    // mail to an address the caller names, as often as it is asked. Without a
+    // budget it is a way to flood a stranger's inbox — every request drawing a
+    // fresh verification link, each one invalidating the last so that a real
+    // click is hard to land. The per-IP limiter bounds one address; this bounds
+    // one mailbox, which is the side being harmed.
+    //
+    // Spent on every request past validation, because the cost here *is* the
+    // work. An attacker can mint keys for addresses they do not own, but those
+    // keys cost them nothing to burn and buy them no mail either.
+    const budgetKey = accountKey('resend-verification', role, email);
+    const budget = checkBudget(budgetKey, BUDGETS.resendVerification);
+    if (!budget.allowed) {
+      return NextResponse.json(
+        tooManyRequests(budget, 'A verification email was sent recently. Please check your inbox, then try again shortly.'),
+        { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
+      );
+    }
+    penalize(budgetKey, BUDGETS.resendVerification);
 
     const user = await supabaseDb.user.findFirst({ where: { email, role } });
 

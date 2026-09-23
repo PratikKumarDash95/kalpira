@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { createPasswordResetOtp, EmailDeliveryError, sendPasswordResetEmail } from '@/lib/email';
+import { BUDGETS, accountKey, checkBudget, penalize, tooManyRequests } from '@/lib/throttle';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
+    // ── One mail budget per account ──────────────────────────────────────────
+    // This route sends mail to an address the caller names, and it sent it as
+    // often as it was asked. That is a way to flood a stranger's inbox from here
+    // — repeatedly resetting a password they never asked about, each reset
+    // invalidating the code from the previous one so that a real request is hard
+    // to complete. The per-IP limiter on /api/auth bounds one address; this
+    // bounds one mailbox, which is the side being harmed.
+    const budgetKey = accountKey('forgot-password', role, email);
+    const budget = checkBudget(budgetKey, BUDGETS.forgotPassword);
+    if (!budget.allowed) {
+      return NextResponse.json(
+        tooManyRequests(budget, 'A reset code was requested recently. Please check your inbox, then try again shortly.'),
+        { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
+      );
+    }
+    penalize(budgetKey, BUDGETS.forgotPassword);
+
     const user = await supabaseDb.user.findFirst({ where: { email, role } });
 
     if (!user || !user.password) {
@@ -39,6 +57,10 @@ export async function POST(request: Request) {
         passwordResetOtp: hashedOtp,
         passwordResetOtpSentAt: now,
         passwordResetOtpExpiresAt: expiresAt,
+        // A new code comes with a new guess budget. Without this zero, five
+        // wrong guesses against a code that has since been replaced would spend
+        // the fresh code on the old mistakes' behalf.
+        passwordResetOtpAttempts: 0,
       },
     });
 

@@ -4,6 +4,7 @@ import supabaseDb, { hasServiceRoleKey } from '@/lib/supabaseDb';
 import { hashPassword } from '@/lib/auth';
 import { createEmailVerificationToken, sendVerificationEmail } from '@/lib/email';
 import { validatePasswordPolicy } from '@/lib/passwordPolicy';
+import { BUDGETS, accountKey, checkBudget, penalize, tooManyRequests } from '@/lib/throttle';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +61,27 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
+
+        // ── Sign-up budget for this address ──────────────────────────────────
+        // This route both mints an account and sends a verification mail to an
+        // address the caller chooses, so it is two abuse vectors in one: a free
+        // account factory, and a second way to flood a stranger's inbox (the
+        // first being resend-verification, which is budgeted the same way).
+        //
+        // Keyed per address rather than per connection, because the address is
+        // the side that gets flooded; the per-IP limiter on /api/auth covers the
+        // script that rotates through fresh addresses instead. Spent on every
+        // request past validation, since the work — one row, one mail — is what
+        // is being priced.
+        const budgetKey = accountKey('register', 'candidate', trimmedEmail);
+        const budget = checkBudget(budgetKey, BUDGETS.register);
+        if (!budget.allowed) {
+            return NextResponse.json(
+                tooManyRequests(budget, 'Too many sign-up attempts for this email. Please try again later.'),
+                { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
+            );
+        }
+        penalize(budgetKey, BUDGETS.register);
 
         // Check if a CANDIDATE account already exists for this email. The same
         // email may separately own an interviewer account, so scope by role.

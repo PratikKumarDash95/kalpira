@@ -18,6 +18,7 @@ import {
 import { isHostedMode } from '@/lib/mode';
 import supabaseDb from '@/lib/supabaseDb';
 import { assertTrustedOrigin } from '@/lib/csrf';
+import { BUDGETS, accountKey, checkBudget, clearBudget, penalize, tooManyRequests } from '@/lib/throttle';
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +41,24 @@ export async function POST(request: Request) {
       // to the stored 'candidate' role; default to candidate when unspecified.
       const role = rawRole === 'interviewer' ? 'interviewer' : 'candidate';
 
+      // ── Guess budget for this account ───────────────────────────────────────
+      // The per-IP limiter on /api/auth bounds how fast one address may try. It
+      // does not bound how many times one *account* may be guessed at, and that
+      // is the attack that works: attempts spread over thousands of addresses,
+      // each one politely under the per-IP cap, all aimed at the same mailbox.
+      //
+      // Checked before the lookup, so a locked-out account costs nothing to
+      // refuse. Spent only on a wrong password — a person signing in normally,
+      // or mistyping once, never accumulates toward it.
+      const budgetKey = accountKey('login', role, email);
+      const budget = checkBudget(budgetKey, BUDGETS.login);
+      if (!budget.allowed) {
+        return NextResponse.json(
+          tooManyRequests(budget, 'Too many sign-in attempts. Please wait a few minutes and try again.'),
+          { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
+        );
+      }
+
       const user = await supabaseDb.user.findFirst({
         where: { email, role },
       });
@@ -56,11 +75,16 @@ export async function POST(request: Request) {
       const isValid = await verifyPassword(password, user.password);
 
       if (!isValid) {
+        penalize(budgetKey, BUDGETS.login);
         return NextResponse.json(
           { error: 'Invalid email or password' },
           { status: 401 }
         );
       }
+
+      // The credential was right, so this was not a guessing script. Forget the
+      // misses: ordinary activity must never accrue toward a lockout.
+      clearBudget(budgetKey);
 
       if (!user.emailVerifiedAt) {
         return NextResponse.json(

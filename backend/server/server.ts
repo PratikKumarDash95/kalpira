@@ -53,6 +53,26 @@ app.use('/api/interview/ask', aiLimiter);
 app.use('/api/interview/evaluate', aiLimiter);
 app.use('/api/ai', aiLimiter);
 
+// The auth surface gets its own ceiling. This is the *address* dimension; the
+// per-account budgets in ./app/lib/throttle.ts are the *account* dimension, and
+// neither substitutes for the other — a guesser spread over many addresses
+// stays under this one, and a guesser focused on one mailbox is what the other
+// one bounds. 30/min is far above any human sign-in and far below a script.
+//
+// `app.set('trust proxy', …)` is deliberately NOT enabled: req.ip is then the
+// socket address, which a client cannot choose, and X-Forwarded-For is ignored.
+// Enabling it would make every per-IP limit in this file forgeable by header.
+const authLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
+app.use('/api/auth', authLimiter);
+
+// Interviewer sign-up is the one route outside /api/auth that mints an account
+// and mails an address the caller chose, so it gets the same per-address
+// ceiling. Mounted on this exact path rather than on /api/interviewer, because
+// its siblings (billing, studies, me) are ordinary authenticated reads that a
+// signed-in interviewer may legitimately make far more than 30 times a minute.
+const signupLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
+app.use('/api/interviewer/register', signupLimiter);
+
 // Request logging (production: swap for morgan/pino)
 app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
