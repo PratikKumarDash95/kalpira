@@ -10,13 +10,18 @@
 //
 // A NOTE ON THE SESSION-WITH-NO-STUDY CASE
 //
-// `api/sessions/[id]/save-response` guards its writes inside `if (session.studyId)`,
-// which means a self-practice session — one not attached to any study — has no auth
-// check on that route at all. That is a real gap, noted elsewhere and not this file's
-// to fix. It is deliberately NOT reproduced here: the branches below are exhaustive
-// over "has a study" and "has no study", and a session that does not exist is refused
-// rather than treated as ownerless-and-therefore-open. Feature 3 is the first thing in
-// this product that can accuse someone, so its routes do not inherit the pattern.
+// `api/sessions/[id]/save-response` used to guard its writes inside
+// `if (session.studyId)`, which left a self-practice session — one not attached to any
+// study — with no auth check on that route at all: an unauthenticated write into any
+// practice session whose id you knew. That has since been fixed there, and this file's
+// branches are the shape that fix was modelled on.
+//
+// It is recorded here because the pattern is the one to avoid: a permission check that
+// runs for one shape of input and silently does not run for another is worse than no
+// check, because it reads as guarded. The branches below are exhaustive over "has a
+// study" and "has no study", and a session that does not exist is refused rather than
+// treated as ownerless-and-therefore-open. Feature 3 is the first thing in this product
+// that can accuse someone, so its routes do not inherit the pattern.
 //
 // THE THREE ANSWERS
 //

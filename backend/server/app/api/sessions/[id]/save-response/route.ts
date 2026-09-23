@@ -69,21 +69,47 @@ export async function POST(
             return NextResponse.json({ success: true, skipped: true }); // Graceful skip
         }
 
+        // ── Who may write to this session ────────────────────────────────────
+        // Every persisted session has an owner. `sessions/start` refuses to persist
+        // one without an authenticated user or a valid participant link, handing an
+        // anonymous caller a `guest-…` id instead — and those are short-circuited
+        // above, so nothing reaching here is ownerless.
+        //
+        // A session attached to a study can also be written through that study's
+        // participant link, which is how most interviews are actually sat. A
+        // self-practice session has no study, so there is no study to scope a link
+        // to and no owner to compare it against: ownership is the only authority
+        // that exists, and it is the only one accepted.
+        //
+        // This used to be wrapped in `if (session.studyId)`, which left a session
+        // with no study taking the unguarded path — an unauthenticated write into
+        // any practice session whose id you knew. The check is now exhaustive over
+        // both shapes rather than running for one of them.
+        const authUser = await getAuthUser();
+        const isSessionOwner = Boolean(authUser?.id && session.userId && session.userId === authUser.id);
+
         if (session.studyId) {
-            const authUser = await getAuthUser();
-            if (authUser?.id && authUser.role === 'candidate' && session.userId === authUser.id) {
+            if (isSessionOwner && authUser?.role === 'candidate') {
                 // Authenticated candidate owns this assigned session.
             } else {
-            const participantAuth = await getParticipantRequestContext(request);
-            if (
-                !participantAuth.valid ||
-                !participantAuth.context ||
-                participantAuth.studyId !== session.studyId ||
-                participantAuth.context.userId !== session.study?.userId
-            ) {
-                return NextResponse.json({ error: 'Valid participant link required for this session' }, { status: 401 });
+                const participantAuth = await getParticipantRequestContext(request);
+                if (
+                    !participantAuth.valid ||
+                    !participantAuth.context ||
+                    participantAuth.studyId !== session.studyId ||
+                    participantAuth.context.userId !== session.study?.userId
+                ) {
+                    return NextResponse.json(
+                        { error: 'Valid participant link required for this session' },
+                        { status: 401 }
+                    );
+                }
             }
-            }
+        } else if (!isSessionOwner) {
+            return NextResponse.json(
+                { error: 'This session belongs to another user' },
+                { status: 401 }
+            );
         }
 
         // Create question record
