@@ -1,4 +1,4 @@
-import { randomBytes, createHash, randomInt } from 'crypto';
+import { randomBytes, createHash, createHmac, randomInt, timingSafeEqual } from 'crypto';
 
 const brevoApiKey = process.env.BREVO_API_KEY;
 const defaultSenderEmail = process.env.BREVO_SENDER_EMAIL;
@@ -44,15 +44,59 @@ export function hashEmailVerificationToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-export function createPasswordResetOtp(): { otp: string; hashedOtp: string; expiresAt: Date } {
-  const otp = String(randomInt(100000, 1000000));
-  const hashedOtp = createHash('sha256').update(otp).digest('hex');
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-  return { otp, hashedOtp, expiresAt };
+// ── The password-reset OTP is hashed with a key, not just a hash function ─────
+//
+// A reset OTP is six digits. That is a million possible values, which is a fine
+// secret only for as long as it is not stored in a form that can be searched.
+// A bare `sha256(otp)` cannot survive a database read: the whole input space is
+// a million hashes, seconds of work on a laptop, and the attacker learns the
+// code for every account with a reset in flight. Keying the hash with a secret
+// that lives in the environment and not in the database means a leaked table is
+// not a leaked OTP.
+//
+// The context string is mixed in so this key can never be confused with any
+// other use of the same secret elsewhere in the app.
+const OTP_HASH_CONTEXT = 'kalpira.password-reset-otp.v1';
+
+function otpHashSecret(): string {
+  const secret = process.env.OTP_SECRET || process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD;
+  if (!secret) {
+    // Refusing is the safe failure: falling back to an unkeyed hash here would
+    // silently restore the weakness this exists to close.
+    throw new Error('No secret available to hash password-reset OTPs. Set OTP_SECRET or SESSION_SECRET.');
+  }
+  return secret;
 }
 
 export function hashPasswordResetOtp(otp: string): string {
-  return createHash('sha256').update(otp).digest('hex');
+  return createHmac('sha256', otpHashSecret()).update(`${OTP_HASH_CONTEXT}:${otp}`).digest('hex');
+}
+
+/**
+ * Compares a submitted OTP against the stored hash in constant time.
+ *
+ * Both sides go through Buffer.from(..., 'hex') so a stored value that is not
+ * hex — an empty string, a legacy value, anything malformed — produces a
+ * different length and returns false rather than throwing or matching loosely.
+ */
+export function verifyPasswordResetOtp(otp: string, storedHash: unknown): boolean {
+  if (typeof storedHash !== 'string' || !storedHash) return false;
+
+  const expected = Buffer.from(storedHash, 'hex');
+  if (expected.length === 0) return false;
+
+  const candidate = Buffer.from(hashPasswordResetOtp(otp), 'hex');
+  return expected.length === candidate.length && timingSafeEqual(expected, candidate);
+}
+
+export function createPasswordResetOtp(): { otp: string; hashedOtp: string; expiresAt: Date } {
+  // randomInt is rejection-sampled and unbiased, unlike `Math.random()` — the
+  // difference matters because this value is the only thing standing between a
+  // stranger and a password reset.
+  const otp = String(randomInt(100000, 1000000));
+  const hashedOtp = hashPasswordResetOtp(otp);
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  return { otp, hashedOtp, expiresAt };
 }
 
 async function sendBrevoEmail(params: {
