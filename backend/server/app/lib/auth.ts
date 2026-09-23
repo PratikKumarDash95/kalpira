@@ -281,12 +281,35 @@ function getCookieValue(request: Request, name: string): string | null {
   return null;
 }
 
-// Check if request has valid admin session cookie
+// Check if request has a valid *admin* session cookie.
+//
+// This used to accept any valid session token and report the caller as an admin.
+// Every signed-in candidate and interviewer therefore arrived at participant
+// routes as "the researcher previewing their own study", which skips the link
+// and study checks entirely — a candidate's own cookie was enough to start
+// sessions in someone else's study. Admin means admin, decided the same way
+// `getAdminUser()` decides it: the legacy password login (a session with no
+// researcherId) or an account whose role is 'admin'.
 async function hasValidAdminSession(request: Request): Promise<boolean> {
   const sessionToken = getCookieValue(request, SESSION_COOKIE_NAME);
   if (!sessionToken) return false;
   const result = await verifySessionToken(sessionToken);
-  return result.valid;
+  if (!result.valid) return false;
+
+  // Legacy admin-password sessions carry no researcherId.
+  if (!result.researcherId) return true;
+
+  // Imported lazily, and this matters: server.ts imports this module statically,
+  // so anything pulled in here evaluates before dotenv.config() runs and would
+  // read an empty process.env — supabaseDb would then build its client against
+  // its 'http://localhost' fallback and every query in the process would fail.
+  const { default: supabaseDb } = await import('./supabaseDb');
+
+  const user = await supabaseDb.user.findUnique({
+    where: { id: result.researcherId },
+    select: { role: true },
+  });
+  return user?.role === 'admin';
 }
 
 // Participant token verification result
@@ -295,6 +318,13 @@ export interface ParticipantVerifyResult {
   studyId?: string;
   researcherId?: string; // Present in hosted mode tokens
   isAdmin?: boolean;
+  /**
+   * The candidate this link was minted for, when it was minted for one. A study
+   * link says nothing about which candidate is holding it; a link carrying an
+   * assignment is signed proof that this one was issued to that person, which is
+   * the only thing a route can use to tell "my invitation" from "someone else's".
+   */
+  assignment?: { candidateName?: string; candidateEmail?: string };
   error?: string;
 }
 
@@ -319,11 +349,14 @@ export async function verifyParticipantToken(request: Request): Promise<Particip
         } else {
           const studyId = payload.studyId as string;
           const researcherId = payload.researcherId as string | undefined;
+          const assignment = payload.assignment as
+            | { candidateName?: string; candidateEmail?: string }
+            | undefined;
 
           // Note: "links disabled" check moved to getParticipantRequestContext()
           // where the correct per-researcher KV client is available
 
-          return { valid: true, studyId, researcherId };
+          return { valid: true, studyId, researcherId, assignment };
         }
       } catch (error) {
         // Check if it's an expiration error

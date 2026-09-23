@@ -49,9 +49,37 @@ export async function POST(request: Request) {
 
         const authUser = await getAuthUser();
         const participantAuth = await getParticipantRequestContext(request);
+
+        // ── Identity comes from the session, never from the body ─────────────
+        // `candidateName` and `candidateEmail` are free text. The email alone used
+        // to be the whole gate: an authenticated candidate could name *any*
+        // address, satisfy the "assigned candidate" test below, and then claim —
+        // and rewrite the owner of — whichever session row in that study carried
+        // it. The account's own address is the only thing in this request that
+        // proves who is asking, and comparing against it is exactly what the
+        // designed claim path (`/api/candidate/sessions/[id]/start`) already does.
+        const callerEmail = normalizeEmail(authUser?.email);
+        const normalizedCandidateEmail = normalizeEmail(candidateEmail);
+        const namesSelf = Boolean(callerEmail && callerEmail === normalizedCandidateEmail);
+
         let studyConfig: any = null;
         if (studyId) {
-            const isCandidateAssigned = Boolean(authUser?.id && authUser.role === 'candidate' && candidateEmail);
+            // Naming your own address is necessary but not sufficient: an account
+            // holder is admitted only to an interview that was actually assigned
+            // to that address. Without this, any signed-in candidate who knew or
+            // guessed a study id could open the gate on a stranger's study and
+            // write sessions into it, bypassing both the invitation link and its
+            // expiry. An assignment row is the researcher's own record that this
+            // address was invited.
+            let isCandidateAssigned = false;
+            if (authUser?.id && authUser.role === 'candidate' && namesSelf) {
+                const assignment = await supabaseDb.interviewSession.findFirst({
+                    where: { studyId, candidateEmail: normalizedCandidateEmail },
+                    select: { id: true },
+                });
+                isCandidateAssigned = Boolean(assignment);
+            }
+
             if (!participantAuth.valid && !isCandidateAssigned) {
                 return NextResponse.json({ error: 'Valid participant link required for this study' }, { status: 401 });
             }
@@ -111,8 +139,37 @@ export async function POST(request: Request) {
             return NextResponse.json({ sessionId: `guest-${Date.now()}`, guest: true });
         }
 
-        const normalizedCandidateEmail = normalizeEmail(candidateEmail);
-        if (studyId && normalizedCandidateEmail) {
+        // ── Reuse only a row the caller has proven a claim to ────────────────
+        // A participant link is a capability for one *study*, not an identity: a
+        // study-wide link says nothing about which candidate is holding it, so
+        // matching a row by the free-text email under one let any link holder
+        // claim — and reset — whichever candidate's row they could name, and read
+        // that row's state back through the 409 below. Three things can prove the
+        // claim instead:
+        //
+        //   • the signed-in account naming its own address,
+        //   • the study's own stored config naming that candidate, or
+        //   • an assignment signed into the link itself.
+        //
+        // The last is what a per-candidate link carries (`generate-link` embeds
+        // it, and the token is signed), which is the difference between "my
+        // invitation" and "someone else's".
+        //
+        // An unproven email gets no reuse and no state disclosure: it falls
+        // through to the create below, which is what already happens for an
+        // address no assignment mentions. Refusing to match is the point — the
+        // row it would have matched belongs to someone else.
+        const assignmentEmail = normalizeEmail(studyConfig?.interviewerAssignment?.candidateEmail);
+        const linkAssignmentEmail = normalizeEmail(participantAuth.assignment?.candidateEmail);
+        const viaStudyLink = participantAuth.valid && participantAuth.studyId === studyId;
+        const namesAssignment =
+            Boolean(assignmentEmail) && assignmentEmail === normalizedCandidateEmail;
+        const namesLinkAssignment =
+            Boolean(linkAssignmentEmail) && linkAssignmentEmail === normalizedCandidateEmail;
+        const identityProven =
+            namesSelf || (viaStudyLink && (namesAssignment || namesLinkAssignment));
+
+        if (studyId && normalizedCandidateEmail && identityProven) {
             const existingSession = await supabaseDb.interviewSession.findFirst({
                 where: {
                     studyId,

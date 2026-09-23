@@ -8,6 +8,12 @@ export interface AuthUser {
   id: string | null;
   role: Role;
   isLegacyAdmin: boolean;
+  /**
+   * The account's own address, when it has one. Callers that accept a name or an
+   * email in a request body need something to compare it against; the body is a
+   * claim, this is the proof.
+   */
+  email?: string | null;
 }
 
 export async function getAuthUser(): Promise<AuthUser | null> {
@@ -24,13 +30,13 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
   const user = await supabaseDb.user.findUnique({
     where: { id: session.researcherId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, email: true },
   });
 
   if (!user) return null;
 
   const role = user.role === 'admin' || user.role === 'interviewer' ? user.role : 'candidate';
-  return { id: user.id, role, isLegacyAdmin: false };
+  return { id: user.id, role, isLegacyAdmin: false, email: user.email ?? null };
 }
 
 export async function requireRole(...roles: Role[]): Promise<AuthUser | null> {

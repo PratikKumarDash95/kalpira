@@ -125,6 +125,9 @@ export interface ParticipantContextResult {
   context: ResearcherContext | null;
   studyId?: string;
   isAdmin?: boolean;
+  /** Present when the link was minted for one named candidate — see
+   *  ParticipantVerifyResult.assignment. Absent for a study-wide link. */
+  assignment?: { candidateName?: string; candidateEmail?: string };
   error?: string;
 }
 
@@ -157,6 +160,7 @@ export async function getParticipantRequestContext(
       valid: true,
       context: await getStandaloneContext(auth.researcherId),
       studyId: auth.studyId,
+      assignment: auth.assignment,
     };
   }
 
@@ -189,7 +193,7 @@ export async function getParticipantRequestContext(
       }
     }
 
-    return { valid: true, context, studyId: auth.studyId };
+    return { valid: true, context, studyId: auth.studyId, assignment: auth.assignment };
   } catch (err) {
     console.error('Failed to resolve participant context:', err);
     return { valid: false, context: null, error: 'Failed to resolve study context' };
