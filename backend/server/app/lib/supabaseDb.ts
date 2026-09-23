@@ -177,6 +177,13 @@ const tables = {
   // Feature 2 — Multimodal Delivery Analysis
   deliveryMetric: 'DeliveryMetric',
   analysisJob: 'AnalysisJob',
+  // Feature 3 — Integrity & Authenticity Suite
+  integrityEvent: 'IntegrityEvent',
+  authenticityScore: 'AuthenticityScore',
+  answerSimilarity: 'AnswerSimilarity',
+  integrityReport: 'IntegrityReport',
+  integrityAppeal: 'IntegrityAppeal',
+  integrityReviewLog: 'IntegrityReviewLog',
 } as const;
 
 type ModelName = keyof typeof tables;
@@ -220,6 +227,13 @@ type SupabaseDb = {
   // Feature 2 — Multimodal Delivery Analysis
   deliveryMetric: Delegate;
   analysisJob: Delegate;
+  // Feature 3 — Integrity & Authenticity Suite
+  integrityEvent: Delegate;
+  authenticityScore: Delegate;
+  answerSimilarity: Delegate;
+  integrityReport: Delegate;
+  integrityAppeal: Delegate;
+  integrityReviewLog: Delegate;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -523,6 +537,13 @@ const db: SupabaseDb = {
   // Feature 2 — Multimodal Delivery Analysis
   deliveryMetric: delegate('deliveryMetric'),
   analysisJob: delegate('analysisJob'),
+  // Feature 3 — Integrity & Authenticity Suite
+  integrityEvent: delegate('integrityEvent'),
+  authenticityScore: delegate('authenticityScore'),
+  answerSimilarity: delegate('answerSimilarity'),
+  integrityReport: delegate('integrityReport'),
+  integrityAppeal: delegate('integrityAppeal'),
+  integrityReviewLog: delegate('integrityReviewLog'),
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);
   },
