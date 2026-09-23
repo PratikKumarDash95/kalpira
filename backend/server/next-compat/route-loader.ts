@@ -34,12 +34,43 @@ function toExpressPath(routeFile: string, apiRoot: string): string {
   return '/api' + (segments.length ? '/' + segments.join('/') : '');
 }
 
+// Express matches in registration order, so a dynamic segment registered first
+// swallows every literal sibling underneath it. Sorting the files as paths put
+// `[id]` before `export` — '[' is 0x5B, 'e' is 0x65 — which made
+// GET /api/interviews/export unreachable: `/api/interviews/:id` matched it with
+// id="export" and answered "Interview not found" for every CSV download. Next.js
+// itself resolves static before dynamic; the mount order now does too.
+function segmentRank(segment: string): number {
+  return segment.startsWith(':') || segment === '*' || segment === '' ? 1 : 0;
+}
+
+function compareRoutes(a: string, b: string): number {
+  const left = a.split('/');
+  const right = b.split('/');
+
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const x = left[i];
+    const y = right[i];
+    if (x === undefined) return -1;
+    if (y === undefined) return 1;
+
+    // Literals first; only then compare the segments themselves.
+    const rank = segmentRank(x) - segmentRank(y);
+    if (rank !== 0) return rank;
+    if (x !== y) return x < y ? -1 : 1;
+  }
+
+  return 0;
+}
+
 export function mountApiRoutes(app: Express, apiRoot: string): void {
-  const files = walk(apiRoot).sort();
+  const routes = walk(apiRoot)
+    .map((file) => ({ file, expressPath: toExpressPath(file, apiRoot) }))
+    .sort((a, b) => compareRoutes(a.expressPath, b.expressPath));
+
   let mounted = 0;
 
-  for (const file of files) {
-    const expressPath = toExpressPath(file, apiRoot);
+  for (const { file, expressPath } of routes) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod = require(file);
 
