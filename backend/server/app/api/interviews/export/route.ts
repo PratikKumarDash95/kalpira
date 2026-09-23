@@ -80,13 +80,40 @@ export async function GET() {
       return NextResponse.json({ error: 'Admins cannot export private interview reports' }, { status: 403 });
     }
 
-    // Build query based on role (mirroring /api/interviews list logic effectively)
-    const where: any = {};
-    if (context.researcherId) {
-      where.study = { userId: context.researcherId };
-    } else if (context.userId) {
-      where.userId = context.userId;
+    // Ownership scope, resolved the way /api/interviews resolves it.
+    //
+    // This used to be `where.study = { userId: ... }` — a *relation* filter. The
+    // shim applies filters before it loads relations, so the row under test had
+    // no `study` property and the comparison read `undefined === userId`: false
+    // for every row in the table. The route answered "No interviews to export"
+    // to everyone, including the owner of the data. Resolve the owned study ids
+    // first, then constrain by studyId.
+    //
+    // Two things this must never do. It must not leave `where` empty — an empty
+    // where is not "no filter" to the shim, it is a full table scan, and this
+    // route holds every candidate's transcript, scores and profile. And it must
+    // not fall through when no identity resolves: that is the same trap by
+    // another path, so an unresolvable caller is refused.
+    const ownerId = context.researcherId || context.userId;
+    if (!ownerId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const ownedStudies = await supabaseDb.study.findMany({
+      where: { userId: ownerId },
+      select: { id: true },
+    });
+    const ownedStudyIds = ownedStudies.map((study: { id: string }) => study.id);
+
+    // Sessions the caller owns directly are included alongside those in their
+    // studies: a self-practice session carries the owner's id but may belong to
+    // no study, and it is still theirs to export.
+    const where: any = {
+      OR: [
+        ...(ownedStudyIds.length ? [{ studyId: { in: ownedStudyIds } }] : []),
+        { userId: ownerId },
+      ],
+    };
 
     // Fetch from InterviewSession (SQL)
     const sessions = await supabaseDb.interviewSession.findMany({
