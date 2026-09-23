@@ -77,6 +77,9 @@ export default function Navbar({
   const links: NavLink[] = [];
   if (showProductNav) {
     links.push({ label: 'Studies', href: '/studies', onClick: () => router.push('/studies') });
+    // Personal to the signed-in user, so it is not role-gated: everyone who
+    // practises has an ability map.
+    links.push({ label: 'Ability', href: '/ability', onClick: () => router.push('/ability') });
     if (!profile || profile.role === 'interviewer' || profile.role === 'admin') {
       links.push({ label: 'Interviewer', href: '/interviewer/dashboard', onClick: () => router.push('/login?role=interviewer') });
     }

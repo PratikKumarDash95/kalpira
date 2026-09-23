@@ -18,6 +18,7 @@ import { processMemoryUpdate, type MemoryUpdateResult } from './memory/memoryOrc
 import type { DifficultyLevel, DifficultyRecommendation } from './adaptive/difficultyEngine';
 import type { SelectedQuestion } from './adaptive/questionSelector';
 import type { EvaluationResult } from './evaluation/evaluationSchema';
+import type { MeasuredDifficulty } from './measurement/adaptiveBridge';
 
 /** Parameters for processing one complete interview step */
 export interface InterviewStepParams {
@@ -29,6 +30,10 @@ export interface InterviewStepParams {
     currentDifficulty: DifficultyLevel;
     /** The evaluation result from evaluateResponse() */
     evaluationResult: EvaluationResult;
+    /** Restrict the measured target to one competency (optional). */
+    competencyId?: string | null;
+    /** Items asked so far in this session, for the measurement stop rule. */
+    itemsAnswered?: number;
 }
 
 /** Complete result from the combined coach engine step */
@@ -41,6 +46,16 @@ export interface InterviewStepResult {
     updatedWeakSkills: MemoryUpdateResult['updatedWeakSkills'];
     /** Top weak skill names for quick access */
     topWeakSkills: string[];
+    /**
+     * The measured difficulty decision behind `nextDifficulty`, when the
+     * candidate has enough history for the measurement engine. Null means the
+     * difficulty came from the evaluation's recommendation instead.
+     *
+     * When present this is the value a prompt builder should use to aim the next
+     * question: `targetDifficulty` is continuous, where `nextDifficulty` is only
+     * the tier recorded on the session row.
+     */
+    measured: MeasuredDifficulty | null;
 }
 
 /**
@@ -99,6 +114,8 @@ export async function processInterviewStep(
             currentDifficulty,
             evaluationRecommendation: recommendation,
             weakTopics,
+            competencyId: params.competencyId ?? null,
+            itemsAnswered: params.itemsAnswered,
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -106,6 +123,7 @@ export async function processInterviewStep(
         adaptiveResult = {
             nextDifficulty: currentDifficulty,
             nextQuestion: null,
+            measured: null,
         };
     }
 
@@ -115,5 +133,6 @@ export async function processInterviewStep(
         nextQuestion: adaptiveResult.nextQuestion,
         updatedWeakSkills: memoryResult.updatedWeakSkills,
         topWeakSkills: memoryResult.topWeakSkills,
+        measured: adaptiveResult.measured,
     };
 }

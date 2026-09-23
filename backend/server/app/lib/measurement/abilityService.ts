@@ -524,6 +524,15 @@ export interface AdaptiveTarget {
     stop: StopDecision;
     /** True when the estimate is already precise enough to act on. */
     isPrecise: boolean;
+    /** Answers behind this estimate. 0 when nothing has been measured yet. */
+    responsesUsed: number;
+    /**
+     * Whether this target rests on evidence. `prior` means the candidate has no
+     * measured ability for the competency, so θ is the starting value 0 and the
+     * target is "start in the middle" — a caller that already has a difficulty
+     * heuristic should keep using it rather than reading a prior as a measurement.
+     */
+    source: 'measured' | 'prior';
 }
 
 /**
@@ -538,6 +547,14 @@ export interface AdaptiveTarget {
  * When the candidate has no measured history, this returns the prior: θ = 0,
  * SE = 1, target difficulty 0 — i.e. "start in the middle and find out", which is
  * the correct behaviour rather than a guess dressed up as an estimate.
+ *
+ * When no competency is named, the one picked is the *least certain* — the
+ * largest standard error among competencies the candidate has actually answered
+ * on, tie-broken by the lower estimate. That is where the next question buys the
+ * most information, which is the whole premise of adaptive testing. (Picking the
+ * weakest would instead re-measure what is already known, and the profile stores
+ * competencies strongest-first, so index 0 would have been the opposite of the
+ * right choice.)
  */
 export async function getAdaptiveTarget(params: {
     userId: string;
@@ -550,7 +567,16 @@ export async function getAdaptiveTarget(params: {
 
     const competency = params.competencyId
         ? profile.competencies.find((entry) => entry.competencyId === params.competencyId)
-        : profile.competencies[0];
+        : [...profile.competencies]
+              // Only competencies with their own answers can steer generation; a
+              // value inherited through a prerequisite is not this person's
+              // measured ability on that competency.
+              .filter((entry) => entry.responsesUsed > 0)
+              .sort(
+                  (x, y) =>
+                      y.standardError - x.standardError ||
+                      x.effectiveTheta - y.effectiveTheta
+              )[0];
 
     const theta = competency?.effectiveTheta ?? profile.overall.theta;
     const standardError = competency?.standardError ?? profile.overall.standardError;
@@ -576,6 +602,8 @@ export async function getAdaptiveTarget(params: {
         intensity: intensityFor(theta),
         stop,
         isPrecise: isPreciseEnough(standardError, targetSe),
+        responsesUsed: competency?.responsesUsed ?? 0,
+        source: competency && competency.responsesUsed > 0 ? 'measured' : 'prior',
     };
 }
 

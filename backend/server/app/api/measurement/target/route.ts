@@ -102,7 +102,8 @@ export async function GET(request: Request) {
         }
 
         // A competencyId supplied on a session request is honoured only if the
-        // caller passed one explicitly; otherwise the engine picks the weakest.
+        // caller passed one explicitly; otherwise the engine targets whichever
+        // competency is least certain, where the next question buys most.
         if (!competencyId) competencyId = null;
 
         const target = await getAdaptiveTarget({

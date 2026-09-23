@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
+import { recomputeUserAbilities } from '@/lib/measurement/abilityService';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,7 +89,27 @@ export async function POST(
             },
         });
 
-        return NextResponse.json({ success: true, overallScore });
+        // Bring the candidate's measured ability profile up to date now that the
+        // session's responses are final. Awaited rather than fired and forgotten:
+        // a candidate who lands on their ability map right after finishing should
+        // see this session in it, and this only touches one user's rows.
+        //
+        // Never fatal — measurement is an enhancement of the results, so a
+        // failure here must not cost the candidate their completed session.
+        let measured = false;
+        if (session.userId && responses.length > 0) {
+            try {
+                await recomputeUserAbilities(session.userId, { sessionId });
+                measured = true;
+            } catch (measurementError) {
+                console.error(
+                    '[sessions/complete] Ability recompute failed (session still completed):',
+                    measurementError
+                );
+            }
+        }
+
+        return NextResponse.json({ success: true, overallScore, measured });
     } catch (error) {
         console.error('Session complete error:', error);
         return NextResponse.json({ success: true, skipped: true });

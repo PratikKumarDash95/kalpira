@@ -51,6 +51,8 @@ import {
     stopDecision,
     targetDifficultyFor,
 } from '../app/lib/measurement/selectionMath';
+import { measuredFromTarget } from '../app/lib/measurement/measuredDifficulty';
+import type { AdaptiveTarget } from '../app/lib/measurement/abilityService';
 
 // --------------------------------------------
 // Tiny harness
@@ -826,6 +828,113 @@ test('legacy difficulty labels map continuously from the target', () => {
     assert.equal(difficultyLabelFor(2), 'hard');
     // The boundary is continuous, not a three-way bucket.
     assert.equal(difficultyLabelFor(-0.49), 'medium');
+});
+
+// ============================================
+// [9] Measurement ↔ adaptive bridge
+// ============================================
+
+console.log('\n[9] Measurement bridge');
+
+/** Builds an AdaptiveTarget, so each check states only the field it is about. */
+function makeTarget(overrides: Partial<AdaptiveTarget> = {}): AdaptiveTarget {
+    return {
+        userId: 'user-1',
+        competencyId: 'comp-1',
+        competencyName: 'System Design',
+        theta: 0,
+        standardError: 1,
+        targetDifficulty: 0,
+        intensity: 'at-level',
+        stop: {
+            shouldStop: false,
+            reason: 'minimum-items-not-met',
+            explanation: 'Not enough items answered to conclude the measurement.',
+        },
+        isPrecise: false,
+        responsesUsed: 0,
+        source: 'prior',
+        ...overrides,
+    };
+}
+
+test('a prior is not mistaken for a measurement', () => {
+    // The whole integration turns on this: θ = 0 with SE = 1 is "we know nothing
+    // yet", and steering generation with it would fake adaptivity.
+    assert.equal(measuredFromTarget(makeTarget({ source: 'prior' })), null);
+});
+
+test('a measured target becomes a difficulty decision', () => {
+    const decision = measuredFromTarget(
+        makeTarget({ source: 'measured', responsesUsed: 12, theta: 1.1, targetDifficulty: 1.1 })
+    );
+    assert.ok(decision, 'a measured target must produce a decision');
+    assert.equal(decision!.difficulty, 'hard');
+    assert.equal(decision!.targetDifficulty, 1.1);
+    assert.equal(decision!.responsesUsed, 12);
+});
+
+test('the decision carries the evidence behind it', () => {
+    const decision = measuredFromTarget(
+        makeTarget({
+            source: 'measured',
+            responsesUsed: 9,
+            theta: -0.8,
+            standardError: 0.42,
+            targetDifficulty: -0.8,
+            intensity: 'below-level',
+            isPrecise: true,
+        })
+    );
+    assert.ok(decision);
+    assert.equal(decision!.theta, -0.8);
+    assert.equal(decision!.standardError, 0.42);
+    assert.equal(decision!.intensity, 'below-level');
+    assert.equal(decision!.competencyId, 'comp-1');
+    assert.equal(decision!.competencyName, 'System Design');
+});
+
+test('the tier tracks the continuous target rather than a fixed bucket', () => {
+    const tierAt = (targetDifficulty: number) =>
+        measuredFromTarget(makeTarget({ source: 'measured', responsesUsed: 5, targetDifficulty }))!
+            .difficulty;
+
+    assert.equal(tierAt(-2.4), 'easy');
+    assert.equal(tierAt(-0.4), 'medium');
+    assert.equal(tierAt(0.4), 'medium');
+    assert.equal(tierAt(2.4), 'hard');
+    // Two targets inside the same tier still differ — the continuous value is
+    // what generation should aim at, the tier is only what the session records.
+    const near = measuredFromTarget(makeTarget({ source: 'measured', responsesUsed: 5, targetDifficulty: 0.1 }))!;
+    const far = measuredFromTarget(makeTarget({ source: 'measured', responsesUsed: 5, targetDifficulty: 0.45 }))!;
+    assert.equal(near.difficulty, far.difficulty);
+    assert.notEqual(near.targetDifficulty, far.targetDifficulty);
+});
+
+test('the stop decision is carried through to the caller', () => {
+    const decision = measuredFromTarget(
+        makeTarget({
+            source: 'measured',
+            responsesUsed: 30,
+            standardError: 0.2,
+            isPrecise: true,
+            stop: {
+                shouldStop: true,
+                reason: 'target-precision-reached',
+                explanation: 'Standard error is at or below the target.',
+            },
+        })
+    );
+    assert.ok(decision);
+    assert.equal(decision!.shouldStop, true);
+});
+
+test('a measured target does not throw on a competency it cannot name', () => {
+    const decision = measuredFromTarget(
+        makeTarget({ source: 'measured', responsesUsed: 3, competencyId: null, competencyName: null })
+    );
+    assert.ok(decision, 'an unnamed competency is still a measurement');
+    assert.equal(decision!.competencyId, null);
 });
 
 // ============================================

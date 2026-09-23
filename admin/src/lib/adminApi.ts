@@ -83,6 +83,70 @@ export interface UserDetail {
     readinessScore: number | null;
 }
 
+// ─── Competency measurement (Feature 1) ────────────────────────────────────
+// The calibrated item bank. `concerns` is the important field: an item with an
+// empty list is one the engine can measure with, and anything else says why not.
+export interface ItemParameterRow {
+    itemKey: string;
+    label: string;
+    sampleText: string;
+    competencyId: string | null;
+    category: string | null;
+    a: number | null;
+    b: number | null;
+    c: number | null;
+    sampleSize: number;
+    proportionCorrect: number | null;
+    isRetired: boolean;
+    retiredReason: string | null;
+    calibratedAt: string | null;
+    concerns: string[];
+    usable: boolean;
+}
+
+export interface ItemBankTotals {
+    items: number;
+    live: number;
+    retired: number;
+    /** Live items whose sample is still small enough that a re-fit could move them. */
+    thinSamples: number;
+    withConcerns: number;
+}
+
+export interface ItemBankThresholds {
+    minSampleSize: number;
+    thinSample: number;
+    minDiscrimination: number;
+    retirementDiscrimination: number;
+    maxGuessing: number;
+}
+
+export interface ItemBank {
+    items: ItemParameterRow[];
+    totals: ItemBankTotals;
+    thresholds: ItemBankThresholds;
+    returned: number;
+    truncated: boolean;
+}
+
+export interface CalibrationSummary {
+    itemsConsidered: number;
+    itemsCalibrated: number;
+    itemsSkipped: number;
+    itemsNewlyRetired: number;
+    itemsUnretired: number;
+    unattributableResponses: number;
+    threshold: number;
+    minSampleSize: number;
+}
+
+export interface CalibrationResult {
+    success: boolean;
+    summary: CalibrationSummary;
+    minimumSampleSize: number;
+    note?: string;
+}
+
 // ─── API helpers ────────────────────────────────────────────────────────────
 // Every call throws with a readable message on failure so the UI can surface it
 // instead of silently rendering zeros.
@@ -124,4 +188,13 @@ export const AdminApi = {
         apiFetch('/api/admin/sessions', { method: 'DELETE', body: JSON.stringify({ sessionId }) }).then(json<{ success: boolean }>),
 
     feedback: () => apiFetch('/api/admin/feedback').then(json<{ feedback: FeedbackItem[]; count: number; averageRating: number }>),
+
+    // ─── Competency measurement (Feature 1) ─────────────────────────────────
+    itemBank: () => apiFetch('/api/measurement/items').then(json<ItemBank>),
+
+    /** Re-fits item parameters from response history. Admin-only, and slow. */
+    calibrate: (body: { minSampleSize?: number } = {}) =>
+        apiFetch('/api/measurement/calibrate', { method: 'POST', body: JSON.stringify(body) }).then(
+            json<CalibrationResult>
+        ),
 };

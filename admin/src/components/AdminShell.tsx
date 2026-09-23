@@ -11,7 +11,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Activity, BarChart3, Menu, X, Shield, LogOut, ChevronRight,
-    Database, UserCog, GraduationCap, MessageSquare,
+    Database, UserCog, GraduationCap, MessageSquare, Gauge,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/apiClient';
 import { AdminShellSkeleton } from '@/components/ui/Skeleton';
@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
     { href: '/interviewers', label: 'Interviewers', icon: UserCog },
     { href: '/studies', label: 'Studies', icon: GraduationCap },
     { href: '/sessions', label: 'Sessions', icon: Activity },
+    { href: '/calibration', label: 'Calibration', icon: Gauge },
     { href: '/feedback', label: 'Feedback', icon: MessageSquare },
 ];
 
