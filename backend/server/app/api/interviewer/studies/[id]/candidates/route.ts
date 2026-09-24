@@ -7,6 +7,7 @@ import supabaseDb from '@/lib/supabaseDb';
 import { isInterviewClosed } from '@/lib/interviewDeadline';
 import { excludeSelfPreviewSessions } from '@/lib/previewSession';
 import { getInterviewerId } from '@/lib/interviewerAuth';
+import { isMeasuredResponse, readScoreSet } from '@/lib/fairness/decisionLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,18 +80,30 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 depthAverage: sess.scoreBreakdown.depthAverage,
             } : null,
             questionCount: sess.questions.length,
-            qaItems: sess.questions.map((q: any) => ({
-                question: q.text,
-                answer: q.responses[0]?.answerText || '',
-                feedback: q.responses[0]?.feedback || '',
-                scores: {
-                    technical: q.responses[0]?.technicalScore || 0,
-                    communication: q.responses[0]?.communicationScore || 0,
-                    confidence: q.responses[0]?.confidenceScore || 0,
-                    logic: q.responses[0]?.logicScore || 0,
-                    depth: q.responses[0]?.depthScore || 0,
-                },
-            })),
+            qaItems: sess.questions.map((q: any) => {
+                // Feature 4: null for a dimension that was never measured, never 0. An
+                // interviewer reading this list is deciding who to advance, and a
+                // fabricated zero on that screen is the most costly one in the product.
+                const response = q.responses[0];
+                const measured = isMeasuredResponse(response);
+                const read = measured ? readScoreSet(response) : null;
+                const scores = read && read.state === 'measured' ? read.scores : null;
+
+                return {
+                    question: q.text,
+                    answer: response?.answerText || '',
+                    feedback: response?.feedback || '',
+                    measured,
+                    scoreSource: response?.scoreSource ?? null,
+                    scores: {
+                        technical: scores?.technicalScore ?? null,
+                        communication: scores?.communicationScore ?? null,
+                        confidence: scores?.confidenceScore ?? null,
+                        logic: scores?.logicScore ?? null,
+                        depth: scores?.depthScore ?? null,
+                    },
+                };
+            }),
         }));
 
         return NextResponse.json({

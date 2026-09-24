@@ -27,7 +27,13 @@ interface StudySummary {
     config: { name: string; researchQuestion: string; aiBehavior: string };
     candidateCount: number;
     completedCount: number;
-    averageScore: number;
+    /** How many of the completed interviews the average covers. Added with Feature 4. */
+    scoredCount?: number;
+    /**
+     * Null when no candidate in this study was scored. Never 0 as a stand-in: a study with
+     * nothing measured has no average score, and 0 would say every candidate scored zero.
+     */
+    averageScore: number | null;
     createdAt: string;
 }
 
@@ -336,9 +342,13 @@ const InterviewerDashboard: React.FC = () => {
                         {
                             label: 'Avg Score',
                             value: (() => {
-                                const scored = studies.filter(st => st.averageScore > 0);
+                                // `!== null`, not `> 0`: a study whose candidates genuinely
+                                // averaged 0 is a measurement and belongs in this figure, and
+                                // a study with nothing scored is not one and must not be
+                                // counted as a zero.
+                                const scored = studies.filter(st => st.averageScore !== null);
                                 if (!scored.length) return '—';
-                                const sum = scored.reduce((s, st) => s + st.averageScore, 0);
+                                const sum = scored.reduce((s, st) => s + (st.averageScore ?? 0), 0);
                                 return `${Math.round(sum / scored.length)}%`;
                             })(),
                             icon: TrendingUp,
@@ -417,8 +427,14 @@ const InterviewerDashboard: React.FC = () => {
                                             </div>
                                             <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                                 <BarChart2 size={13} />
-                                                <span className={study.averageScore > 0 ? scoreColor(study.averageScore) : 'text-slate-600'}>
-                                                    {study.averageScore > 0 ? `${study.averageScore}% avg` : 'No scores yet'}
+                                                {/* A measured 0 shows "0% avg"; only a study
+                                                    with nothing scored shows "No scores yet".
+                                                    Collapsing the two would tell an interviewer
+                                                    that a cohort of candidates scored zero. */}
+                                                <span className={study.averageScore !== null ? scoreColor(study.averageScore) : 'text-slate-600'}>
+                                                    {study.averageScore !== null
+                                                        ? `${study.averageScore}% avg${study.scoredCount !== undefined && study.scoredCount < study.completedCount ? ` over ${study.scoredCount} scored` : ''}`
+                                                        : 'No scores yet'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-xs text-slate-500">

@@ -10,6 +10,7 @@ import {
     TrendingUp, MessageSquare, Brain, Zap, Target, BookOpen, Activity
 } from 'lucide-react';
 import PageShell from '@/components/layout/PageShell';
+import { CohortTagging, StudyFairnessPanel, type CohortKeyDeclaration } from '@/components/FairnessPanel';
 
 interface ScoreBreakdown {
     overallScore: number;
@@ -24,7 +25,23 @@ interface QAItem {
     question: string;
     answer: string;
     feedback: string;
-    scores: { technical: number; communication: number; confidence: number; logic: number; depth: number };
+    /**
+     * Null for any dimension that was not measured.
+     *
+     * Feature 4: the API reports null rather than 0, and these numbers are decisions about
+     * people. Declaring them non-null here would let the next consumer read a not-measured
+     * answer as a zero without anything complaining - which is exactly how the previous
+     * generation of this bug got in.
+     */
+    measured?: boolean;
+    scoreSource?: string | null;
+    scores: {
+        technical: number | null;
+        communication: number | null;
+        confidence: number | null;
+        logic: number | null;
+        depth: number | null;
+    };
 }
 
 interface Candidate {
@@ -74,6 +91,10 @@ const InterviewerStudyDetail: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    // The study's declared cohort keys, read by the fairness panel and reused by the
+    // tagging control below it. Held here rather than fetched twice: a candidate row and
+    // the panel would otherwise each ask the same question and could disagree.
+    const [cohortDeclaration, setCohortDeclaration] = useState<CohortKeyDeclaration[]>([]);
 
     useEffect(() => {
         const load = async () => {
@@ -119,9 +140,16 @@ const InterviewerStudyDetail: React.FC = () => {
     const completed = candidates.filter(c => c.completedAt);
     const absent = candidates.filter(c => c.status === 'absent');
     const rejected = candidates.filter(c => c.status === 'rejected');
-    const avgScore = completed.length > 0
-        ? Math.round(completed.reduce((s, c) => s + c.averageScore, 0) / completed.length)
-        : 0;
+    // Feature 4: averaged over the candidates who were actually scored, not over everyone
+    // who finished. `averageScore` is a not-null column defaulting to 0, so the old
+    // `reduce(… + c.averageScore) / completed.length` counted an unscored interview as a
+    // zero: four measured candidates at 80 alongside one whose answers nothing scored
+    // averaged to 64, a figure that describes nobody. The denominator here is the number of
+    // candidates with a breakdown, and the caption says so.
+    const scored = completed.filter(c => c.scoreBreakdown !== null);
+    const avgScore = scored.length > 0
+        ? Math.round(scored.reduce((s, c) => s + c.scoreBreakdown!.overallScore, 0) / scored.length)
+        : null;
 
     return (
         <PageShell>
@@ -152,7 +180,15 @@ const InterviewerStudyDetail: React.FC = () => {
                         { label: 'Completed', value: completed.length, icon: CheckCircle, color: 'text-emerald-400' },
                         { label: 'Absent', value: absent.length, icon: XCircle, color: 'text-red-400' },
                         { label: 'Rejected', value: rejected.length, icon: XCircle, color: 'text-brand-700' },
-                        { label: 'Avg Score', value: avgScore > 0 ? `${avgScore}%` : '—', icon: TrendingUp, color: 'text-blue-400' },
+                        // Null renders as '—', never 0: a study where nothing has been scored
+                        // has no average, and 0% would read as "everyone scored nothing".
+                        {
+                            label: 'Avg Score',
+                            value: avgScore !== null ? `${avgScore}%` : '—',
+                            sub: scored.length > 0 ? `over ${scored.length} scored` : 'nothing scored yet',
+                            icon: TrendingUp,
+                            color: 'text-blue-400',
+                        },
                     ].map(stat => (
                         <div key={stat.label} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-2">
@@ -160,6 +196,9 @@ const InterviewerStudyDetail: React.FC = () => {
                                 <span className="text-xs text-slate-500">{stat.label}</span>
                             </div>
                             <p className="text-2xl font-bold text-white">{stat.value}</p>
+                            {/* Says what the average is over. An unscored interview is not a
+                                zero, and a reader has to be able to see it is not counted. */}
+                            {stat.sub && <p className="mt-1 text-[11px] text-slate-500">{stat.sub}</p>}
                         </div>
                     ))}
                 </div>
@@ -170,6 +209,15 @@ const InterviewerStudyDetail: React.FC = () => {
                         <p className="text-sm text-red-400">{error}</p>
                     </div>
                 )}
+
+                {/* Feature 4: whether this study has been audited, what the audit could not
+                    examine, and what it found. Above the candidate list, because it is a fact
+                    about the study rather than about any one candidate — but it is deliberately
+                    a summary only. The per-cohort figures are admin-facing.
+
+                    It also hands down the study's declared cohort keys, so the tagging control
+                    on each candidate offers exactly what the study declared. */}
+                <StudyFairnessPanel studyId={studyId} onDeclaration={setCohortDeclaration} />
 
                 {/* Candidates */}
                 <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -296,6 +344,15 @@ const InterviewerStudyDetail: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 )}
+
+                                                {/* Feature 4: which declared cohort this
+                                                    candidate is in. The value is used only to
+                                                    compare selection rates between groups, and
+                                                    it never touches a score. */}
+                                                <CohortTagging
+                                                    sessionId={candidate.sessionId}
+                                                    declaration={cohortDeclaration}
+                                                />
 
                                                 {/* Feature 2: how the answers were actually delivered.
                                                     Shown beside the score, not instead of it — the
