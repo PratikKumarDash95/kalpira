@@ -7,6 +7,13 @@ import {
     analyzeResponseDelivery,
     type DeliveryCapturePayload,
 } from '@/lib/delivery/deliveryService';
+import {
+    appendLinkedDecision,
+    findScoredDecision,
+    readScoreSet,
+    scoreSourceFor,
+    verifyScores,
+} from '@/lib/fairness/decisionLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,14 +35,24 @@ export async function POST(
             category = 'general',
             difficulty = 'medium',
             answerText,
-            technicalScore = 0,
-            communicationScore = 0,
-            confidenceScore = 0,
-            logicScore = 0,
-            depthScore = 0,
-            feedback = '',
+            // ── Feature 4: the scores are NOT read from the body any more ─────────
+            //
+            // They used to be, and upstream they came from a browser-side heuristic that
+            // scored an answer by counting its words and matching a few regexes. So the
+            // numbers in this table described a word count, not a model, and nothing could
+            // tell the difference — the interview's own "AI evaluation" was the shape of
+            // the text box.
+            //
+            // What arrives instead is the id of the model decision recorded by
+            // `/api/interview`, plus optionally the scores the client displayed. The
+            // LOGGED scores are what gets persisted; the claimed ones are only ever
+            // compared against them, so a client that inflated a number is caught rather
+            // than believed. The old top-level score fields are deliberately not
+            // destructured: leaving them in the body has no effect, and a field nobody
+            // reads cannot become a field somebody trusts again by accident.
+            decisionId = null,
+            claimedScores = null,
             idealAnswer = '',
-            improvementTip = '',
             // Feature 2 — the browser's raw capture for this answer, when it had
             // one. Optional by design: a candidate without a microphone, or one
             // who declined camera access, still gets a scored interview.
@@ -45,14 +62,9 @@ export async function POST(
             category?: string;
             difficulty?: string;
             answerText: string;
-            technicalScore?: number;
-            communicationScore?: number;
-            confidenceScore?: number;
-            logicScore?: number;
-            depthScore?: number;
-            feedback?: string;
+            decisionId?: string | null;
+            claimedScores?: Record<string, unknown> | null;
             idealAnswer?: string;
-            improvementTip?: string;
             delivery?: DeliveryCapturePayload | null;
         };
 
@@ -112,6 +124,25 @@ export async function POST(
             );
         }
 
+        // ── Feature 4: read the measurement back from our own record ─────────
+        //
+        // `findScoredDecision` looks up the 'scored' row written by `/api/interview`;
+        // `verifyScores` is pure and decides what may be persisted. Its answer is always
+        // the MODEL's scores when a decision could be traced, never the client's — and
+        // when nothing could be traced, the client's numbers are kept but labelled
+        // 'unverified', which excludes them from every fairness figure.
+        //
+        // Note `readScoreSet` requires ALL FIVE dimensions to be present and in range. A
+        // client sending four is not a partial measurement to be completed; it is a claim
+        // this route will not accept.
+        const claimedRead = readScoreSet(claimedScores);
+        const lookup = await findScoredDecision(decisionId);
+        const verified = verifyScores(
+            lookup,
+            claimedRead.state === 'measured' ? claimedRead.scores : null
+        );
+        const scoreSource = scoreSourceFor(verified.verification, verified.persist);
+
         // Create question record
         const question = await supabaseDb.question.create({
             data: {
@@ -128,15 +159,47 @@ export async function POST(
                 sessionId,
                 questionId: question.id,
                 answerText,
-                technicalScore,
-                communicationScore,
-                confidenceScore,
-                logicScore,
-                depthScore,
-                feedback,
+                // NULL, never 0, when nothing was measured. These five columns are the
+                // measurement; a measurement whose producer cannot be named is not one, and
+                // filling the gap with zeroes is exactly the fabrication this product
+                // promises never to commit. `scoreSource` is derived from the same result
+                // that produced these values, so the label and the numbers cannot disagree
+                // — which is also what the Response_score_source_measured_check constraint
+                // enforces in the database.
+                technicalScore: verified.persist?.technicalScore ?? null,
+                communicationScore: verified.persist?.communicationScore ?? null,
+                confidenceScore: verified.persist?.confidenceScore ?? null,
+                logicScore: verified.persist?.logicScore ?? null,
+                depthScore: verified.persist?.depthScore ?? null,
+                scoreSource,
+                decisionId: lookup.found ? decisionId : null,
+                // `feedback` and `improvementTip` are no longer written. They were composed
+                // in the browser by comparing the invented score against a threshold
+                // (`communicationScore > 70 ? 'Clear communication.' : ...`), so the
+                // candidate was being given generated prose attributed to the AI
+                // interviewer. They are left null rather than filled with something no
+                // model said; a real qualitative field needs the model asked for it.
+                feedback: null,
+                improvementTip: null,
                 idealAnswer,
-                improvementTip,
             },
+        });
+
+        // ── Feature 4: phase two of the log — where the decision landed ──────
+        //
+        // Append only. The 'scored' row written by `/api/interview` is never updated, so a
+        // mismatch is recorded as a second row rather than by rewriting the first: the
+        // claim and the fact both survive, which is the only version of this that is worth
+        // auditing. Never fatal — the answer is already saved above.
+        await appendLinkedDecision({
+            decisionId: lookup.found ? decisionId : null,
+            sessionId,
+            responseId: response.id,
+            studyId: session.studyId ?? null,
+            userId: session.userId ?? null,
+            verification: verified.verification,
+            mismatch: verified.mismatch ?? undefined,
+            reason: verified.reason,
         });
 
         // ── Feature 2: delivery analysis ─────────────────────────────────────
@@ -169,6 +232,11 @@ export async function POST(
             success: true,
             questionId: question.id,
             responseId: response.id,
+            // Reported back rather than kept private: a client (or whoever is debugging a
+            // scoring complaint) can see whether this answer's numbers were traced to a
+            // model decision, and a caller that sent scores it invented is told so.
+            scoreSource,
+            verification: verified.verification,
             deliveryAnalyzed,
             deliveryNote,
         });

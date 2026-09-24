@@ -5,6 +5,7 @@ import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
 import { assertTrustedOrigin } from '@/lib/csrf';
 import { recomputeUserAbilities } from '@/lib/measurement/abilityService';
+import { isMeasuredResponse } from '@/lib/fairness/decisionLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,50 +84,68 @@ export async function POST(
             );
         }
 
-        const responses = session.responses;
-        const count = responses.length || 1;
+        // ── Feature 4: average only what was actually measured ────────────────
+        //
+        // The old calculation was `reduce(sum + r[field]) / responses.length`, which read a
+        // not-measured answer as a zero: the null contributed nothing to the numerator
+        // while still counting in the denominator, so one measured answer of 80 alongside
+        // one unmeasured answer averaged to 40. That is a fabricated measurement — it
+        // describes neither answer — and it was invisible, because the arithmetic never
+        // failed.
+        //
+        // A response now counts only when its scores were read back from a recorded model
+        // decision. When none do, the session still completes (the candidate finished their
+        // interview, and that is a fact) but no breakdown is written, because there is no
+        // measurement to report. A missing breakdown is absent, and the API reports it as
+        // null — never as 0.
+        const measured = session.responses.filter((response: any) => isMeasuredResponse(response));
+        const count = measured.length;
 
-        // Compute averages
-        const avg = (field: keyof typeof responses[0]) =>
-            responses.reduce((sum: number, r: any) => sum + (r[field] as number), 0) / count;
-
-        const technicalAverage = avg('technicalScore');
-        const communicationAverage = avg('communicationScore');
-        const confidenceAverage = avg('confidenceScore');
-        const logicAverage = avg('logicScore');
-        const depthAverage = avg('depthScore');
-        const overallScore = (technicalAverage + communicationAverage + confidenceAverage + logicAverage + depthAverage) / 5;
-
-        // Upsert ScoreBreakdown
-        await supabaseDb.scoreBreakdown.upsert({
-            where: { sessionId },
-            create: {
-                sessionId,
-                overallScore,
-                technicalAverage,
-                communicationAverage,
-                confidenceAverage,
-                logicAverage,
-                depthAverage,
-            },
-            update: {
-                overallScore,
-                technicalAverage,
-                communicationAverage,
-                confidenceAverage,
-                logicAverage,
-                depthAverage,
-            },
-        });
-
-        // Update session with completedAt and averageScore
+        // Update the session with completedAt either way; the score is conditional.
         await supabaseDb.interviewSession.update({
             where: { id: sessionId },
-            data: {
-                completedAt: new Date(),
-                averageScore: overallScore,
-            },
+            data: { completedAt: new Date() },
         });
+
+        let overallScore: number | null = null;
+        if (count > 0) {
+            const avg = (field: string) =>
+                measured.reduce((sum: number, r: any) => sum + Number(r[field]), 0) / count;
+
+            const technicalAverage = avg('technicalScore');
+            const communicationAverage = avg('communicationScore');
+            const confidenceAverage = avg('confidenceScore');
+            const logicAverage = avg('logicScore');
+            const depthAverage = avg('depthScore');
+            overallScore = (technicalAverage + communicationAverage + confidenceAverage + logicAverage + depthAverage) / 5;
+
+            // Upsert ScoreBreakdown
+            await supabaseDb.scoreBreakdown.upsert({
+                where: { sessionId },
+                create: {
+                    sessionId,
+                    overallScore,
+                    technicalAverage,
+                    communicationAverage,
+                    confidenceAverage,
+                    logicAverage,
+                    depthAverage,
+                },
+                update: {
+                    overallScore,
+                    technicalAverage,
+                    communicationAverage,
+                    confidenceAverage,
+                    logicAverage,
+                    depthAverage,
+                },
+            });
+
+            await supabaseDb.interviewSession.update({
+                where: { id: sessionId },
+                data: { averageScore: overallScore },
+            });
+        }
 
         // Bring the candidate's measured ability profile up to date now that the
         // session's responses are final. Awaited rather than fired and forgotten:
@@ -135,11 +154,15 @@ export async function POST(
         //
         // Never fatal — measurement is an enhancement of the results, so a
         // failure here must not cost the candidate their completed session.
-        let measured = false;
-        if (session.userId && responses.length > 0) {
+        //
+        // Run whenever the session has responses, not only when they were measured: the
+        // recompute re-reads every session for this user, so gating it on this session's
+        // measurement would leave an unrelated correction unapplied.
+        let measuredAbility = false;
+        if (session.userId && session.responses.length > 0) {
             try {
                 await recomputeUserAbilities(session.userId, { sessionId });
-                measured = true;
+                measuredAbility = true;
             } catch (measurementError) {
                 console.error(
                     '[sessions/complete] Ability recompute failed (session still completed):',
@@ -148,7 +171,15 @@ export async function POST(
             }
         }
 
-        return NextResponse.json({ success: true, overallScore, measured });
+        return NextResponse.json({
+            success: true,
+            // Null, never 0, when nothing was measured. A client that renders this must say
+            // "not measured" rather than print a zero the candidate never scored.
+            overallScore,
+            assessed: count > 0,
+            measuredAnswers: count,
+            measured: measuredAbility,
+        });
     } catch (error) {
         console.error('Session complete error:', error);
         return NextResponse.json({ success: true, skipped: true });

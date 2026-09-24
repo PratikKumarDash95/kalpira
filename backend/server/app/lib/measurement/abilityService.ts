@@ -10,6 +10,7 @@
 // ============================================
 
 import supabaseDb from '@/lib/supabaseDb';
+import { isMeasuredResponse, readScoreSet } from '@/lib/fairness/decisionLog';
 import { deriveCorrectness, type DimensionScores } from './calibrationMath';
 import { resolveItemParametersForText } from './calibration';
 import {
@@ -181,6 +182,9 @@ async function loadAttributedResponses(
             id: true,
             sessionId: true,
             questionId: true,
+            // Feature 4: the provenance label travels with the scores, so a
+            // not-measured answer can be skipped rather than read as a zero.
+            scoreSource: true,
             technicalScore: true,
             communicationScore: true,
             confidenceScore: true,
@@ -223,12 +227,23 @@ async function loadAttributedResponses(
             continue;
         }
 
+        // Skip anything that was not measured rather than reading it as zero.
+        // `Number(response.technicalScore) || 0` used to turn a not-measured answer into
+        // five confident zeroes, which then became evidence about what this person cannot
+        // do. An absence contributes nothing to a competence estimate; a fabricated zero
+        // contributes a wrong one, and this is the one call site where that difference
+        // changes a claim about a human being.
+        if (!isMeasuredResponse(response) || readScoreSet(response).state !== 'measured') {
+            skipped += 1;
+            continue;
+        }
+
         const scores: DimensionScores = {
-            technicalScore: Number(response.technicalScore) || 0,
-            communicationScore: Number(response.communicationScore) || 0,
-            confidenceScore: Number(response.confidenceScore) || 0,
-            logicScore: Number(response.logicScore) || 0,
-            depthScore: Number(response.depthScore) || 0,
+            technicalScore: Number(response.technicalScore),
+            communicationScore: Number(response.communicationScore),
+            confidenceScore: Number(response.confidenceScore),
+            logicScore: Number(response.logicScore),
+            depthScore: Number(response.depthScore),
         };
 
         const params = await resolveItemParametersForText(question.text || '', question.difficulty);

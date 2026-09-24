@@ -14,6 +14,13 @@ import {
 } from '@/types';
 import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 import { withPlatformAiConfig } from '@/lib/platformAiConfig';
+import {
+  appendScoredDecision,
+  hashInput,
+  readScoreSet,
+  redactOutput,
+} from '@/lib/fairness/decisionLog';
+import { INTERVIEW_PROMPT_VERSION } from '@/lib/prompts';
 
 // Payload size limits to prevent abuse
 const MAX_HISTORY_MESSAGES = 100;
@@ -130,7 +137,48 @@ export async function POST(request: Request) {
       currentContext
     );
 
-    return NextResponse.json(result);
+    // ── Feature 4: record the decision, before anyone can profit from claiming it ──
+    //
+    // This is the moment a score comes into existence, and the only moment at which its
+    // provenance is known first-hand. Everything downstream — the browser, the save
+    // handler, the audit — trusts THIS row and not the request body, which is why it is
+    // written here rather than reconstructed later from whatever the client chooses to
+    // send.
+    //
+    // Written even when the model returned no scores, so that a later link can tell "the
+    // model was asked and produced none" from "nothing was ever recorded". It is skipped
+    // only when the provider reported a failure, since a crashed call is not a decision.
+    //
+    // `appendScoredDecision` never throws: a database problem must not fail an interview
+    // in progress. It returns a null id instead, and the client then forwards null, which
+    // labels the answer's scores 'unverified' rather than pretending they were traced.
+    let decisionId: string | null = null;
+    if (!result.errorCode) {
+      const read = readScoreSet(result.scores);
+      const identity = provider.describeModel?.() ?? {
+        provider: studyConfig.aiProvider ?? null,
+        model: studyConfig.aiModel ?? null,
+      };
+
+      const logged = await appendScoredDecision({
+        studyId: studyConfig.id ?? null,
+        userId: context.userId ?? null,
+        provider: identity.provider,
+        modelId: identity.model,
+        inputHash: hashInput({
+          studyId: studyConfig.id ?? null,
+          promptVersion: INTERVIEW_PROMPT_VERSION,
+          messages: history.map((message) => ({ role: message.role, content: message.content })),
+        }),
+        // The redacted structure, never the raw response: the log must not become a second
+        // copy of the candidate's own words. See `redactOutput`.
+        output: redactOutput(result),
+        scores: read.state === 'measured' ? read.scores : null,
+      });
+      decisionId = logged.decisionId;
+    }
+
+    return NextResponse.json({ ...result, decisionId });
   } catch (error) {
     console.error('Interview API error:', error);
     return NextResponse.json(

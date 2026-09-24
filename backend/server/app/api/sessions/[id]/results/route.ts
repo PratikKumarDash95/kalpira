@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import supabaseDb from '@/lib/supabaseDb';
 import { resolveSessionAccess } from '@/lib/sessionAccess';
+import { isMeasuredResponse, readScoreSet } from '@/lib/fairness/decisionLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,23 +53,45 @@ export async function GET(
         // Build structured results
         const qaItems = session.questions.map((q: any) => {
             const r = q.responses[0]; // One response per question
+            // Feature 4: a not-measured answer reports null for every dimension, never 0 —
+            // and says which it is, so a reader can tell "the model scored this zero" from
+            // "nothing scored this". Null twice over: `?? null` because the columns are
+            // nullable now, and a deliberate absence of the substitution that used to
+            // turn them into zeroes.
+            const measured = isMeasuredResponse(r);
+            const read = measured ? readScoreSet(r) : null;
+            const scores = read && read.state === 'measured' ? read.scores : null;
+
             return {
+                // Feature 4: the answer's id, so the "how your score was decided" view can
+                // join each question to the model decision that scored it. Without it the
+                // candidate's provenance page could only list opaque ids.
+                responseId: r?.id ?? null,
                 question: q.text,
                 category: q.category,
                 difficulty: q.difficulty,
                 answer: r?.answerText || '',
+                measured,
+                scoreSource: r?.scoreSource ?? null,
                 scores: {
-                    technical: r?.technicalScore || 0,
-                    communication: r?.communicationScore || 0,
-                    confidence: r?.confidenceScore || 0,
-                    logic: r?.logicScore || 0,
-                    depth: r?.depthScore || 0,
+                    technical: scores?.technicalScore ?? null,
+                    communication: scores?.communicationScore ?? null,
+                    confidence: scores?.confidenceScore ?? null,
+                    logic: scores?.logicScore ?? null,
+                    depth: scores?.depthScore ?? null,
                 },
                 feedback: r?.feedback || '',
                 idealAnswer: r?.idealAnswer || '',
                 improvementTip: r?.improvementTip || '',
             };
         });
+
+        // Null, never 0, for a session with nothing measured. The old fallback here was
+        // `breakdown?.overallScore || averageScore`, and `averageScore` is a `not null
+        // default 0` column — so a session whose answers were never scored reported an
+        // overallScore of exactly 0, which reads as "this candidate scored zero" rather
+        // than "this candidate was not scored".
+        const breakdown = session.scoreBreakdown ?? null;
 
         return NextResponse.json({
             sessionId: session.id,
@@ -77,14 +100,15 @@ export async function GET(
             mode: session.mode,
             startedAt: session.startedAt,
             completedAt: session.completedAt,
-            overallScore: session.scoreBreakdown?.overallScore || session.averageScore,
-            scoreBreakdown: session.scoreBreakdown
+            assessed: breakdown !== null,
+            overallScore: breakdown ? breakdown.overallScore : null,
+            scoreBreakdown: breakdown
                 ? {
-                    technical: session.scoreBreakdown.technicalAverage,
-                    communication: session.scoreBreakdown.communicationAverage,
-                    confidence: session.scoreBreakdown.confidenceAverage,
-                    logic: session.scoreBreakdown.logicAverage,
-                    depth: session.scoreBreakdown.depthAverage,
+                    technical: breakdown.technicalAverage,
+                    communication: breakdown.communicationAverage,
+                    confidence: breakdown.confidenceAverage,
+                    logic: breakdown.logicAverage,
+                    depth: breakdown.depthAverage,
                 }
                 : null,
             qaItems,

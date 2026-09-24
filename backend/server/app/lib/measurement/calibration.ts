@@ -12,6 +12,7 @@
 // ============================================
 
 import supabaseDb from '@/lib/supabaseDb';
+import { isMeasuredResponse, readScoreSet } from '@/lib/fairness/decisionLog';
 import {
     CORRECTNESS_THRESHOLD,
     MIN_SAMPLE_SIZE,
@@ -84,6 +85,11 @@ export async function calibrateItemBank(
             id: true,
             sessionId: true,
             questionId: true,
+            // Feature 4: the provenance label travels with the scores. Calibration fits
+            // item difficulty to scored answers, so an answer that was never scored must
+            // be excluded rather than read as a zero — a zero is a data point that says
+            // "this item is easy", and enough of them make an item look easier than it is.
+            scoreSource: true,
             technicalScore: true,
             communicationScore: true,
             confidenceScore: true,
@@ -109,6 +115,13 @@ export async function calibrateItemBank(
             continue;
         }
 
+        // Feature 4: an unmeasured answer is absent, not zero. `Number(x) || 0` would
+        // have made it a real observation of a real score.
+        if (!isMeasuredResponse(response) || readScoreSet(response).state !== 'measured') {
+            unattributableResponses += 1;
+            continue;
+        }
+
         const entry: ResponseWithQuestion = {
             responseId: response.id,
             sessionId: response.sessionId,
@@ -118,11 +131,11 @@ export async function calibrateItemBank(
             difficulty: question.difficulty ?? null,
             competencyId: question.competencyId ?? null,
             scores: {
-                technicalScore: Number(response.technicalScore) || 0,
-                communicationScore: Number(response.communicationScore) || 0,
-                confidenceScore: Number(response.confidenceScore) || 0,
-                logicScore: Number(response.logicScore) || 0,
-                depthScore: Number(response.depthScore) || 0,
+                technicalScore: Number(response.technicalScore),
+                communicationScore: Number(response.communicationScore),
+                confidenceScore: Number(response.confidenceScore),
+                logicScore: Number(response.logicScore),
+                depthScore: Number(response.depthScore),
             },
         };
 
