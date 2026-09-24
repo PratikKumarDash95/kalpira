@@ -191,6 +191,13 @@ const tables = {
   biasFlag: 'BiasFlag',
   decisionLog: 'DecisionLog',
   reviewRequest: 'ReviewRequest',
+  // Feature 5 — Talent & Research Intelligence
+  embedding: 'Embedding',
+  themeCluster: 'ThemeCluster',
+  themeOccurrence: 'ThemeOccurrence',
+  trendSnapshot: 'TrendSnapshot',
+  benchmark: 'Benchmark',
+  indexJob: 'IndexJob',
 } as const;
 
 type ModelName = keyof typeof tables;
@@ -248,6 +255,22 @@ type SupabaseDb = {
   biasFlag: Delegate;
   decisionLog: Delegate;
   reviewRequest: Delegate;
+  // Feature 5 — Talent & Research Intelligence
+  embedding: Delegate;
+  themeCluster: Delegate;
+  themeOccurrence: Delegate;
+  trendSnapshot: Delegate;
+  benchmark: Delegate;
+  indexJob: Delegate;
+  /**
+   * Call a Postgres function.
+   *
+   * The only path to `match_embeddings`, which orders by the cosine distance operator
+   * — something PostgREST's query syntax cannot express and `$queryRaw` cannot either
+   * (it is a connectivity probe, not an executor). Narrow on purpose: named functions,
+   * named arguments, no SQL from the caller.
+   */
+  $rpc(name: string, params?: Row): Promise<any>;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -278,6 +301,11 @@ const dateFields = new Set([
   // until the request closes, so the coercion leaves null alone rather than inventing a date.
   'requestedAt',
   'resolvedAt',
+  // Feature 5 — Talent & Research Intelligence
+  'observedAt',
+  'firstSeenAt',
+  'lastSeenAt',
+  'computedAt',
 ]);
 
 function normalizeRow<T>(row: T): T {
@@ -393,11 +421,36 @@ function applyWhereQuery(query: any, where?: Row) {
   }, query);
 }
 
+// A `select` entry is either a plain column (`true`) or a relation, which Prisma
+// spells as an object — `_count: { select: … }`, `user: { select: … }`. Only the
+// object form has to be loaded, so collect those and hand them to loadRelations
+// exactly as if they had been passed as `include`. Without this, an object-valued
+// entry is dropped twice over: loadRelations never sees it (it is only given
+// `include`), and applySelect then deletes it from the row.
+function selectRelations(select?: Row): Row | undefined {
+  if (!select) return undefined;
+  const relations: Row = {};
+  for (const [key, value] of Object.entries(select)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) relations[key] = value;
+  }
+  return Object.keys(relations).length > 0 ? relations : undefined;
+}
+
 function applySelect(row: Row, select?: Row): Row {
   if (!select) return row;
   const out: Row = {};
   for (const [key, enabled] of Object.entries(select)) {
-    if (enabled === true) out[key] = row[key];
+    // `true` is a plain column, an object is a relation loaded by loadRelations.
+    // Anything else (`false`, undefined) drops the key, as Prisma does.
+    //
+    // The `key in row` guard matters for `_count`: it is always asked for under a
+    // nested `select`, and a relation the loader could not build must be absent
+    // from the response rather than present-and-undefined. An undefined `_count`
+    // is what took the admin candidates page down — `/api/admin/users` returned
+    // rows without it and the table rendered `u._count.interviewSessions`.
+    if (enabled === true || (enabled && typeof enabled === 'object' && key in row)) {
+      out[key] = row[key];
+    }
   }
   return out;
 }
@@ -455,10 +508,15 @@ async function loadRelations(model: ModelName, row: Row, include?: Row): Promise
     if (include.studies) out.studies = await db.study.findMany({ where: { userId: row.id } });
     if (include.storedInterviews) out.storedInterviews = await db.storedInterview.findMany({ where: { userId: row.id } });
     if (include._count) {
-      out._count = {
-        interviewSessions: await db.interviewSession.count({ where: { userId: row.id } }),
-        studies: await db.study.count({ where: { userId: row.id } }),
-      };
+      // `_count` may be asked for bare or with a nested select. Both mean the same
+      // two tallies here (`interviewSessions` and `studies` are the only relations
+      // the model has counts for), so a nested select only ever narrows the result.
+      const wanted = include._count === true ? {} : (include._count.select || {});
+      const [interviewSessions, studies] = await Promise.all([
+        wanted.interviewSessions === false ? undefined : db.interviewSession.count({ where: { userId: row.id } }),
+        wanted.studies === false ? undefined : db.study.count({ where: { userId: row.id } }),
+      ]);
+      out._count = { interviewSessions, studies };
     }
   }
 
@@ -472,7 +530,20 @@ async function loadRelations(model: ModelName, row: Row, include?: Row): Promise
     if (include.questions) out.questions = await db.question.findMany({ where: { sessionId: row.id }, orderBy: include.questions.orderBy, include: include.questions.include, select: include.questions.select });
     if (include.responses) out.responses = await db.response.findMany({ where: { sessionId: row.id } });
     if (include.scoreBreakdown) out.scoreBreakdown = await db.scoreBreakdown.findUnique({ where: { sessionId: row.id } });
-    if (include.study) out.study = row.studyId ? await db.study.findUnique({ where: { id: row.studyId } }) : null;
+    // The nested include/select has to travel with the relation, not stop here:
+    // `/api/candidate/sessions` asks for `study: { include: { user: true } }` and
+    // renders the interviewer's name, which silently read as the generic
+    // "Interviewer" while the nested include was being dropped.
+    if (include.study) {
+      out.study = row.studyId
+        ? await db.study.findUnique({ where: { id: row.studyId }, include: include.study.include, select: include.study.select })
+        : null;
+    }
+    if (include.user) {
+      out.user = row.userId
+        ? await db.user.findUnique({ where: { id: row.userId }, include: include.user.include, select: include.user.select })
+        : null;
+    }
   }
 
   if (model === 'question' && include.responses) {
@@ -489,7 +560,11 @@ function delegate(model: ModelName) {
       rows = applyOrder(rows, args.orderBy);
       if (typeof args.skip === 'number') rows = rows.slice(Math.max(0, args.skip));
       if (typeof args.take === 'number') rows = rows.slice(0, args.take);
-      rows = await Promise.all(rows.map((row) => loadRelations(model, row, args.include)));
+      // Relations reach us two ways — as `include`, or as an object-valued
+      // `select` entry — and both mean "load this related record".
+      const include = { ...selectRelations(args.select), ...args.include };
+      const hasRelations = Object.keys(include).length > 0;
+      rows = await Promise.all(rows.map((row) => loadRelations(model, row, hasRelations ? include : undefined)));
       return rows.map((row) => applySelect(row, args.select));
     },
     async findFirst(args: Row = {}) {
@@ -597,6 +672,18 @@ const db: SupabaseDb = {
   biasFlag: delegate('biasFlag'),
   decisionLog: delegate('decisionLog'),
   reviewRequest: delegate('reviewRequest'),
+  // Feature 5 — Talent & Research Intelligence
+  embedding: delegate('embedding'),
+  themeCluster: delegate('themeCluster'),
+  themeOccurrence: delegate('themeOccurrence'),
+  trendSnapshot: delegate('trendSnapshot'),
+  benchmark: delegate('benchmark'),
+  indexJob: delegate('indexJob'),
+  async $rpc(name: string, params: Row = {}) {
+    const { data, error } = await supabase.rpc(name, params);
+    if (error) throw formatSupabaseError(error, name as ModelName, 'query');
+    return data;
+  },
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);
   },
