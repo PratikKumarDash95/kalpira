@@ -13,6 +13,7 @@
     "verify:delivery": "tsx server/scripts/verify-delivery.ts",
     "verify:integrity": "tsx server/scripts/verify-integrity.ts",
     "verify:fairness": "tsx server/scripts/verify-fairness.ts",
+    "verify:research": "tsx server/scripts/verify-research.ts",
     "test": "echo \"No backend database test script. Supabase is the database layer.\""
   },
   "dependencies": {

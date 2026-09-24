@@ -10,7 +10,10 @@
     "resolveJsonModule": true,
     "strict": false,
     "noEmit": true,
-    "baseUrl": ".",
+    // No baseUrl: it is not required for "paths" (TS 4.1+), and every target here is
+    // relative to this file, so it would resolve identically. What it would add is
+    // precedence over node_modules — a top-level directory named like a dependency
+    // would shadow it silently.
     "paths": {
       "@/*": ["./server/app/*"],
       "next/server": ["./server/next-compat/next-server.ts"],

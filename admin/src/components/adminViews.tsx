@@ -203,7 +203,11 @@ export function UsersTable({ title, users, search, setSearch, onCreate, onEdit, 
                                             {u.oauthProvider || 'Password'}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 hidden md:table-cell text-slate-300">{u._count.interviewSessions}</td>
+                                    {/* `_count` is optional at the type level because a response that
+                                        omits it used to blank this whole page with a TypeError. An
+                                        unknown count reads as "—" rather than 0 — a candidate may well
+                                        have no sessions, and guessing zero states something untrue. */}
+                                    <td className="px-4 py-3 hidden md:table-cell text-slate-300">{u._count ? u._count.interviewSessions : '—'}</td>
                                     <td className="px-4 py-3 hidden lg:table-cell text-slate-400 text-xs">{formatDate(u.createdAt)}</td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-end gap-1">
