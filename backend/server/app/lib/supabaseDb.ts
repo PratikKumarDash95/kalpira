@@ -184,6 +184,13 @@ const tables = {
   integrityReport: 'IntegrityReport',
   integrityAppeal: 'IntegrityAppeal',
   integrityReviewLog: 'IntegrityReviewLog',
+  // Feature 4 — Fairness, Bias & Compliance Audit
+  cohortAssignment: 'CohortAssignment',
+  auditRun: 'AuditRun',
+  cohortMetric: 'CohortMetric',
+  biasFlag: 'BiasFlag',
+  decisionLog: 'DecisionLog',
+  reviewRequest: 'ReviewRequest',
 } as const;
 
 type ModelName = keyof typeof tables;
@@ -234,6 +241,13 @@ type SupabaseDb = {
   integrityReport: Delegate;
   integrityAppeal: Delegate;
   integrityReviewLog: Delegate;
+  // Feature 4 — Fairness, Bias & Compliance Audit
+  cohortAssignment: Delegate;
+  auditRun: Delegate;
+  cohortMetric: Delegate;
+  biasFlag: Delegate;
+  decisionLog: Delegate;
+  reviewRequest: Delegate;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -260,6 +274,10 @@ const dateFields = new Set([
   'deliveryAnalyzedAt',
   'claimedAt',
   'finishedAt',
+  // Feature 4 — the human-review path. Both are timestamptz, and `resolvedAt` is null
+  // until the request closes, so the coercion leaves null alone rather than inventing a date.
+  'requestedAt',
+  'resolvedAt',
 ]);
 
 function normalizeRow<T>(row: T): T {
@@ -572,6 +590,13 @@ const db: SupabaseDb = {
   integrityReport: delegate('integrityReport'),
   integrityAppeal: delegate('integrityAppeal'),
   integrityReviewLog: delegate('integrityReviewLog'),
+  // Feature 4 — Fairness, Bias & Compliance Audit
+  cohortAssignment: delegate('cohortAssignment'),
+  auditRun: delegate('auditRun'),
+  cohortMetric: delegate('cohortMetric'),
+  biasFlag: delegate('biasFlag'),
+  decisionLog: delegate('decisionLog'),
+  reviewRequest: delegate('reviewRequest'),
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);
   },

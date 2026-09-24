@@ -224,6 +224,16 @@ export interface AIInterviewResponse {
     logic: number;
     depth: number;
   };
+  /**
+   * Feature 4 - the id of the DecisionLog row recording the model call that produced
+   * these scores.
+   *
+   * The client forwards it to `save-response` so the server can read the scores back from
+   * its own record instead of trusting the numbers in the request body. Null when no
+   * decision could be recorded, in which case the answer's scores are stored labelled
+   * 'unverified' rather than silently accepted as measured.
+   */
+  decisionId?: string | null;
   errorCode?: 'provider_unavailable';
 }
 
