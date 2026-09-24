@@ -38,48 +38,22 @@ import {
     MIN_ITEM_SCORED,
     MIN_SCORE_COVERAGE,
 } from './contract';
+// The refusal doctrine is the platform's rule rather than this feature's — Feature 5's
+// trend and benchmark maths declines to produce a number for exactly the same reasons —
+// so it lives in `../measured` and is re-exported here for every existing import site.
+import { computed, refused } from '../measured';
+import type { Computed, Refused, Measured, MeasuredNumber } from '../measured';
+
+export { computed, refused };
+export type { Computed, Refused, Measured, MeasuredNumber };
 
 // --------------------------------------------
 // The result type
 // --------------------------------------------
-
-/** A quantity that was computed. */
-export interface Computed<T> {
-    state: 'computed';
-    value: T;
-}
-
-/** A quantity that was NOT computed, and why. Carries no value at all. */
-export interface Refused {
-    state: 'refused';
-    reason: string;
-}
-
-/**
- * The result of a measurement that may have been refused.
- *
- * THE DISCRIMINANT IS A STRING, AND THAT IS NOT A STYLE CHOICE
- *
- * `backend/tsconfig.json` sets `strict: false`, and with `strictNullChecks` off TypeScript
- * does not narrow a union on a boolean literal — a `{ computable: true } | { computable:
- * false }` pair collapses to `{ computable: boolean }` at every use site, so the refusal
- * branch below every call would be dead code the compiler could not see. String literals
- * survive, so `state` is what the compiler can branch on. The same constraint is recorded
- * in `sessionAccess.ts`, and the boolean `computable` column on the database table is a
- * separate matter — the column stores a flag, this type has to narrow.
- */
-export type Measured<T> = Computed<T> | Refused;
-
-function computed<T>(value: T): Computed<T> {
-    return { state: 'computed', value };
-}
-
-function refused<T>(reason: string): Refused {
-    return { state: 'refused', reason };
-}
-
-/** `Measured<T>` where T is a double — the shape most callers want. */
-export type MeasuredNumber = Measured<number>;
+//
+// `Measured<T>`, `computed` and `refused` are imported and re-exported above; the
+// explanation of why the discriminant is a string travels with the type in
+// `../measured`, where Feature 5 reads it too.
 
 // --------------------------------------------
 // Elementary pieces
