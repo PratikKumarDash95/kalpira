@@ -51,6 +51,11 @@ export class GeminiProvider implements AIProvider {
       DEFAULT_GEMINI_MODEL;
   }
 
+  /** The provider and model this instance resolved. See `AIProvider.describeModel`. */
+  describeModel(): { provider: string | null; model: string | null } {
+    return { provider: 'gemini', model: this.model ?? null };
+  }
+
   // For interview responses (2.5 models) - disable thinking for speed (unless explicitly enabled)
   private getInterviewThinkingConfig(enableReasoning?: boolean) {
     const useReasoning = enableReasoning === true;

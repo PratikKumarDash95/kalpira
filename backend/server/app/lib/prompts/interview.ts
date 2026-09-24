@@ -19,6 +19,21 @@
 import { StudyConfig, ParticipantProfile, QuestionProgress } from '@/types';
 
 /**
+ * The version of the interview prompt below.
+ *
+ * Recorded on every entry in the decision log, and bumped by hand whenever the prompt
+ * changes in a way that could move a score. Same purpose as the integrity registry's
+ * version: a score is a product of the prompt that asked for it, and when the prompt
+ * changes, findings made under the old one must not be silently re-read as though the new
+ * one had produced them. A bias audit that mixes prompt versions without saying so is
+ * comparing two different measuring instruments and reporting the difference as a finding.
+ *
+ * Bump this when the scoring instructions change. Do not bump it for a typo in prose that
+ * cannot reach a score — a version that changes constantly tells a reader nothing.
+ */
+export const INTERVIEW_PROMPT_VERSION = 'interview-v1';
+
+/**
  * AI Behavior Modes
  *
  * Controls how the interviewer balances depth vs. coverage:
@@ -138,6 +153,10 @@ RULES:
   - If the user says "I don't know" or similar, score technical, depth, and logic very low (e.g., <30).
   - If the user is brief or vague, score depth low.
   - If the response is off-topic or nonsense, score all low.
+  - If there is NO user answer to evaluate (the opening turn, or a turn where the user
+    said nothing), OMIT 'scores' entirely or set it to null. Never report 0 for an answer
+    that was not given: a zero is a score, and scoring an absent answer invents a
+    measurement. Omitting is correct and expected here.
 
 ANTI-CHEAT & DEPTH RULES:
 - DYNAMIC PROBABILISTIC DRILL-DOWN: If the candidate provides a generic, textbook, or scripted answer (e.g., looks like a standard LLM output), DO NOT accept it. Immediately challenge them with a constraint or specific scenario. Example: "That is a standard answer. Now explain how you would handle this if we had zero budget for X."

@@ -74,6 +74,11 @@ export class ClaudeProvider implements AIProvider {
     this.synthesisModel = process.env.CLAUDE_SYNTHESIS_MODEL || CLAUDE_SYNTHESIS_MODEL;
   }
 
+  /** The provider and model this instance resolved. See `AIProvider.describeModel`. */
+  describeModel(): { provider: string | null; model: string | null } {
+    return { provider: 'claude', model: this.model ?? null };
+  }
+
   // For interview responses - no thinking by default (unless explicitly enabled)
   private getInterviewThinking(enableReasoning?: boolean): { type: 'enabled'; budget_tokens: number } | undefined {
     if (enableReasoning === true) {

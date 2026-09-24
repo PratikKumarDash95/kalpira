@@ -14,6 +14,7 @@
 
 // Interview system prompt and helpers
 export {
+  INTERVIEW_PROMPT_VERSION,
   buildInterviewSystemPrompt,
   getAIBehaviorInstruction,
   formatProfileFields

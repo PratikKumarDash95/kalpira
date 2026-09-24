@@ -40,6 +40,11 @@ export class OllamaProvider implements AIProvider {
             DEFAULT_OLLAMA_MODEL;
     }
 
+    /** The provider and model this instance resolved. See `AIProvider.describeModel`. */
+    describeModel(): { provider: string | null; model: string | null } {
+        return { provider: 'ollama', model: this.model ?? null };
+    }
+
     private async chat(messages: { role: string; content: string }[], jsonMode = false): Promise<string> {
         // Local models can take 2+ minutes for CPU inference — set a generous timeout
         const controller = new AbortController();

@@ -49,6 +49,17 @@ export interface AIProvider {
     parentConfig: StudyConfig,
     synthesis: AggregateSynthesisResult
   ): Promise<{ name: string; researchQuestion: string; coreQuestions: string[] }>;
+
+  /**
+   * The provider and model this instance ACTUALLY resolved.
+   *
+   * Recorded on every entry in the decision log, and reported from the instance rather than
+   * re-derived at the call site — the model falls back through `constructor > <PROVIDER>_MODEL
+   * > AI_MODEL > default`, so reading it back off `studyConfig` later would name the model
+   * somebody configured, not the one that produced the score. A provenance record that names
+   * the wrong model is worse than one that names none.
+   */
+  describeModel?(): { provider: string | null; model: string | null };
 }
 
 // Response schema for structured output (Gemini format)
@@ -100,7 +111,12 @@ export const interviewResponseSchema = {
         depth: { type: 'NUMBER' as const }
       },
       nullable: true,
-      description: 'Evaluate the LAST user message (0-100) on these 5 dimensions. Use 0 if no user message yet.'
+      // Deliberately NOT "use 0 if there is no user message yet". A zero is a score, and a
+      // score for an answer that does not exist is a fabricated measurement — the one thing
+      // this product promises never to do. Absent must be expressible as absent, so the
+      // model is told to omit the object instead, and every consumer treats an omitted
+      // `scores` as "not measured" rather than as five zeroes.
+      description: 'Evaluate the LAST user message (0-100) on these 5 dimensions. Omit this field entirely (or use null) when there is no user message to evaluate — never report 0 for an answer that was not given.'
     }
   },
   required: ['message', 'profileUpdates', 'shouldConclude']
