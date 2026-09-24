@@ -8,11 +8,12 @@ import {
     Trophy, Star, ChevronDown, ChevronUp, ArrowRight,
     RefreshCw, Home, CheckCircle, AlertCircle, Lightbulb,
     Target, TrendingUp, Brain, Zap, MessageSquare, Clock,
-    BarChart2, Award, BookOpen, Code, Users, Layers, Activity
+    BarChart2, Award, BookOpen, Code, Users, Layers, Activity, FileSearch
 } from 'lucide-react';
 import { Skeleton, SkeletonList, SkeletonStatRow } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
 import EmptyState from '@/components/layout/EmptyState';
+import ScoreProvenance from '@/components/ScoreProvenance';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ScoreBreakdown {
@@ -23,12 +24,33 @@ interface ScoreBreakdown {
     depth: number;
 }
 
+/**
+ * A dimension score, or null when it was never measured.
+ *
+ * Feature 4: the API reports null rather than 0 for an answer the model did not score.
+ * `null` is not a low score — it is the absence of one — and every reader here has to keep
+ * those apart, because "this candidate scored 0 on depth" and "nobody scored this answer
+ * on depth" are different statements about a person.
+ */
+interface NullableScoreBreakdown {
+    technical: number | null;
+    communication: number | null;
+    confidence: number | null;
+    logic: number | null;
+    depth: number | null;
+}
+
 interface QAItem {
+    /** The stored answer's id, used to join this question to the decision that scored it. */
+    responseId?: string | null;
     question: string;
     category: string;
     difficulty: string;
     answer: string;
-    scores: ScoreBreakdown;
+    /** Null for any dimension that was not measured. */
+    scores: NullableScoreBreakdown;
+    /** True when these scores trace to a recorded model decision. */
+    measured?: boolean;
     feedback: string;
     idealAnswer: string;
     improvementTip: string;
@@ -41,17 +63,24 @@ interface ResultsData {
     mode: string;
     startedAt: string;
     completedAt: string | null;
-    overallScore: number;
-    scoreBreakdown: ScoreBreakdown | null;
+    /** Null when nothing in this session was measured. Never 0 as a stand-in. */
+    overallScore: number | null;
+    scoreBreakdown: NullableScoreBreakdown | null;
+    /** Whether a breakdown exists at all. */
+    assessed?: boolean;
     qaItems: QAItem[];
 }
 
 // ─── Animated Score Ring ───────────────────────────────────────────────────────
-const ScoreRing: React.FC<{ score: number; size?: number }> = ({ score, size = 160 }) => {
+const ScoreRing: React.FC<{ score: number | null; size?: number }> = ({ score, size = 160 }) => {
     const [displayed, setDisplayed] = useState(0);
     const radius = (size - 20) / 2;
     const circumference = 2 * Math.PI * radius;
-    const pct = Math.min(Math.max(score, 0), 100);
+    // A null score draws an EMPTY ring and reads "Not measured". It does not draw a ring at
+    // zero, and it does not animate: a sweep from 0 to 0 is a statement that the candidate
+    // scored nothing, which is precisely what the absence of a score does not mean.
+    const measured = typeof score === "number" && Number.isFinite(score);
+    const pct = measured ? Math.min(Math.max(score as number, 0), 100) : 0;
     const offset = circumference - (pct / 100) * circumference;
 
     useEffect(() => {
@@ -65,8 +94,8 @@ const ScoreRing: React.FC<{ score: number; size?: number }> = ({ score, size = 1
         return () => clearTimeout(t);
     }, [pct]);
 
-    const color = pct >= 80 ? '#0ca30c' : pct >= 60 ? '#fab219' : pct >= 40 ? '#ec835a' : '#d03b3b';
-    const label = pct >= 80 ? 'Excellent' : pct >= 60 ? 'Good' : pct >= 40 ? 'Fair' : 'Needs Work';
+    const color = !measured ? '#64748b' : pct >= 80 ? '#0ca30c' : pct >= 60 ? '#fab219' : pct >= 40 ? '#ec835a' : '#d03b3b';
+    const label = !measured ? 'Not measured' : pct >= 80 ? 'Excellent' : pct >= 60 ? 'Good' : pct >= 40 ? 'Fair' : 'Needs Work';
 
     return (
         <div className="flex flex-col items-center gap-2 w-full max-w-[160px]">
@@ -83,8 +112,10 @@ const ScoreRing: React.FC<{ score: number; size?: number }> = ({ score, size = 1
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl sm:text-4xl font-bold text-white">{Math.round(displayed)}</span>
-                    <span className="text-xs text-slate-400">/ 100</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-white">
+                        {measured ? Math.round(displayed) : '-'}
+                    </span>
+                    <span className="text-xs text-slate-400">{measured ? '/ 100' : 'no score'}</span>
                 </div>
             </div>
             <span className="text-sm font-medium" style={{ color }}>{label}</span>
@@ -319,7 +350,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
     const router = useRouter();
     const [data, setData] = useState<ResultsData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'questions' | 'roadmap'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'questions' | 'roadmap' | 'decided'>('overview');
     const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
 
     useEffect(() => {
@@ -339,10 +370,15 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                         mode: fallbackData.mode || 'video',
                         startedAt: fallbackData.startedAt || new Date().toISOString(),
                         completedAt: new Date().toISOString(),
-                        overallScore: fallbackData.overallScore || 72,
-                        scoreBreakdown: fallbackData.scoreBreakdown || {
-                            technical: 70, communication: 75, confidence: 68, logic: 72, depth: 65,
-                        },
+                        // Feature 4: NOT `|| 72`, and not a made-up breakdown. If the
+                        // results could not be loaded, this page says so; it does not
+                        // invent a score. The old fallback showed the candidate 72 with
+                        // {70, 75, 68, 72, 65} — numbers no model produced, presented as
+                        // their interview result, and indistinguishable from real ones.
+                        // A page that cannot load a measurement must not manufacture one.
+                        overallScore: fallbackData.overallScore ?? null,
+                        scoreBreakdown: fallbackData.scoreBreakdown ?? null,
+                        assessed: false,
                         qaItems: fallbackData.qaItems || [],
                     } as ResultsData;
                     setData(fallback);
@@ -357,10 +393,10 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                         mode: 'video',
                         startedAt: new Date().toISOString(),
                         completedAt: new Date().toISOString(),
-                        overallScore: fallbackData.overallScore || 72,
-                        scoreBreakdown: fallbackData.scoreBreakdown || {
-                            technical: 70, communication: 75, confidence: 68, logic: 72, depth: 65,
-                        },
+                        // Same rule as above, for the network-failure path.
+                        overallScore: fallbackData.overallScore ?? null,
+                        scoreBreakdown: fallbackData.scoreBreakdown ?? null,
+                        assessed: false,
                         qaItems: [],
                     } as ResultsData;
                     setData(fallback);
@@ -376,10 +412,27 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
     const generateDynamicRoadmap = (results: ResultsData) => {
         if (!results.scoreBreakdown) return;
 
-        // Extract weak skills from QA items (questions with score < 60)
+        // Feature 4: a roadmap is advice, and advice built from a fabricated zero sends
+        // someone to study something the interview never assessed. All three inputs must be
+        // real, or there is no roadmap.
+        const { technical, communication, logic } = results.scoreBreakdown;
+        if (typeof technical !== 'number' || typeof communication !== 'number' || typeof logic !== 'number') {
+            return;
+        }
+
+        // Extract weak skills from QA items (questions with score < 60).
+        //
+        // Feature 4: only MEASURED items are considered, and an item counts only when all
+        // five dimensions are present. Object.values over a nullable scores object coerces
+        // null to 0, so a single unmeasured answer used to read as a 0/100 and nominate its
+        // topic as a weakness — the roadmap would then tell the candidate to go and study
+        // something the interview never actually assessed.
         const weakSkills: string[] = [];
         results.qaItems.forEach(item => {
-            const avg = Object.values(item.scores).reduce((a, b) => a + b, 0) / 5;
+            const values = Object.values(item.scores);
+            if (values.length !== 5 || values.some(value => typeof value !== 'number')) return;
+
+            const avg = (values as number[]).reduce((a, b) => a + b, 0) / 5;
             if (avg < 70) {
                 // Use question category or keywords as skill
                 weakSkills.push(item.category || 'General Knowledge');
@@ -397,9 +450,9 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
         const generated = generateRoadmap({
             weakSkills: uniqueWeakSkills.length > 0 ? uniqueWeakSkills : ['General Fundamentals'],
             difficulty,
-            technicalAverage: results.scoreBreakdown.technical,
-            communicationAverage: results.scoreBreakdown.communication,
-            logicAverage: results.scoreBreakdown.logic,
+            technicalAverage: technical,
+            communicationAverage: communication,
+            logicAverage: logic,
         });
         setRoadmap(generated);
     };
@@ -453,15 +506,39 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
         );
     }
 
+    // `null`, not 0. Every comparison below has to know which it has, because a null that
+    // fell through the old `>= 80 ? ... : ...` chain landed on the LAST branch — so an
+    // unscored interview was labelled "💪 Room to Grow", i.e. the page told the candidate
+    // they had performed poorly on the strength of having no measurement at all.
     const score = data.overallScore;
-    const breakdown = data.scoreBreakdown || { technical: 0, communication: 0, confidence: 0, logic: 0, depth: 0 };
-    const scoreColor = score >= 80 ? '#0ca30c' : score >= 60 ? '#fab219' : score >= 40 ? '#ec835a' : '#d03b3b';
-    const scoreLabel = score >= 80 ? '🏆 Excellent Performance' : score >= 60 ? '👍 Good Performance' : score >= 40 ? '📈 Keep Practicing' : '💪 Room to Grow';
+    const assessed = score !== null;
+    const stored = data.scoreBreakdown ?? null;
+    // Every chart below needs five real numbers. All five or nothing: the server writes the
+    // breakdown all-or-none, so a partial one means something is wrong, and drawing bars for
+    // it would put a fabricated 0 in whatever gap there was.
+    const breakdown = stored !== null
+        && Object.values(stored).length === 5
+        && Object.values(stored).every((value) => typeof value === "number")
+        ? (stored as unknown as ScoreBreakdown)
+        : null;
+    // Dimensions ordered weakest-first, for the roadmap line. Empty when nothing was
+    // measured, so the sentence degrades to a dash rather than to an invented topic.
+    const weakestSkills = breakdown === null
+        ? []
+        : Object.entries(breakdown).sort(([, a], [, b]) => a - b).map(([key]) => key);
+    const scoreColor = score === null ? '#64748b' : score >= 80 ? '#0ca30c' : score >= 60 ? '#fab219' : score >= 40 ? '#ec835a' : '#d03b3b';
+    const scoreLabel = score === null
+        ? 'Not measured'
+        : score >= 80 ? '🏆 Excellent Performance' : score >= 60 ? '👍 Good Performance' : score >= 40 ? '📈 Keep Practicing' : '💪 Room to Grow';
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: <BarChart2 size={14} /> },
         { id: 'questions', label: `Q&A (${data.qaItems.length})`, icon: <MessageSquare size={14} /> },
         { id: 'roadmap', label: 'Roadmap', icon: <Target size={14} /> },
+        // Feature 4: "How your score was decided". A tab rather than a link out, because it
+        // is part of the same answer to the same question — the candidate should not have to
+        // go looking for the record behind their own score.
+        { id: 'decided', label: 'How it was decided', icon: <FileSearch size={14} /> },
     ] as const;
 
     return (
@@ -510,17 +587,22 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 {data.role} · {data.difficulty} difficulty · {data.qaItems.length} questions answered
                             </p>
                             <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                                {score >= 70 && (
+                                {/* Feature 4: each of these badges is a claim ABOUT the
+                                    candidate, so none may appear without a measurement.
+                                    The comparisons are already null-safe - `null >= 70` is
+                                    false - but gating on the value states the intent
+                                    instead of depending on a JavaScript coercion. */}
+                                {score !== null && score >= 70 && (
                                     <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20">
                                         <Award size={12} /> Strong Candidate
                                     </span>
                                 )}
-                                {breakdown.communication >= 70 && (
+                                {breakdown?.communication != null && breakdown.communication >= 70 && (
                                     <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">
                                         <MessageSquare size={12} /> Great Communicator
                                     </span>
                                 )}
-                                {breakdown.technical >= 70 && (
+                                {breakdown?.technical != null && breakdown.technical >= 70 && (
                                     <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 text-brand-700 text-xs border border-brand-500/20">
                                         <Code size={12} /> Technical Strength
                                     </span>
@@ -558,6 +640,19 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                         <motion.div key="overview" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                             <div className="grid sm:grid-cols-2 gap-6">
                                 {/* Radar Chart */}
+                                {breakdown === null ? (
+                                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:col-span-2">
+                                        <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                                            <TrendingUp size={16} className="text-brand-700" /> Scores
+                                        </h3>
+                                        <p className="text-sm text-slate-400">
+                                            None of your answers in this interview carry a score. A score is only
+                                            recorded when it can be traced back to the AI interviewer&apos;s
+                                            evaluation of that specific answer, and nothing here could be - so
+                                            rather than showing you zeroes, this page shows you nothing.
+                                        </p>
+                                    </div>
+                                ) : (
                                 <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
                                     <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
                                         <TrendingUp size={16} className="text-brand-700" /> Skill Radar
@@ -566,8 +661,10 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                         <RadarChart scores={breakdown} />
                                     </div>
                                 </div>
+                                )}
 
                                 {/* Score Bars */}
+                                {breakdown !== null && (
                                 <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
                                     <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
                                         <BarChart2 size={16} className="text-brand-700" /> Score Breakdown
@@ -580,15 +677,20 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                         <ScoreBar label="Depth" value={breakdown.depth} color="#eda100" icon={<Layers size={14} />} />
                                     </div>
                                 </div>
+                                )}
                             </div>
 
                             {/* Quick stats */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {/* Feature 4: "Not measured" rather than "NaN%", and the two
+                                    best/weakest tiles are blank when there is no breakdown -
+                                    Object.entries(null) throws, which took the whole page
+                                    down rather than degrading. */}
                                 {[
-                                    { label: 'Overall Score', value: `${Math.round(score)}%`, icon: <Trophy size={18} className="text-amber-400" />, color: 'text-amber-400' },
+                                    { label: 'Overall Score', value: score === null ? 'Not measured' : `${Math.round(score)}%`, icon: <Trophy size={18} className="text-amber-400" />, color: 'text-amber-400' },
                                     { label: 'Questions', value: data.qaItems.length, icon: <MessageSquare size={18} className="text-blue-400" />, color: 'text-blue-400' },
-                                    { label: 'Best Skill', value: Object.entries(breakdown).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A', icon: <Star size={18} className="text-brand-700" />, color: 'text-brand-700' },
-                                    { label: 'Needs Work', value: Object.entries(breakdown).sort(([, a], [, b]) => a - b)[0]?.[0] || 'N/A', icon: <Target size={18} className="text-brand-700" />, color: 'text-brand-700' },
+                                    { label: 'Best Skill', value: breakdown === null ? '-' : Object.entries(breakdown).sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] || 'N/A', icon: <Star size={18} className="text-brand-700" />, color: 'text-brand-700' },
+                                    { label: 'Needs Work', value: breakdown === null ? '-' : Object.entries(breakdown).sort(([, a], [, b]) => (a as number) - (b as number))[0]?.[0] || 'N/A', icon: <Target size={18} className="text-brand-700" />, color: 'text-brand-700' },
                                 ].map((stat, i) => (
                                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
                                         <div className="flex justify-center mb-2">{stat.icon}</div>
@@ -623,7 +725,7 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 <div>
                                     <p className="text-sm font-medium text-slate-200">Your 4-Week Interview Prep Roadmap</p>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Based on your performance, focus on: <span className="text-brand-700 capitalize">{Object.entries(breakdown).sort(([, a], [, b]) => a - b)[0]?.[0]}</span> and <span className="text-brand-700 capitalize">{Object.entries(breakdown).sort(([, a], [, b]) => a - b)[1]?.[0]}</span>
+                                        Based on your performance, focus on: <span className="text-brand-700 capitalize">{weakestSkills[0] ?? '-'}</span> and <span className="text-brand-700 capitalize">{weakestSkills[1] ?? '-'}</span>
                                     </p>
                                 </div>
                             </div>
@@ -654,6 +756,17 @@ const InterviewResults: React.FC<InterviewResultsProps> = ({ sessionId, fallback
                                 </button>
                             </motion.div>
                         </motion.div>
+                    )}
+
+                    {/* How It Was Decided Tab — Feature 4 */}
+                    {/* The whole provenance view is one child component, including its own
+                        fetch and its own error state. It fails on its own without taking the
+                        results page down with it: a candidate whose provenance record cannot
+                        be read should still see their Q&A and their roadmap. */}
+                    {activeTab === 'decided' && (
+                        <div key="decided">
+                            <ScoreProvenance sessionId={sessionId} qaItems={data.qaItems} />
+                        </div>
                     )}
                 </AnimatePresence>
             </div>

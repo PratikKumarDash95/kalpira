@@ -24,24 +24,25 @@ const phaseLabels: Record<InterviewPhase, string> = {
     'wrap-up': 'Wrapping Up',
 };
 
-// ─── Score Extraction Helper ───────────────────────────────────────────────────
-function extractScoresFromAIResponse(aiText: string, userAnswer: string) {
-    // Heuristic scoring based on answer length and keywords
-    const wordCount = userAnswer.split(' ').length;
-    const hasExamples = /example|instance|specifically|for instance|such as/i.test(userAnswer);
-    const hasStructure = /first|second|then|finally|additionally|moreover/i.test(userAnswer);
-    const hasTechnical = /algorithm|system|architecture|database|api|framework|code|implement/i.test(userAnswer);
-    const isConfident = !/i don't know|not sure|maybe|i think|possibly/i.test(userAnswer);
-
-    const base = Math.min(60 + wordCount * 0.3, 85);
-    return {
-        technicalScore: Math.min(hasTechnical ? base + 10 : base - 5, 100),
-        communicationScore: Math.min(hasStructure ? base + 8 : base, 100),
-        confidenceScore: Math.min(isConfident ? base + 12 : base - 10, 100),
-        logicScore: Math.min(hasExamples ? base + 8 : base - 3, 100),
-        depthScore: Math.min(wordCount > 50 ? base + 10 : base - 5, 100),
-    };
-}
+// ─── Scores ────────────────────────────────────────────────────────────────────
+//
+// There is deliberately no scoring helper here any more.
+//
+// This file used to contain `extractScoresFromAIResponse`, which scored an answer by
+// counting its words and matching five regexes — `wordCount * 0.3 + 60`, plus ten points
+// for containing the word "algorithm". Those five numbers were then displayed to the
+// candidate as their evaluation, stored as the interview's scores, averaged into their
+// session result, and fed to the ability engine as evidence of what they can do. The
+// function never even read the AI's text: its first parameter was unused.
+//
+// So the product's answer to "how was my answer scored?" was: by its word count. Nothing
+// downstream could tell those numbers from real ones, which is what made it dangerous
+// rather than merely wrong.
+//
+// Scores now come from the model or not at all. `/api/interview` records the model's
+// decision server-side and returns its id; this component forwards that id and never
+// computes, adjusts or defaults a score. An answer with no model score is recorded as not
+// measured, and the UI says so.
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 const VideoInterview: React.FC = () => {
@@ -475,14 +476,24 @@ const VideoInterview: React.FC = () => {
 
             // Save to DB (fire-and-forget, non-blocking)
             if (sessionId && lastAiQuestion) {
-                // Map scores to DB schema
-                const dbScores = response.scores ? {
+                // ── Feature 4: forward the decision id, not the scores ───────────
+                //
+                // The server looks the model's decision up by id and persists ITS scores.
+                // `claimedScores` is what this client displayed, and the server only ever
+                // compares it against the logged set — so if these numbers were ever
+                // tampered with in the browser, the server records the tampering and still
+                // stores the model's numbers. It is never the source of truth.
+                //
+                // When `response.scores` is absent, both go as null. The answer is then
+                // recorded as not measured, which is true, rather than scored by a
+                // fallback that would be inventing a measurement.
+                const claimedScores = response.scores ? {
                     technicalScore: response.scores.technical,
                     communicationScore: response.scores.communication,
                     confidenceScore: response.scores.confidence,
                     logicScore: response.scores.logic,
-                    depthScore: response.scores.depth
-                } : extractScoresFromAIResponse(response.message, text);
+                    depthScore: response.scores.depth,
+                } : null;
 
                 apiFetch(`/api/sessions/${sessionId}/save-response`, {
                     method: 'POST',
@@ -495,10 +506,15 @@ const VideoInterview: React.FC = () => {
                         category: questionProgress.currentPhase === 'core-questions' ? 'technical' : 'behavioral',
                         difficulty: 'medium',
                         answerText: text,
-                        ...dbScores,
-                        feedback: `Good response. ${dbScores.communicationScore > 70 ? 'Clear communication.' : 'Try to be more structured.'}`,
+                        decisionId: response.decisionId ?? null,
+                        claimedScores,
+                        // `feedback` and `improvementTip` are gone from this request. They
+                        // were composed here, not by the model — a threshold on the score
+                        // produced "Good response. Clear communication." and a canned tip.
+                        // Generated prose presented as the AI interviewer's assessment is
+                        // the same defect as a generated score, so it goes with the
+                        // scoring helper rather than being quietly kept.
                         idealAnswer: '',
-                        improvementTip: dbScores.depthScore < 60 ? 'Add more specific examples to strengthen your answer.' : 'Well done! Keep up the depth.',
                         // Feature 2: the raw microphone and camera signals for this
                         // answer, measured in the browser but scored entirely on the
                         // server. Null when nothing was captured — the interview is
