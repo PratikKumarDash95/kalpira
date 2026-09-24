@@ -12,6 +12,7 @@
     "verify:measurement": "tsx server/scripts/verify-measurement.ts",
     "verify:delivery": "tsx server/scripts/verify-delivery.ts",
     "verify:integrity": "tsx server/scripts/verify-integrity.ts",
+    "verify:fairness": "tsx server/scripts/verify-fairness.ts",
     "test": "echo \"No backend database test script. Supabase is the database layer.\""
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jose": "^5.10.0",
+    "pdf-lib": "^1.17.1",
     "tsx": "^4.22.4",
     "zod": "^4.4.3"
   },
