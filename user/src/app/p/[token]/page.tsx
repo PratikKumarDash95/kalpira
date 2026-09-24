@@ -63,7 +63,7 @@ function CandidateInfoForm({
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-900/40">
             <Briefcase size={26} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">You're Invited</h1>
+          <h1 className="text-2xl font-bold text-white">You&apos;re Invited</h1>
           <p className="text-slate-400 text-sm mt-1">
             Interview: <span className="text-slate-200 font-medium">{studyName}</span>
           </p>

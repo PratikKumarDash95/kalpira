@@ -334,7 +334,7 @@ const Export: React.FC = () => {
 
           {/* Next Actions */}
           <div className="pt-4 border-t border-stone-700 space-y-3">
-            <h2 className="font-semibold text-white">What's Next?</h2>
+            <h2 className="font-semibold text-white">What&apos;s Next?</h2>
 
             <button
               onClick={handleNewParticipant}

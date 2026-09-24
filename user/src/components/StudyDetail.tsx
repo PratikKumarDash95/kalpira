@@ -403,7 +403,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
                   </div>
                 ) : (
                   <p className="text-stone-500 text-sm">
-                    Click "Analyze All Interviews" to generate cross-interview insights.
+                    Click &quot;Analyze All Interviews&quot; to generate cross-interview insights.
                   </p>
                 )}
               </div>
