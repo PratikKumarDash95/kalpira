@@ -5,6 +5,13 @@ import { AIProvider } from '../ai';
 import { GeminiProvider } from './gemini';
 import { ClaudeProvider } from './claude';
 import { OllamaProvider } from './ollama';
+import {
+  GeminiEmbeddingProvider,
+  OllamaEmbeddingProvider,
+  UnsupportedEmbeddingProvider,
+  NO_EMBEDDING_ENDPOINT,
+  type EmbeddingProvider,
+} from './embeddings';
 import { StudyConfig } from '@/types';
 import { isHostedMode } from '../mode';
 
@@ -62,3 +69,52 @@ export function getInterviewProvider(studyConfig?: StudyConfig, keys?: AIProvide
 export { GeminiProvider } from './gemini';
 export { ClaudeProvider } from './claude';
 export { OllamaProvider } from './ollama';
+export {
+  GeminiEmbeddingProvider,
+  OllamaEmbeddingProvider,
+  UnsupportedEmbeddingProvider,
+  NO_EMBEDDING_ENDPOINT,
+} from './embeddings';
+export type { EmbeddingProvider } from './embeddings';
+
+// --------------------------------------------
+// The embedding provider
+// --------------------------------------------
+// Resolution is deliberately NOT "whatever the interview provider is". The two
+// capabilities have different providers, and on a Claude deployment the chat provider
+// has none at all — so reusing `getInterviewProvider` here would hand back an object
+// that cannot embed and make the failure look like a missing feature rather than a
+// missing endpoint.
+//
+// Order:
+//   1. EMBEDDING_PROVIDER, when a deployment has stated one.
+//   2. Gemini, when a key is configured — the only hosted provider that embeds.
+//   3. Ollama, when a base URL is configured — a local deployment embeds locally,
+//      which is the point of running one.
+//   4. Otherwise a provider that refuses every call with the reason, so the search
+//      interface shows why it is empty instead of a bare "no results".
+export function getEmbeddingProvider(keys?: AIProviderKeys): EmbeddingProvider {
+  const hosted = isHostedMode();
+  const explicit = (process.env.EMBEDDING_PROVIDER || '').toLowerCase();
+
+  const geminiKey = keys?.geminiApiKey !== undefined
+    ? keys.geminiApiKey
+    : process.env.GEMINI_API_KEY;
+  const ollamaUrl = keys?.ollamaBaseUrl ?? process.env.OLLAMA_BASE_URL;
+
+  if (explicit === 'ollama' || (!explicit && !geminiKey && ollamaUrl)) {
+    return new OllamaEmbeddingProvider(undefined, ollamaUrl ?? undefined);
+  }
+
+  if (explicit === 'none') {
+    return new UnsupportedEmbeddingProvider('none', NO_EMBEDDING_ENDPOINT);
+  }
+
+  if (geminiKey) {
+    // In hosted mode the researcher's own key is used and there is no environment to
+    // fall back to, so an explicit empty string is passed rather than undefined.
+    return new GeminiEmbeddingProvider(undefined, hosted ? (geminiKey || '') : geminiKey);
+  }
+
+  return new UnsupportedEmbeddingProvider(getDefaultProvider(), NO_EMBEDDING_ENDPOINT);
+}
