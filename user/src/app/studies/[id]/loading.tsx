@@ -1,17 +1,22 @@
 // A single study: header, meta tiles, then its interview list. Server-rendered
 // per study id.
+//
+// Same shape as the real page, inside the app chrome so the navbar stays put
+// across the wait.
 
-import { SkeletonList, SkeletonPageHeader, SkeletonStatRow } from '@/components/ui/Skeleton';
+import {
+  AppShellSkeleton,
+  SkeletonList,
+  SkeletonPageHeader,
+  SkeletonStatRow,
+} from '@/components/ui/Skeleton';
 
 export default function Loading() {
   return (
-    <div className="kalpira-light min-h-screen p-4 sm:p-8" role="status">
-      <span className="sr-only">Loading study…</span>
-      <div className="max-w-5xl mx-auto">
-        <SkeletonPageHeader className="mb-6 sm:mb-8" />
-        <SkeletonStatRow className="mb-6" />
-        <SkeletonList rows={5} />
-      </div>
-    </div>
+    <AppShellSkeleton>
+      <SkeletonPageHeader className="mb-6 sm:mb-8" />
+      <SkeletonStatRow className="mb-6" />
+      <SkeletonList rows={5} />
+    </AppShellSkeleton>
   );
 }

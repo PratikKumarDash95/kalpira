@@ -1,8 +1,12 @@
 'use client';
 
 // Merra-style footer: brand blurb + link columns + legal row.
+//
+// Column links are <Link> so Next prefetches them like the navbar's — a footer
+// link should be as instant as a nav item. In-page anchors (`/#pricing`) stay
+// buttons: they scroll the current page, they do not navigate.
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { BrandMark } from './BrandMark';
 
 // Mirrors PageShell's content column so the footer lines up with the page above it.
@@ -43,14 +47,13 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
 ];
 
 export default function Footer({ width = 'default' }: { width?: FooterWidth }) {
-  const router = useRouter();
-  const go = (href: string) => {
-    if (href.startsWith('/#')) {
-      const el = document.getElementById(href.slice(2));
-      if (el) return el.scrollIntoView({ behavior: 'smooth' });
-    }
-    router.push(href);
+  const scrollToSection = (href: string) => {
+    const el = document.getElementById(href.slice(2));
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const linkClass =
+    'text-sm text-[color:var(--muted)] transition-colors hover:text-[color:var(--brand-strong)]';
 
   return (
     <footer className="border-t border-[color:var(--line)] bg-[color:var(--surface)]">
@@ -71,12 +74,15 @@ export default function Footer({ width = 'default' }: { width?: FooterWidth }) {
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    <button
-                      onClick={() => go(link.href)}
-                      className="text-sm text-[color:var(--muted)] transition-colors hover:text-[color:var(--brand-strong)]"
-                    >
-                      {link.label}
-                    </button>
+                    {link.href.startsWith('/#') ? (
+                      <button onClick={() => scrollToSection(link.href)} className={linkClass}>
+                        {link.label}
+                      </button>
+                    ) : (
+                      <Link href={link.href} className={linkClass}>
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

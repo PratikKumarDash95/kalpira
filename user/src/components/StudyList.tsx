@@ -3,9 +3,13 @@ import { apiFetch } from '@/lib/apiClient';
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { StoredStudy, StudyConfig } from '@/types';
-import { getAllStudies, deleteStudy } from '@/services/storageService';
+import { deleteStudy } from '@/services/storageService';
+import { useQuery, setQuery, invalidateQuery } from '@/lib/queryCache';
+import { STUDIES_DETAIL_PREFIX } from '@/lib/queryKeys';
+import { STUDIES_QUERY_KEY, fetchStudies, type StudiesPayload } from '@/lib/studiesQuery';
+import { useProfile } from '@/hooks/useProfile';
 import {
   Loader2,
   Plus,
@@ -28,51 +32,43 @@ import EmptyState from '@/components/layout/EmptyState';
 
 const StudyList: React.FC = () => {
   const router = useRouter();
-  const [studies, setStudies] = useState<StoredStudy[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Cached: a revisit paints the real list on the first frame and revalidates
+  // behind it, instead of re-showing the skeleton grid every time.
+  const { data } = useQuery<StudiesPayload>(STUDIES_QUERY_KEY, fetchStudies);
+  const { status: sessionStatus, profile } = useProfile();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [kvWarning, setKvWarning] = useState<string | null>(null);
   const [assignedInterviewCount, setAssignedInterviewCount] = useState(0);
 
-  useEffect(() => {
-    loadStudies();
-    // Only used to decide whether to surface the "assigned interviews" badge.
-    apiFetch('/api/auth/me')
-      .then(async (meRes) => {
-        if (!meRes.ok) return null;
-        return meRes.json();
-      })
-      .then(async meData => {
-        if (!meData?.profile || meData.profile.role === 'interviewer' || meData.profile.role === 'admin') {
-          return;
-        }
+  const studies = data?.studies ?? [];
+  const kvWarning = data?.warning ?? null;
+  // Only a first-ever fetch has nothing to show; a revalidation keeps the list.
+  const loading = data === undefined;
 
-        const sessionsRes = await apiFetch('/api/candidate/sessions');
-        if (!sessionsRes.ok) return;
-        const data = await sessionsRes.json();
-        const assignedCount = (data?.sessions || []).filter((session: { status?: string }) => session.status === 'assigned' || session.status === 'in_progress').length;
+  useEffect(() => {
+    // Only used to decide whether to surface the "assigned interviews" badge.
+    // Waits for the shared profile so this does not race the navbar's own read.
+    if (sessionStatus !== 'authed') return;
+    if (profile?.role === 'interviewer' || profile?.role === 'admin') return;
+
+    let cancelled = false;
+    apiFetch('/api/candidate/sessions')
+      .then(async (sessionsRes) => {
+        if (!sessionsRes.ok || cancelled) return;
+        const sessionsData = await sessionsRes.json();
+        if (cancelled) return;
+        const assignedCount = (sessionsData?.sessions || []).filter(
+          (session: { status?: string }) =>
+            session.status === 'assigned' || session.status === 'in_progress',
+        ).length;
         setAssignedInterviewCount(assignedCount);
       })
-      .catch(() => { });
-  }, []);
+      .catch(() => {});
 
-  const loadStudies = async () => {
-    setLoading(true);
-    try {
-      const { studies: data, warning } = await getAllStudies();
-      setStudies(data);
-      setKvWarning(warning || null);
-    } catch (error) {
-      console.error('Error loading studies:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInterviewerPractice = async () => {
-    router.push('/candidate/dashboard');
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionStatus, profile?.role]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this study? This cannot be undone.')) {
@@ -83,7 +79,14 @@ const StudyList: React.FC = () => {
     try {
       const result = await deleteStudy(id);
       if (result.success) {
-        setStudies(studies.filter(s => s.id !== id));
+        // Write the confirmed deletion through the cache rather than
+        // invalidating it: clearing would drop the list to `undefined` and flash
+        // the skeleton the user just navigated away from.
+        setQuery<StudiesPayload>(STUDIES_QUERY_KEY, {
+          studies: studies.filter(s => s.id !== id),
+          warning: kvWarning ?? undefined,
+        });
+        invalidateQuery(STUDIES_DETAIL_PREFIX);
       } else {
         alert(result.error || 'Failed to delete study');
       }
@@ -95,9 +98,6 @@ const StudyList: React.FC = () => {
       setMenuOpenId(null);
     }
   };
-
-  // Check if demo data exists (Removed)
-  // const hasDemoData = studies.some(s => s.id.startsWith('demo-'));
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -150,31 +150,25 @@ const StudyList: React.FC = () => {
         subtitle={`${studies.length} ${studies.length === 1 ? 'study' : 'studies'}`}
         actions={
           <>
-            <button
-              onClick={() => router.push('/setup')}
-              className="btn-primary sheen px-3 py-2 text-sm"
-            >
+            <Link href="/setup" className="btn-primary sheen px-3 py-2 text-sm">
               <Plus size={16} />
               Create Study
-            </button>
+            </Link>
 
-            <button
-              onClick={handleInterviewerPractice}
+            <Link
+              href="/candidate/dashboard"
               title="Open assigned interviews"
               className="btn-secondary relative px-3 py-2 text-sm"
             >
               <Briefcase size={16} />
               Interview Practice
               {renderAssignedBadge()}
-            </button>
+            </Link>
 
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="btn-secondary px-3 py-2 text-sm"
-            >
+            <Link href="/dashboard" className="btn-secondary px-3 py-2 text-sm">
               <Users size={16} />
               All Interviews
-            </button>
+            </Link>
           </>
         }
       />
@@ -207,23 +201,20 @@ const StudyList: React.FC = () => {
             description="Create your first practice study or open an interview assigned by an interviewer."
             action={
               <div className="flex flex-wrap items-center justify-center gap-4">
-                <button
-                  onClick={() => router.push('/setup')}
-                  className="btn-primary sheen px-6 py-3"
-                >
+                <Link href="/setup" className="btn-primary sheen px-6 py-3">
                   <Plus size={18} />
                   Create Study
-                </button>
+                </Link>
 
-                <button
-                  onClick={handleInterviewerPractice}
+                <Link
+                  href="/candidate/dashboard"
                   title="Open assigned interviews"
                   className="btn-secondary relative px-6 py-3"
                 >
                   <Briefcase size={18} />
                   Interview Practice
                   {renderAssignedBadge()}
-                </button>
+                </Link>
               </div>
             }
           />
@@ -234,13 +225,19 @@ const StudyList: React.FC = () => {
                 key={study.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                // Capped: with a cached list this runs on every visit, so a
+                // 6-card list should not take 300ms to finish appearing.
+                transition={{ delay: Math.min(index, 5) * 0.04 }}
                 className="bg-stone-800/50 rounded-xl border border-stone-700 p-6 hover:border-stone-500 transition-colors relative"
               >
-                {/* Menu button */}
-                <div className="absolute top-4 right-4">
+                {/* Menu button. Deliberately a sibling of the card link, not a
+                    child: a <button> inside an <a> is invalid HTML and swallows
+                    the wrong clicks. */}
+                <div className="absolute top-4 right-4 z-20">
                   <button
                     onClick={() => setMenuOpenId(menuOpenId === study.id ? null : study.id)}
+                    aria-label="Study actions"
+                    aria-expanded={menuOpenId === study.id}
                     className="p-2 text-stone-500 hover:text-stone-400 rounded-lg hover:bg-stone-700"
                   >
                     <MoreVertical size={16} />
@@ -286,12 +283,10 @@ const StudyList: React.FC = () => {
                   )}
                 </div>
 
-                {/* Content */}
-                <div
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/studies/${study.id}`)}
-                >
-                  <div className="flex items-start gap-3 mb-3 pr-8">
+                {/* Content — the link. Also prefetches the detail route, so the
+                    ⋯ → View Details path is warm too. */}
+                <Link href={`/studies/${study.id}`} className="block pr-10">
+                  <div className="flex items-start gap-3 mb-3">
                     <div className="flex-1">
                       <h3 className="font-semibold text-white text-lg mb-1">
                         {study.config.name}
@@ -329,7 +324,7 @@ const StudyList: React.FC = () => {
                       {study.config.coreQuestions?.length ?? 0} questions
                     </span>
                   </div>
-                </div>
+                </Link>
               </motion.div>
             ))}
           </div>

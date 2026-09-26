@@ -8,6 +8,8 @@
 // on login/logout, so the answer is safe to reuse for a short window.
 
 import { apiFetch } from './apiClient';
+import { PROFILE_QUERY_KEY } from './profileQuery';
+import { invalidateQuery } from './queryCache';
 
 export interface AuthStatus {
   authenticated: boolean;
@@ -53,10 +55,28 @@ export function getAuthStatus(): Promise<AuthStatus> {
 }
 
 /**
+ * The cached answer, read synchronously, or `null` if there isn't a usable one.
+ *
+ * This lets a guard render a signed-in page on its *first* frame instead of
+ * showing a skeleton for the one microtask it takes the cached promise to
+ * resolve. Only a signed-in answer is ever cached, so a non-null result always
+ * means "authenticated" — there is no way to read a stale "guest" from here.
+ *
+ * Still not an authorization decision: the cached answer is at most TTL_MS old
+ * and every data request is authorized server-side regardless.
+ */
+export function peekAuthStatus(): AuthStatus | null {
+  if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
+  return null;
+}
+
+/**
  * Drop the cached answer. Call on login and logout so the next page render
- * reflects the new session instead of the previous one.
+ * reflects the new session instead of the previous one. Also drops the cached
+ * profile, which is the same session described differently.
  */
 export function invalidateAuthStatus(): void {
   cached = null;
   inFlight = null;
+  invalidateQuery(PROFILE_QUERY_KEY);
 }

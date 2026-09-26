@@ -6,26 +6,38 @@
 //
 // Width is passed down from PageShell so the bar lines up with the content
 // column on narrow, default and wide pages alike.
+//
+// Two things here are load-bearing for how navigation feels:
+//
+//   1. Nav items are <Link>, not <button onClick={router.push}>. Next only
+//      prefetches routes it can see as links, so buttons made every nav click a
+//      cold server round trip that rendered the route's loading boundary — which
+//      is what made moving between tabs feel like a page reload.
+//   2. The account slot renders from the shared profile cache, so it does not
+//      flip from "Sign in" to the avatar on every mount. Role-gated items are
+//      held back until the session is *known*, so they can never appear and then
+//      disappear once the role arrives.
 
 import React, { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ArrowRight, Menu, UserCircle, X } from 'lucide-react';
-import { apiFetch } from '@/lib/apiClient';
+import { useProfile } from '@/hooks/useProfile';
 import { BrandLockup } from './BrandMark';
 import type { PageWidth } from './PageShell';
 
-interface HeaderProfile {
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  role?: string;
-}
-
 export interface NavLink {
   label: string;
-  onClick: () => void;
-  /** Route this link points at, used to mark it active and to close the drawer. */
-  href?: string;
+  /** Destination. Internal hrefs are rendered as <Link> so Next can prefetch. */
+  href: string;
+  /**
+   * Path prefix used to mark the item active, when it differs from `href`
+   * (e.g. Interviewer points at /login when signed out but is "current" on any
+   * /interviewer route).
+   */
+  activePrefix?: string;
+  /** Render as a plain anchor instead of a prefetching <Link> (cross-origin). */
+  external?: boolean;
 }
 
 const WIDTH_CLASS: Record<PageWidth, string> = {
@@ -34,6 +46,9 @@ const WIDTH_CLASS: Record<PageWidth, string> = {
   wide: 'app-container-wide',
   full: 'w-full px-4 sm:px-6',
 };
+
+/** The account chip's footprint, so the slot never shifts as the session resolves. */
+const ACCOUNT_PLACEHOLDER = 'h-9 w-24 rounded-xl';
 
 export default function Navbar({
   transparent = false,
@@ -44,20 +59,10 @@ export default function Navbar({
   showProductNav?: boolean;
   width?: PageWidth;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
-  const [profile, setProfile] = useState<HeaderProfile | null>(null);
+  const { status, profile } = useProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    apiFetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.profile) setProfile(data.profile);
-      })
-      .catch(() => {});
-  }, []);
 
   // A route change closes the drawer — otherwise it stays open over the new page.
   useEffect(() => {
@@ -76,23 +81,79 @@ export default function Navbar({
 
   const links: NavLink[] = [];
   if (showProductNav) {
-    links.push({ label: 'Studies', href: '/studies', onClick: () => router.push('/studies') });
+    links.push({ label: 'Studies', href: '/studies' });
     // Personal to the signed-in user, so it is not role-gated: everyone who
     // practises has an ability map.
-    links.push({ label: 'Ability', href: '/ability', onClick: () => router.push('/ability') });
+    links.push({ label: 'Ability', href: '/ability' });
     // Same reasoning as Ability: the delivery profile is about the signed-in
     // person's own answers, whoever they are in the product.
-    links.push({ label: 'Delivery', href: '/delivery', onClick: () => router.push('/delivery') });
-    if (!profile || profile.role === 'interviewer' || profile.role === 'admin') {
-      links.push({ label: 'Interviewer', href: '/interviewer/dashboard', onClick: () => router.push('/login?role=interviewer') });
-    }
-    if (!profile || profile.role === 'admin') {
-      links.push({ label: 'Admin', onClick: () => { window.location.href = adminUrl; } });
+    links.push({ label: 'Delivery', href: '/delivery' });
+
+    // Role-gated, so only offered once we actually know the role. Rendering
+    // these while the profile is unknown is what made them flash in and out.
+    if (status !== 'unknown') {
+      const isInterviewer = profile?.role === 'interviewer' || profile?.role === 'admin';
+      if (isInterviewer) {
+        links.push({
+          label: 'Interviewer',
+          // Signed in as an interviewer: straight to their portal. Otherwise the
+          // link is the way in, so it goes through the role-specific login.
+          href: status === 'authed' ? '/interviewer/dashboard' : '/login?role=interviewer',
+          activePrefix: '/interviewer',
+        });
+      } else if (status === 'guest') {
+        // Offer the portal to signed-out visitors — it is how interviewers get in.
+        links.push({
+          label: 'Interviewer',
+          href: '/login?role=interviewer',
+          activePrefix: '/interviewer',
+        });
+      }
+
+      if (profile?.role === 'admin') {
+        links.push({ label: 'Admin', href: adminUrl, external: true });
+      }
     }
   }
 
-  const isActive = (href?: string) =>
-    Boolean(href && (pathname === href || pathname.startsWith(`${href}/`)));
+  const isActive = (link: NavLink) => {
+    const prefix = link.activePrefix ?? link.href.split('?')[0];
+    return Boolean(prefix) && (pathname === prefix || pathname.startsWith(`${prefix}/`));
+  };
+
+  const renderAccount = () => {
+    // Unknown: a same-size placeholder rather than a guess. Showing "Sign in"
+    // here and swapping it for the avatar is exactly the flicker we are fixing.
+    if (status === 'unknown') {
+      return <span className={`skeleton ${ACCOUNT_PLACEHOLDER}`} aria-hidden="true" />;
+    }
+
+    if (status === 'guest') {
+      return (
+        <Link href="/login" className="btn-primary sheen px-4 py-2 text-sm">
+          Sign in <ArrowRight size={16} />
+        </Link>
+      );
+    }
+
+    return (
+      <Link href="/profile" className="btn-secondary px-3 py-2 text-sm">
+        {profile?.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.avatarUrl}
+            alt={profile.name || 'Profile'}
+            className="h-6 w-6 rounded-full object-cover"
+          />
+        ) : (
+          <UserCircle size={20} className="text-brand-700" />
+        )}
+        <span className="hidden sm:inline max-w-[120px] truncate">
+          {profile?.name || profile?.email}
+        </span>
+      </Link>
+    );
+  };
 
   return (
     <header
@@ -101,47 +162,40 @@ export default function Navbar({
       } backdrop-blur-md`}
     >
       <div className={`${WIDTH_CLASS[width]} flex h-16 items-center justify-between gap-4`}>
-        <button onClick={() => router.push('/')} className="flex items-center text-left">
+        <Link href="/" className="flex items-center text-left">
           <BrandLockup />
-        </button>
+        </Link>
 
         {/* Desktop nav */}
         {links.length > 0 && (
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
-            {links.map((l) => (
-              <button
-                key={l.label}
-                onClick={l.onClick}
-                aria-current={isActive(l.href) ? 'page' : undefined}
-                className={`link-sweep rounded-lg px-3.5 py-2 transition-colors hover:text-[color:var(--brand-strong)] ${
-                  isActive(l.href) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
-                }`}
-              >
-                {l.label}
-              </button>
-            ))}
+            {links.map((l) =>
+              l.external ? (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  className="link-sweep rounded-lg px-3.5 py-2 text-[color:var(--muted)] transition-colors hover:text-[color:var(--brand-strong)]"
+                >
+                  {l.label}
+                </a>
+              ) : (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  aria-current={isActive(l) ? 'page' : undefined}
+                  className={`link-sweep rounded-lg px-3.5 py-2 transition-colors hover:text-[color:var(--brand-strong)] ${
+                    isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              ),
+            )}
           </nav>
         )}
 
         <div className="flex items-center gap-2">
-          {profile ? (
-            <button
-              onClick={() => router.push('/profile')}
-              className="btn-secondary px-3 py-2 text-sm"
-            >
-              {profile.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.avatarUrl} alt={profile.name || 'Profile'} className="h-6 w-6 rounded-full object-cover" />
-              ) : (
-                <UserCircle size={20} className="text-brand-700" />
-              )}
-              <span className="hidden sm:inline max-w-[120px] truncate">{profile.name || profile.email}</span>
-            </button>
-          ) : (
-            <button onClick={() => router.push('/login')} className="btn-primary sheen px-4 py-2 text-sm">
-              Sign in <ArrowRight size={16} />
-            </button>
-          )}
+          {renderAccount()}
 
           {links.length > 0 && (
             <button
@@ -161,18 +215,28 @@ export default function Navbar({
       {mobileOpen && links.length > 0 && (
         <nav className="animate-fade-in-down border-t border-[color:var(--line)] md:hidden">
           <div className={`${WIDTH_CLASS[width]} flex flex-col py-2`}>
-            {links.map((l) => (
-              <button
-                key={l.label}
-                onClick={l.onClick}
-                aria-current={isActive(l.href) ? 'page' : undefined}
-                className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                  isActive(l.href) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
-                }`}
-              >
-                {l.label}
-              </button>
-            ))}
+            {links.map((l) =>
+              l.external ? (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-[color:var(--muted)]"
+                >
+                  {l.label}
+                </a>
+              ) : (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  aria-current={isActive(l) ? 'page' : undefined}
+                  className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                    isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              ),
+            )}
           </div>
         </nav>
       )}

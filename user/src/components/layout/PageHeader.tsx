@@ -3,9 +3,14 @@
 // Page identity block — the title region every page opens with.
 // Emits the shared `.page-header` grammar so titles, icons, back links and
 // page-level actions land in the same place on every screen.
+//
+// When `back` is a route it renders a <Link> so Next prefetches the destination;
+// the handler form stays a button, since it is an action rather than a place.
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+
+const BACK_BUTTON_CLASS = 'btn-ghost shrink-0 p-2';
 
 export default function PageHeader({
   title,
@@ -22,33 +27,34 @@ export default function PageHeader({
   icon?: React.ReactNode;
   /** Page-level actions, right-aligned on desktop and wrapped below on mobile. */
   actions?: React.ReactNode;
-  /** Back affordance: a route to push, or a handler. */
+  /** Back affordance: a route to link to, or a handler. */
   back?: string | (() => void);
   /** Secondary row under the title — filters, tabs, a search field. */
   children?: React.ReactNode;
   className?: string;
 }) {
-  const router = useRouter();
+  const backGlyph = (
+    <>
+      <ArrowLeft size={18} />
+    </>
+  );
 
-  const goBack = () => {
-    if (typeof back === 'function') back();
-    else if (back) router.push(back);
-  };
+  const backControl =
+    typeof back === 'function' ? (
+      <button type="button" onClick={back} aria-label="Go back" className={BACK_BUTTON_CLASS}>
+        {backGlyph}
+      </button>
+    ) : back ? (
+      <Link href={back} aria-label="Go back" className={BACK_BUTTON_CLASS}>
+        {backGlyph}
+      </Link>
+    ) : null;
 
   return (
     <div className={className}>
       <div className="page-header">
         <div className="flex min-w-0 items-center gap-3">
-          {back && (
-            <button
-              type="button"
-              onClick={goBack}
-              aria-label="Go back"
-              className="btn-ghost shrink-0 p-2"
-            >
-              <ArrowLeft size={18} />
-            </button>
-          )}
+          {backControl}
           {icon && (
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)]">
               {icon}

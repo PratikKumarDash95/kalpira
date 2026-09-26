@@ -40,6 +40,9 @@ import PageHeader from '@/components/layout/PageHeader';
 import PageSection from '@/components/layout/PageSection';
 import EmptyState from '@/components/layout/EmptyState';
 import { apiFetch } from '@/lib/apiClient';
+import { useQuery } from '@/lib/queryCache';
+import { deliveryProfileQueryKey } from '@/lib/queryKeys';
+import { useProfile } from '@/hooks/useProfile';
 import {
   aggregateVerdict,
   describeBand,
@@ -73,76 +76,65 @@ interface DeliveryProfileResponse {
 // Component
 // --------------------------------------------
 
+/**
+ * A failed load is a *value*, not a thrown error: the cache has to be able to
+ * hold the reason, and a fetch that rejects would leave the screen permanently
+ * "loading" instead of saying what went wrong.
+ */
+type DeliveryResult =
+  | { ok: true; data: DeliveryProfileResponse }
+  | { ok: false; error: string };
+
+async function fetchDeliveryProfile(sessionId?: string): Promise<DeliveryResult> {
+  try {
+    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
+    const res = await apiFetch(`/api/delivery/profile${query}`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data.error || 'Failed to load your delivery profile.' };
+    }
+    return { ok: true, data: (await res.json()) as DeliveryProfileResponse };
+  } catch {
+    return { ok: false, error: 'Could not reach the delivery service.' };
+  }
+}
+
 export default function DeliveryProfile({ sessionId }: { sessionId?: string } = {}) {
   const router = useRouter();
+  const { status: sessionStatus } = useProfile();
 
-  const [ready, setReady] = useState(false);
-  const [profile, setProfile] = useState<DeliveryProfileResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Cached, so revisiting /delivery — or an interviewer opening the same
+  // candidate again — paints the profile on the first frame and revalidates
+  // behind it, rather than flashing the skeleton on every mount.
+  const { data: result } = useQuery<DeliveryResult>(
+    deliveryProfileQueryKey(sessionId),
+    () => fetchDeliveryProfile(sessionId),
+  );
+
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
 
-  // Whose profile this is. Bare `/delivery` is the signed-in person's own; an
-  // interviewer arrives with a session id and the server resolves who sat it,
-  // refusing the request if the caller has no claim on that session. No account id
-  // travels from the client either way.
-  //
-  // A signed-out visitor never reaches this component — RequireAuth replaces the
-  // route before it renders — so a missing session is a fault, not something to
-  // redirect for.
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const meRes = await apiFetch('/api/auth/me');
-        if (!meRes.ok) throw new Error(`auth/me responded ${meRes.status}`);
-        const me = await meRes.json();
-        if (!me?.profile?.id) throw new Error('no profile id in the session');
-        if (!cancelled) setReady(true);
-      } catch {
-        if (!cancelled) {
-          setError('Could not load your account. Try signing in again.');
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [sessionId]);
+  // `undefined` is "not answered yet" and must not be read as "nothing measured":
+  // an empty delivery profile is a statement about the candidate, and saying it
+  // before the answer arrives would be a false one.
+  const profile = result?.ok ? result.data : null;
+  const loading = sessionStatus === 'unknown' || result === undefined;
+  const error = sessionStatus === 'guest'
+    ? 'Could not load your account. Try signing in again.'
+    : result && !result.ok
+      ? result.error
+      : null;
 
   useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
-        const res = await apiFetch(`/api/delivery/profile${query}`);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          if (!cancelled) setError(data.error || 'Failed to load your delivery profile.');
-          return;
-        }
-        const data: DeliveryProfileResponse = await res.json();
-        if (cancelled) return;
-        setProfile(data);
-        // Default the trend to the metric with the most measurements behind it,
-        // rather than to whatever happens to be first in the registry: the useful
-        // default is the one with the most evidence, not the alphabetical one.
-        const best = [...(data.aggregate ?? [])]
-          .filter((metric) => metric.mean !== null)
-          .sort((a, b) => b.measuredCount - a.measuredCount)[0];
-        setSelectedMetric(best?.key ?? null);
-      } catch {
-        if (!cancelled) setError('Could not reach the delivery service.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [ready, sessionId]);
+    if (!profile) return;
+    // Default the trend to the metric with the most measurements behind it,
+    // rather than to whatever happens to be first in the registry: the useful
+    // default is the one with the most evidence, not the alphabetical one.
+    // `prev ??` keeps whatever the reader picked across a background refresh.
+    const best = [...(profile.aggregate ?? [])]
+      .filter((metric) => metric.mean !== null)
+      .sort((a, b) => b.measuredCount - a.measuredCount)[0];
+    setSelectedMetric((prev) => prev ?? best?.key ?? null);
+  }, [profile]);
 
   const entryFor = useMemo(() => {
     const byKey = new Map((profile?.registry ?? []).map((entry) => [entry.key, entry]));

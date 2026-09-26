@@ -15,6 +15,12 @@
 // in app/layout.tsx — it is not repeated here. Pages authored against the old
 // dark palette are normalised by that layer, so a page's own `bg-slate-950`
 // classes are already neutral and need no special handling.
+//
+// `<main>` carries `animate-page-in`. Each navigation mounts a fresh page tree
+// (the shell lives in the page, not a layout), so the animation replays on its
+// own — no `key` and no `template.tsx`, both of which would remount and refetch
+// the page's data. The navbar is deliberately outside it, so the chrome holds
+// still and only the content moves.
 import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -46,7 +52,7 @@ export default function PageShell({
   return (
     <div className="app-shell flex min-h-screen flex-col">
       <Navbar showProductNav={showProductNav} width={width} />
-      <main className="flex-1">
+      <main className="animate-page-in flex-1">
         <div className={WIDTH_CLASS[width]}>
           <div className={padded ? 'py-8 sm:py-10' : ''}>{children}</div>
         </div>

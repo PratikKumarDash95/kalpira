@@ -694,6 +694,13 @@ select:focus {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
 }
+/* Route change. Shorter and shallower than the fade-in-up reveals above: this
+   runs on every navigation, so it should register as the content settling into
+   place rather than as an animation the user waits through. */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @keyframes float-y {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -727,6 +734,7 @@ select:focus {
 .animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-slide-in-left { animation: slide-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-slide-in-right { animation: slide-in-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-page-in { animation: page-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-float { animation: float-y 6s ease-in-out infinite; }
 .animate-glow { animation: glow-pulse 2.4s ease-in-out infinite; }
 .animate-gradient { background-size: 200% auto; animation: gradient-pan 6s ease infinite; }
@@ -822,6 +830,7 @@ select:focus {
   .animate-pop-in,
   .animate-slide-in-left,
   .animate-slide-in-right,
+  .animate-page-in,
   .animate-float,
   .animate-glow,
   .animate-gradient,

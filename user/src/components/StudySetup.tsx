@@ -10,6 +10,7 @@ import { StudyConfig, ProfileField, AIBehavior, AIProviderType, LinkExpirationOp
 import { dateInputToEndsAt, endsAtToDateInput, formatInterviewEndDate } from '@/lib/interviewDeadline';
 import { INTERVIEWER_AI_MODEL, INTERVIEWER_AI_PROVIDER, withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 import { useSessionState } from '@/hooks/useSessionState';
+import { revalidateStudies } from '@/lib/studiesQuery';
 import {
   FileText, Plus, X, ArrowRight, ArrowLeft, Sparkles, Eye,
   Lightbulb, User, ToggleLeft, ToggleRight, Link as LinkIcon,
@@ -357,6 +358,9 @@ const StudySetup: React.FC = () => {
       const linkData = await linkResponse.json();
       setParticipantLink(linkData.url);
       clearSetupDraft();
+      // The study list is cached so a revisit paints without a skeleton; refetch
+      // it behind the scenes so this study is in it when the user goes back.
+      revalidateStudies();
     } catch {
       setSaveError('Network error. Please check your connection.');
     } finally {
@@ -401,6 +405,7 @@ const StudySetup: React.FC = () => {
                 setSavedStudyId(retryData.study.id); setStudyConfig(retryData.study.config);
                 setSaveSuccess(true); setIsDirty(false);
                 clearSetupDraft();
+                revalidateStudies();
                 router.push(`/studies/${retryData.study.id}`);
               }
             }
@@ -415,6 +420,8 @@ const StudySetup: React.FC = () => {
       setSavedStudyId(data.study.id); setSaveSuccess(true);
       setStudyConfig(data.study.config); setIsDirty(false);
       clearSetupDraft();
+      // Covers both create and rename: the cached list is now out of date.
+      revalidateStudies();
       router.push(isInterviewerFlow ? interviewerPath('/dashboard') : `/studies/${data.study.id}`);
     } catch { setSaveError('Network error. Please check your connection.'); }
     finally { setIsSaving(false); }

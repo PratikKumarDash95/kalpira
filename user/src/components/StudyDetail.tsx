@@ -1,11 +1,13 @@
 'use client';
 import { apiFetch, apiUrl } from '@/lib/apiClient';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { StoredStudy, StoredInterview, AggregateSynthesisResult } from '@/types';
 import { getStudy, getStudyInterviews } from '@/services/storageService';
+import { useQuery, setQuery } from '@/lib/queryCache';
+import { studyQueryKey, studyInterviewsQueryKey } from '@/lib/queryKeys';
 import {
   Loader2,
   BookOpen,
@@ -40,9 +42,27 @@ type TabType = 'overview' | 'interviews' | 'settings';
 
 const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
   const router = useRouter();
-  const [study, setStudy] = useState<StoredStudy | null>(null);
-  const [interviews, setInterviews] = useState<StoredInterview[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Cached reads: a study opened twice — or reached from the list, which has
+  // already prefetched the route — paints its real content on the first frame
+  // instead of a skeleton, then revalidates quietly.
+  //
+  // `undefined` means "not fetched yet"; `null` is a real answer from getStudy
+  // ("no such study"), so the two must not be collapsed.
+  const studyQuery = useQuery<StoredStudy | null>(studyQueryKey(studyId), () =>
+    getStudy(studyId),
+  );
+  const interviewsQuery = useQuery<StoredInterview[]>(
+    studyInterviewsQueryKey(studyId),
+    () => getStudyInterviews(studyId),
+  );
+
+  const study = studyQuery.data ?? null;
+  const interviews = interviewsQuery.data ?? [];
+  const loading = studyQuery.data === undefined;
+  // Distinct from `interviews.length === 0`: "not answered yet" must not be
+  // shown as "no interviews", nor lock the aggregate analysis out with a claim
+  // that there are too few.
+  const interviewsPending = interviewsQuery.data === undefined;
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [aggregateSynthesis, setAggregateSynthesis] = useState<AggregateSynthesisResult | null>(null);
   const [isGeneratingAggregate, setIsGeneratingAggregate] = useState(false);
@@ -51,26 +71,6 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
   const [participantLink, setParticipantLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
-
-  useEffect(() => {
-    loadStudyData();
-  }, [studyId]);
-
-  const loadStudyData = async () => {
-    setLoading(true);
-    try {
-      const [studyData, interviewData] = await Promise.all([
-        getStudy(studyId),
-        getStudyInterviews(studyId)
-      ]);
-      setStudy(studyData);
-      setInterviews(interviewData);
-    } catch (error) {
-      console.error('Error loading study:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleToggleLinksEnabled = async () => {
     if (!study) return;
@@ -94,8 +94,9 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
         throw new Error('Failed to update study');
       }
 
-      // Update local state
-      setStudy({
+      // The PUT succeeded, so this is the confirmed value, not a guess: write it
+      // through the cache instead of holding local state beside it.
+      setQuery<StoredStudy | null>(studyQueryKey(studyId), {
         ...study,
         config: {
           ...study.config,
@@ -346,7 +347,7 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
                   </h3>
                   <button
                     onClick={handleGenerateAggregateSynthesis}
-                    disabled={isGeneratingAggregate || interviews.length < 2}
+                    disabled={isGeneratingAggregate || interviewsPending || interviews.length < 2}
                     className="px-4 py-2 text-sm bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isGeneratingAggregate ? (
@@ -358,7 +359,9 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
                   </button>
                 </div>
 
-                {interviews.length < 2 ? (
+                {interviewsPending ? (
+                  <p className="text-stone-500 text-sm">Loading interviews…</p>
+                ) : interviews.length < 2 ? (
                   <p className="text-stone-500 text-sm">
                     Need at least 2 interviews to generate aggregate analysis.
                   </p>
@@ -412,7 +415,9 @@ const StudyDetail: React.FC<StudyDetailProps> = ({ studyId }) => {
 
           {activeTab === 'interviews' && (
             <div className="space-y-4">
-              {interviews.length === 0 ? (
+              {interviewsPending ? (
+                <SkeletonList rows={3} />
+              ) : interviews.length === 0 ? (
                 <div className="bg-stone-800/50 rounded-xl border border-stone-700 p-12 text-center">
                   <Users size={32} className="text-stone-500 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-white mb-2">No Interviews Yet</h3>
