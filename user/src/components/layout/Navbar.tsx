@@ -28,7 +28,7 @@ import type { PageWidth } from './PageShell';
 
 export interface NavLink {
   label: string;
-  /** Destination. Internal hrefs are rendered as <Link> so Next can prefetch. */
+  /** Destination, always a path inside this app. Rendered as <Link> so Next can prefetch. */
   href: string;
   /**
    * Path prefix used to mark the item active, when it differs from `href`
@@ -36,8 +36,6 @@ export interface NavLink {
    * /interviewer route).
    */
   activePrefix?: string;
-  /** Render as a plain anchor instead of a prefetching <Link> (cross-origin). */
-  external?: boolean;
 }
 
 const WIDTH_CLASS: Record<PageWidth, string> = {
@@ -60,7 +58,6 @@ export default function Navbar({
   width?: PageWidth;
 }) {
   const pathname = usePathname();
-  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
   const { status, profile } = useProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -111,7 +108,10 @@ export default function Navbar({
       }
 
       if (profile?.role === 'admin') {
-        links.push({ label: 'Admin', href: adminUrl, external: true });
+        // Local route, not the console's own origin. This used to be an <a> to
+        // NEXT_PUBLIC_ADMIN_URL, which crossed ports (and therefore origins) with
+        // a full page load. /admin says where the console is without going there.
+        links.push({ label: 'Admin', href: '/admin' });
       }
     }
   }
@@ -169,28 +169,18 @@ export default function Navbar({
         {/* Desktop nav */}
         {links.length > 0 && (
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
-            {links.map((l) =>
-              l.external ? (
-                <a
-                  key={l.label}
-                  href={l.href}
-                  className="link-sweep rounded-lg px-3.5 py-2 text-[color:var(--muted)] transition-colors hover:text-[color:var(--brand-strong)]"
-                >
-                  {l.label}
-                </a>
-              ) : (
-                <Link
-                  key={l.label}
-                  href={l.href}
-                  aria-current={isActive(l) ? 'page' : undefined}
-                  className={`link-sweep rounded-lg px-3.5 py-2 transition-colors hover:text-[color:var(--brand-strong)] ${
-                    isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              ),
-            )}
+            {links.map((l) => (
+              <Link
+                key={l.label}
+                href={l.href}
+                aria-current={isActive(l) ? 'page' : undefined}
+                className={`link-sweep rounded-lg px-3.5 py-2 transition-colors hover:text-[color:var(--brand-strong)] ${
+                  isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
+                }`}
+              >
+                {l.label}
+              </Link>
+            ))}
           </nav>
         )}
 
@@ -215,28 +205,18 @@ export default function Navbar({
       {mobileOpen && links.length > 0 && (
         <nav className="animate-fade-in-down border-t border-[color:var(--line)] md:hidden">
           <div className={`${WIDTH_CLASS[width]} flex flex-col py-2`}>
-            {links.map((l) =>
-              l.external ? (
-                <a
-                  key={l.label}
-                  href={l.href}
-                  className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-[color:var(--muted)]"
-                >
-                  {l.label}
-                </a>
-              ) : (
-                <Link
-                  key={l.label}
-                  href={l.href}
-                  aria-current={isActive(l) ? 'page' : undefined}
-                  className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                    isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              ),
-            )}
+            {links.map((l) => (
+              <Link
+                key={l.label}
+                href={l.href}
+                aria-current={isActive(l) ? 'page' : undefined}
+                className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                  isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
+                }`}
+              >
+                {l.label}
+              </Link>
+            ))}
           </div>
         </nav>
       )}

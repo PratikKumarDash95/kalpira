@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, GraduationCap, CreditCard, UserCircle,
+  LayoutDashboard, CreditCard, UserCircle,
   LogOut, Menu, X, ChevronRight,
 } from 'lucide-react';
 import { apiFetch, clearSessionDrafts } from '@/lib/apiClient';
@@ -37,7 +37,6 @@ export default function PortalSidebar({
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || '';
 
   // Standalone interviewer app => paths at root; embedded under user app => /interviewer/*.
   const isStandalonePortal =
@@ -108,14 +107,11 @@ export default function PortalSidebar({
         </nav>
 
         <div className="space-y-1 border-t border-[color:var(--line)] p-4">
-          {mainAppUrl && (
-            <button
-              onClick={() => { window.location.href = mainAppUrl; }}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[color:var(--muted)] transition-all hover:bg-[color:var(--surface-soft)] hover:text-[color:var(--text)]"
-            >
-              <GraduationCap size={16} /> Main app
-            </button>
-          )}
+          {/* No "Main app" link here. It did `window.location.href = <main app>`,
+              a full page load into another portal's origin — and since the
+              session cookie is valid on every port, that is exactly how one role
+              ends up inside another role's app. This portal navigates only its
+              own paths; signing out is the one way out of it. */}
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[color:var(--danger)] transition-all hover:bg-[color:var(--danger-soft)]"

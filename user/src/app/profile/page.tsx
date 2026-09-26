@@ -180,10 +180,6 @@ export default function ProfilePage() {
               <div className="-mt-14 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex items-end gap-4">
                   <div className="skeleton h-28 w-28 rounded-3xl border-4 border-white" />
-                  <div className="space-y-3 pb-3">
-                    <div className="skeleton h-7 w-44" />
-                    <div className="skeleton h-4 w-56" />
-                  </div>
                 </div>
                 <div className="skeleton h-10 w-28 rounded-xl" />
               </div>
@@ -286,11 +282,10 @@ export default function ProfilePage() {
                     Photo
                   </button>
                 </div>
-                <div className="pb-2">
-                  {/* The page's single h1 lives in PageHeader; this is the hero's display name. */}
-                  <h2 className="text-2xl font-bold text-slate-950">{profile.name || 'Kalpira User'}</h2>
-                  <p className="text-sm text-slate-500">{profile.email || 'No email available'}</p>
-                </div>
+                {/* No display name or email here: this row is pulled up over the
+                    cover with -mt-14, so anything in it lands on the image. The
+                    name is the editable field below; the page header carries the
+                    page's title. */}
               </div>
 
               {!isInterviewerProfile && (

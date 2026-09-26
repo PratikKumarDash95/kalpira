@@ -5,13 +5,13 @@
 // so reload and back/forward land on the same view instead of resetting to the
 // dashboard — replacing the former single-page sessionStorage tab state.
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Activity, BarChart3, Menu, X, Shield, LogOut, ChevronRight,
-    Database, UserCog, GraduationCap, MessageSquare, Gauge, Waves, Scale,
+    UserCog, GraduationCap, MessageSquare, Gauge, Waves, Scale,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/apiClient';
 import { AdminShellSkeleton } from '@/components/ui/Skeleton';
@@ -48,37 +48,48 @@ function clearAdminDrafts() {
 export default function AdminShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname() || '/';
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'http://localhost:3000';
 
     // Admin-session gate: verify the caller is actually an admin BEFORE rendering
     // any admin chrome. A candidate/interviewer session (or logged-out browser)
-    // is bounced to the main app login so the admin UI can't be viewed by simply
-    // navigating to this app's URL. Server routes are already protected, but this
-    // stops the shell from rendering at all for non-admins.
+    // gets the access screen below instead of the console. Server routes are
+    // already protected; this stops the shell from rendering at all for them.
+    //
+    // Nothing here navigates off this origin. It used to set
+    // `window.location.href = <main app>/login`, which made one portal able to
+    // move the browser into another — a session valid on every port meant a
+    // non-admin could be walked from the admin console into the candidate app
+    // (and, via that app's own links, back again). Portals now only ever render
+    // their own pages; a wrong-role visitor gets this screen.
     const [authState, setAuthState] = useState<'checking' | 'ok' | 'denied'>('checking');
 
-    useEffect(() => {
-        let cancelled = false;
-        apiFetch('/api/admin/me')
-            .then((res) => {
-                if (cancelled) return;
-                if (res.ok) {
-                    setAuthState('ok');
-                } else {
-                    setAuthState('denied');
-                    window.location.href = `${mainAppUrl}/login`;
-                }
-            })
-            .catch(() => {
-                if (cancelled) return;
-                setAuthState('denied');
-                window.location.href = `${mainAppUrl}/login`;
-            });
-        return () => { cancelled = true; };
-    }, [mainAppUrl]);
+    const checkAdmin = useCallback(async () => {
+        try {
+            const res = await apiFetch('/api/admin/me');
+            setAuthState(res.ok ? 'ok' : 'denied');
+        } catch {
+            setAuthState('denied');
+        }
+    }, []);
 
-    if (authState !== 'ok') {
+    useEffect(() => {
+        checkAdmin();
+    }, [checkAdmin]);
+
+    const handleSignOut = useCallback(async () => {
+        try {
+            await apiFetch('/api/auth', { method: 'DELETE' });
+        } finally {
+            clearAdminDrafts();
+            setAuthState('denied');
+        }
+    }, []);
+
+    if (authState === 'checking') {
         return <AdminShellSkeleton />;
+    }
+
+    if (authState === 'denied') {
+        return <AdminAccessRequired onRetry={checkAdmin} onSignOut={handleSignOut} />;
     }
 
     const active = NAV.reduce((best, item) => {
@@ -86,15 +97,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         return pathname === item.href || pathname.startsWith(`${item.href}/`) ? item.href : best;
     }, '/');
     const title = NAV.find((n) => n.href === active)?.label ?? 'Admin';
-
-    const handleLogout = async () => {
-        try {
-            await apiFetch('/api/auth', { method: 'DELETE' });
-        } finally {
-            clearAdminDrafts();
-            window.location.href = `${mainAppUrl}/login`;
-        }
-    };
 
     return (
         <div className="app-shell min-h-screen flex">
@@ -132,11 +134,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                     })}
                 </nav>
                 <div className="p-4 border-t border-[color:var(--line)] space-y-2">
-                    <button type="button" onClick={() => { window.location.href = `${mainAppUrl}/studies`; }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-[color:var(--muted)] hover:bg-[color:var(--surface-soft)] hover:text-[color:var(--text)] transition-all">
-                        <Database size={16} /> Back to App
-                    </button>
-                    <button type="button" onClick={handleLogout}
+                    {/* No "Back to App" here. It jumped to the candidate app on
+                        another port; that app is reachable by its own URL, and no
+                        portal in this product navigates another one. */}
+                    <button type="button" onClick={handleSignOut}
                         className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-[color:var(--danger)] hover:bg-[color:var(--danger-soft)] transition-all">
                         <LogOut size={16} /> Logout
                     </button>
@@ -155,6 +156,48 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 </header>
 
                 <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Shown in place of the console when the browser has no admin session — a
+ * candidate or interviewer session, or nobody signed in.
+ *
+ * Self-contained by design: the only actions are re-checking the session and
+ * signing out, and neither leaves this origin. Signing in as an administrator
+ * happens in the main Kalpira app, which this screen says in words rather than
+ * navigating there.
+ */
+function AdminAccessRequired({
+    onRetry,
+    onSignOut,
+}: {
+    onRetry: () => void;
+    onSignOut: () => void;
+}) {
+    return (
+        <div className="app-shell min-h-screen grid place-items-center p-4 sm:p-6">
+            <div className="surface w-full max-w-md rounded-2xl p-8 text-center">
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 shadow-[0_6px_16px_rgba(234,179,8,0.32)]">
+                    <Shield size={22} className="text-white" />
+                </div>
+
+                <h1 className="mt-5 text-lg font-bold text-[color:var(--text)]">Admin access required</h1>
+                <p className="mt-2 text-sm text-[color:var(--muted)]">
+                    This console only serves Kalpira administrators, and the browser is not signed in as one.
+                    Sign in with an administrator account in the main Kalpira app, then try again.
+                </p>
+
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <button type="button" onClick={onRetry} className="btn-primary px-5 py-2.5 text-sm font-semibold">
+                        Try again
+                    </button>
+                    <button type="button" onClick={onSignOut} className="btn-secondary px-5 py-2.5 text-sm font-semibold">
+                        Sign out
+                    </button>
+                </div>
             </div>
         </div>
     );
