@@ -35,19 +35,42 @@ export async function GET() {
   }
 
   const email = user.email.toLowerCase();
+  // Query sessions explicitly assigned to this candidate email
   const sessions = await supabaseDb.interviewSession.findMany({
     where: {
-      OR: [
-        { userId: user.id },
-        { candidateEmail: email },
-      ],
+      candidateEmail: email,
     },
     include: { study: { include: { user: true } }, scoreBreakdown: true },
     orderBy: { startedAt: 'desc' },
   });
 
   const visibleSessions = sessions
-    .filter((session: any) => session.candidateEmail?.toLowerCase() === email || session.userId === user.id)
+    .filter((session: any) => {
+      // Must be explicitly assigned to this candidate email
+      const candidateEmail = (session.candidateEmail || '').trim().toLowerCase();
+      if (!candidateEmail || candidateEmail !== email || candidateEmail === 'practice@self') {
+        return false;
+      }
+
+      // Exclude self-practice sessions: practice mode, practice study kind, or practice title
+      if (session.mode === 'practice') return false;
+
+      const config = parseConfig(session.study?.configJSON);
+      if (config?.kind === 'practice') return false;
+
+      const studyTitle = (config?.name || session.study?.name || session.role || '').trim().toLowerCase();
+      if (studyTitle.startsWith('practice:')) return false;
+
+      const topic = (config?.researchQuestion || '').trim().toLowerCase();
+      if (topic.includes('practice interview')) return false;
+
+      // An assigned interview is created by an external interviewer, not by the candidate for themselves
+      if (session.study?.userId && session.study.userId === user.id) {
+        return false;
+      }
+
+      return true;
+    })
     .map((session: any) => {
       const config = parseConfig(session.study?.configJSON);
       return {

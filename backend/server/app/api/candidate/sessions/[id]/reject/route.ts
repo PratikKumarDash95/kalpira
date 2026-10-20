@@ -44,6 +44,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'This interview is not assigned to your email' }, { status: 403 });
   }
 
+  if (session.mode === 'practice' || session.candidateEmail === 'practice@self') {
+    return NextResponse.json({ error: 'Self-practice sessions cannot be rejected' }, { status: 400 });
+  }
+
   if (session.completedAt) {
     return NextResponse.json({ error: 'This interview has already been completed and cannot be rejected' }, { status: 409 });
   }

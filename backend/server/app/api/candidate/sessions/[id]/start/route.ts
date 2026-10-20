@@ -47,6 +47,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'This interview is not assigned to your email' }, { status: 403 });
   }
 
+  const config = parseConfig(session.study?.configJSON);
+  const studyTitle = (config?.name || session.study?.name || session.role || '').trim().toLowerCase();
+  if (
+    session.mode === 'practice' ||
+    session.candidateEmail === 'practice@self' ||
+    config?.kind === 'practice' ||
+    studyTitle.startsWith('practice:') ||
+    (session.study?.userId && session.study.userId === user.id)
+  ) {
+    return NextResponse.json({ error: 'This is a self-practice session, not an assigned interview.' }, { status: 400 });
+  }
+
   if (session.completedAt || session.mode === 'terminated') {
     return NextResponse.json({ error: 'This interview has already been completed or terminated' }, { status: 409 });
   }
@@ -59,7 +71,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'This interview is no longer available — the study it belonged to was removed by the interviewer.' }, { status: 410 });
   }
 
-  const config = parseConfig(session.study.configJSON);
   if (!config) {
     return NextResponse.json({ error: 'Interview configuration is invalid' }, { status: 500 });
   }

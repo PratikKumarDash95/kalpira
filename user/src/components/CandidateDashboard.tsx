@@ -98,7 +98,28 @@ const CandidateDashboard: React.FC = () => {
         }
 
         const sessionsData = await sessionsRes.json();
-        setSessions(sessionsData.sessions || []);
+        const rawSessions: CandidateSession[] = sessionsData.sessions || [];
+        const userEmail = (meData.user?.email || '').trim().toLowerCase();
+
+        // Practice interviews belong to the user's personal practice history and must never
+        // be displayed as interviewer-assigned interviews.
+        const assignedOnly = rawSessions.filter((s) => {
+          const title = (s.title || '').trim().toLowerCase();
+          const topic = (s.topic || '').trim().toLowerCase();
+          const desc = (s.description || '').trim().toLowerCase();
+          const candEmail = (s.candidateEmail || '').trim().toLowerCase();
+          const intEmail = (s.interviewerEmail || '').trim().toLowerCase();
+
+          if (candEmail === 'practice@self') return false;
+          if (title.startsWith('practice:')) return false;
+          if (topic.includes('practice interview')) return false;
+          if (desc.includes('self-guided practice')) return false;
+          // An assigned interview comes from an external interviewer, not the candidate themselves
+          if (userEmail && intEmail === userEmail) return false;
+          return true;
+        });
+
+        setSessions(assignedOnly);
       } catch {
         setError('Failed to load candidate dashboard.');
       } finally {

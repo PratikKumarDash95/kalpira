@@ -23,7 +23,6 @@ function VrmScene({
   lipSync?: LipSyncController | null;
 }) {
   const vrmRef = useRef<VRM | null>(null);
-  const clockRef = useRef(new THREE.Clock());
   const currentWeightsRef = useRef<VisemeWeights>({ aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 });
   const [vrm, setVrm] = useState<VRM | null>(null);
 
@@ -42,8 +41,8 @@ function VrmScene({
           return;
         }
 
-        // Clean up joints/vertices
-        VRMUtils.removeUnnecessaryJoints(loadedVrm.scene);
+        // Clean up skeletons and vertices for performance
+        VRMUtils.combineSkeletons(loadedVrm.scene);
         VRMUtils.removeUnnecessaryVertices(loadedVrm.scene);
 
         // VRM0 models face -Z by default; rotateVRM0 turns it 180 deg to face the camera (+Z)
@@ -70,13 +69,12 @@ function VrmScene({
     };
   }, []);
 
-  // Animation loop
-  useFrame(() => {
+  // Animation loop using React Three Fiber's built-in frame state
+  useFrame((state, delta) => {
     const activeVrm = vrmRef.current;
     if (!activeVrm) return;
 
-    const delta = clockRef.current.getDelta();
-    const elapsed = clockRef.current.elapsedTime;
+    const elapsed = state.clock.getElapsedTime();
 
     // Update VRM spring bones, lookAt, and expressions
     activeVrm.update(delta);

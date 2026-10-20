@@ -30,8 +30,9 @@ export function Markdown({ children, className }: MarkdownProps) {
 
     import('react-markdown')
       .then(mod => {
-        cachedRenderer = mod.default as unknown as Renderer;
-        if (!cancelled) setRenderer(() => cachedRenderer);
+        const comp = (mod.default || (mod as any).Markdown || mod) as unknown as Renderer;
+        cachedRenderer = comp;
+        if (!cancelled) setRenderer(() => comp);
       })
       .catch(() => {
         // Chunk failed to load — the plain-text fallback stays in place, which is
@@ -43,16 +44,24 @@ export function Markdown({ children, className }: MarkdownProps) {
     };
   }, []);
 
-  if (!Renderer) {
+  if (!Renderer || typeof children !== 'string' || !children.trim()) {
     // Plain text, keeping the line breaks markdown would have produced.
+    return (
+      <span className={className} style={{ whiteSpace: 'pre-wrap' }}>
+        {children ?? ''}
+      </span>
+    );
+  }
+
+  try {
+    return <Renderer className={className}>{children}</Renderer>;
+  } catch {
     return (
       <span className={className} style={{ whiteSpace: 'pre-wrap' }}>
         {children}
       </span>
     );
   }
-
-  return <Renderer className={className}>{children}</Renderer>;
 }
 
 export default Markdown;
