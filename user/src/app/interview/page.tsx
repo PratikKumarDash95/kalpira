@@ -4,16 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import VideoInterview from '@/components/VideoInterview';
+import RequireAuth from '@/components/RequireAuth';
 import { Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 
-export default function InterviewPage() {
+function InterviewContent() {
   const router = useRouter();
-  const { studyConfig, participantToken } = useStore();
+  const { studyConfig } = useStore();
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     // Wait for Zustand persist to finish hydrating from sessionStorage.
-    // Using the persist API directly is more reliable than a fixed timer.
     const anyStore = useStore as unknown as {
       persist?: { hasHydrated: () => boolean; onFinishHydration: (cb: () => void) => () => void };
     };
@@ -22,7 +22,6 @@ export default function InterviewPage() {
       return;
     }
     const unsub = anyStore.persist?.onFinishHydration(() => setHydrated(true));
-    // Safety fallback: if persist API isn't available, hydrate after a short delay
     const fallback = setTimeout(() => setHydrated(true), 500);
     return () => {
       unsub?.();
@@ -65,3 +64,12 @@ export default function InterviewPage() {
 
   return <VideoInterview />;
 }
+
+export default function InterviewPage() {
+  return (
+    <RequireAuth redirectTo="/login">
+      <InterviewContent />
+    </RequireAuth>
+  );
+}
+

@@ -9,11 +9,16 @@ import { generateInterviewResponse, getInterviewGreeting } from '@/services/gemi
 import { InterviewMessage, InterviewPhase } from '@/types';
 import { Markdown } from '@/components/ui/Markdown';
 import { createDeliveryCapture, type DeliveryCapture } from '@/lib/deliveryCapture';
+import { createLipSyncController, type LipSyncController } from '@/lib/lipSync';
 import {
-    Mic, MicOff, Video, VideoOff, Phone, Send, Bot, User,
+    Mic, MicOff, Video, VideoOff, Phone, Send, User,
     Loader2, CheckCircle, MessageSquare, Volume2, VolumeX,
     Activity, Clock, ChevronRight
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import VrmAvatar so Three.js is never bundled server-side
+const VrmAvatar = dynamic(() => import('@/components/VrmAvatar'), { ssr: false });
 
 // ─── Phase Labels ──────────────────────────────────────────────────────────────
 const phaseLabels: Record<InterviewPhase, string> = {
@@ -95,6 +100,26 @@ const VideoInterview: React.FC = () => {
     const listeningDesiredRef = useRef(false);
     // Feature 2: raw delivery capture. Measures, never scores — see deliveryCapture.ts.
     const deliveryCaptureRef = useRef<DeliveryCapture | null>(null);
+    const inputRef = useRef('');
+    const lipSyncRef = useRef<LipSyncController | null>(null);
+    if (!lipSyncRef.current) {
+        lipSyncRef.current = createLipSyncController();
+    }
+
+    // Keep inputRef synchronously updated with input state
+    useEffect(() => {
+        inputRef.current = input;
+    }, [input]);
+
+    // Reset TTS and lip-sync on component unmount
+    useEffect(() => {
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.speechSynthesis?.cancel();
+            }
+            lipSyncRef.current?.reset();
+        };
+    }, []);
 
     // ── Scroll chat to bottom ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -213,14 +238,29 @@ const VideoInterview: React.FC = () => {
         if (!isTTSEnabled || typeof window === 'undefined') return;
         const synth = window.speechSynthesis;
         synth.cancel();
+        lipSyncRef.current?.reset();
         const clean = text.replace(/[*_`#>\[\]]/g, '').slice(0, 500);
         const utt = new SpeechSynthesisUtterance(clean);
         utt.rate = 0.95;
-        utt.pitch = 1.05;
+        utt.pitch = 0.98;
         const voices = synth.getVoices();
-        const preferred = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en'));
+        // Prefer English male voices matching the male 3D avatar model
+        const preferred = voices.find(v =>
+            v.lang.startsWith('en') && (
+                v.name.includes('Google UK English Male') ||
+                v.name.includes('David') ||
+                v.name.includes('Mark') ||
+                v.name.toLowerCase().includes('male') ||
+                v.name.includes('Guy') ||
+                v.name.includes('George')
+            )
+        ) || voices.find(v => v.name.includes('David')) || voices.find(v => v.lang.startsWith('en'));
         if (preferred) utt.voice = preferred;
+
+        lipSyncRef.current?.startUtterance(clean, utt.rate);
+
         const onSpeakEnd = () => {
+            lipSyncRef.current?.reset();
             setAiSpeaking(false);
             aiSpeakingRef.current = false;
             // Resume listening only if the user had the mic on before the AI spoke.
@@ -229,10 +269,14 @@ const VideoInterview: React.FC = () => {
             }
         };
         utt.onstart = () => {
+            lipSyncRef.current?.onStart();
             setAiSpeaking(true);
             aiSpeakingRef.current = true;
             // Pause mic recognition so the spoken response isn't captured as input.
             try { recognitionRef.current?.stop(); } catch { /* not running */ }
+        };
+        utt.onboundary = (event: SpeechSynthesisEvent) => {
+            lipSyncRef.current?.onBoundary(event);
         };
         utt.onend = onSpeakEnd;
         utt.onerror = onSpeakEnd;
@@ -265,19 +309,20 @@ const VideoInterview: React.FC = () => {
             }
             setInterimText(interim);
             if (final) {
-                setInput(prev => prev + (prev ? ' ' : '') + final);
+                const updated = (inputRef.current ? inputRef.current + ' ' : '') + final.trim();
+                inputRef.current = updated;
+                setInput(updated);
                 setInterimText('');
                 // Auto-send after 2s silence
                 if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
                 silenceTimerRef.current = setTimeout(() => {
                     if (!isMounted) return;
-                    setInput(prev => {
-                        if (prev.trim()) {
-                            handleSendRef.current?.(prev.trim());
-                            return '';
-                        }
-                        return prev;
-                    });
+                    const textToSend = inputRef.current.trim();
+                    if (textToSend && handleSendRef.current) {
+                        inputRef.current = '';
+                        setInput('');
+                        handleSendRef.current(textToSend);
+                    }
                 }, 2000);
             }
         };
@@ -322,6 +367,7 @@ const VideoInterview: React.FC = () => {
             listeningDesiredRef.current = true;
             // Stop any in-progress TTS so we don't immediately pause again.
             window.speechSynthesis?.cancel();
+            lipSyncRef.current?.reset();
             aiSpeakingRef.current = false;
             setAiSpeaking(false);
             try {
@@ -651,87 +697,79 @@ const VideoInterview: React.FC = () => {
                     {/* ── Video Panel (left) ── */}
                     <div className={`flex flex-col gap-3 p-3 sm:p-4 transition-all duration-300 ${showChat ? 'hidden sm:flex sm:w-1/2 lg:w-3/5' : 'flex w-full'}`}>
 
-                        {/* AI Avatar (top) */}
-                        <div className="relative h-28 sm:h-36 rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 flex-shrink-0">
-                            {/* Animated AI background */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="relative">
-                                    {/* Outer pulse rings */}
-                                    {aiSpeaking && (
-                                        <>
-                                            <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 rounded-full bg-brand-500/20" style={{ width: 160, height: 160, margin: 'auto', top: -40, left: -40 }} />
-                                            <motion.div animate={{ scale: [1, 1.6, 1], opacity: [0.2, 0, 0.2] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }} className="absolute inset-0 rounded-full bg-brand-500/20" style={{ width: 160, height: 160, margin: 'auto', top: -40, left: -40 }} />
-                                        </>
-                                    )}
-                                    {/* AI Avatar circle */}
-                                    <motion.div
-                                        animate={aiSpeaking ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-                                        transition={{ duration: 0.6, repeat: aiSpeaking ? Infinity : 0 }}
-                                        className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center shadow-2xl shadow-brand-900/50 border-2 border-brand-500/30"
-                                    >
-                                        <Bot size={40} className="text-white" />
-                                    </motion.div>
-                                </div>
+                        {/* ── Main Interview Stage (AI Interviewer fills entire surface; Candidate is Picture-in-Picture in bottom right) ── */}
+                        <div className="relative flex-1 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 min-h-[320px] shadow-2xl flex items-center justify-center">
+
+                            {/* 1. Main Stage: AI Interviewer 3D VRM Avatar with Office Backdrop filling the entire surface */}
+                            <div className="absolute inset-0 w-full h-full">
+                                <VrmAvatar aiSpeaking={aiSpeaking} lipSync={lipSyncRef.current} />
                             </div>
 
-                            {/* AI Label */}
-                            <div className="absolute top-3 left-3 flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${aiSpeaking ? 'bg-green-400 animate-pulse' : isAiThinking ? 'bg-amber-400 animate-pulse' : 'bg-slate-500'}`} />
-                                <span className="text-xs text-slate-300 font-medium">AI Interviewer</span>
+                            {/* AI Speaking ambient pulse highlight */}
+                            {aiSpeaking && (
+                                <div className="absolute inset-0 pointer-events-none rounded-2xl ring-2 ring-brand-500/40 shadow-[inset_0_0_40px_rgba(59,130,246,0.15)] transition-all" />
+                            )}
+
+                            {/* AI Status Badge (Top-Left) */}
+                            <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-slate-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-700/60 shadow-lg">
+                                <div className={`w-2 h-2 rounded-full ${aiSpeaking ? 'bg-emerald-400 animate-pulse' : isAiThinking ? 'bg-amber-400 animate-pulse' : 'bg-slate-500'}`} />
+                                <span className="text-xs text-slate-200 font-medium">AI Interviewer</span>
                             </div>
 
-                            {/* TTS toggle */}
+                            {/* TTS Audio Toggle (Top-Right) */}
                             <button
-                                onClick={() => { setIsTTSEnabled(!isTTSEnabled); window.speechSynthesis?.cancel(); }}
-                                className="absolute top-3 right-3 p-1.5 rounded-lg bg-slate-800/80 text-slate-400 hover:text-white transition-colors"
+                                onClick={() => { setIsTTSEnabled(!isTTSEnabled); window.speechSynthesis?.cancel(); lipSyncRef.current?.reset(); }}
+                                className="absolute top-3 right-3 z-10 p-2 rounded-xl bg-slate-900/80 backdrop-blur-sm text-slate-300 hover:text-white border border-slate-700/60 shadow-lg transition-colors"
+                                title={isTTSEnabled ? "Mute AI Speech" : "Unmute AI Speech"}
                             >
-                                {isTTSEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                                {isTTSEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
                             </button>
 
-                            {/* Thinking indicator */}
+                            {/* Thinking Indicator (Bottom-Left) */}
                             {isAiThinking && (
-                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700">
-                                    <Loader2 size={12} className="animate-spin text-brand-700" />
-                                    <span className="text-xs text-slate-400">Thinking...</span>
+                                <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-700 shadow-xl">
+                                    <Loader2 size={13} className="animate-spin text-amber-400" />
+                                    <span className="text-xs text-slate-300 font-medium">Thinking...</span>
                                 </div>
                             )}
-                        </div>
 
-                        {/* Candidate Camera (bottom) */}
-                        <div className="relative flex-1 rounded-2xl overflow-hidden bg-slate-800 border border-slate-700 min-h-0">
-                            <video
-                                ref={handleVideoRef}
-                                autoPlay
-                                muted
-                                playsInline
-                                className={`w-full h-full object-cover ${isCameraOff ? 'opacity-0' : 'opacity-100'}`}
-                            />
-                            {isCameraOff && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center">
-                                        <User size={24} className="text-slate-400" />
+                            {/* 2. Candidate Camera: Picture-in-Picture Floating Inset (Bottom-Right, matching green box in user diagram) */}
+                            <div className="absolute bottom-3 right-3 z-20 w-32 h-24 sm:w-44 sm:h-32 md:w-48 md:h-36 rounded-xl overflow-hidden bg-slate-950 border-2 border-slate-700/90 shadow-2xl transition-all">
+                                <video
+                                    ref={handleVideoRef}
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    className={`w-full h-full object-cover ${isCameraOff ? 'opacity-0' : 'opacity-100'}`}
+                                />
+                                {isCameraOff && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+                                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                                            <User size={18} className="text-slate-400" />
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Mic visualizer */}
-                            {isListening && (
-                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
-                                    {[...Array(5)].map((_, i) => (
-                                        <motion.div
-                                            key={i}
-                                            animate={{ height: [4, 12 + i * 3, 4] }}
-                                            transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
-                                            className="w-1 bg-emerald-400 rounded-full"
-                                            style={{ height: 4 }}
-                                        />
-                                    ))}
+                                {/* Candidate "You" Tag (Top-Left of PiP) */}
+                                <div className="absolute top-1.5 left-1.5 flex items-center gap-1.5 bg-slate-950/80 backdrop-blur-xs px-2 py-0.5 rounded-md border border-slate-800">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${isMuted ? 'bg-red-500' : 'bg-emerald-400'}`} />
+                                    <span className="text-[10px] text-slate-300 font-medium">You</span>
                                 </div>
-                            )}
 
-                            <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${isMuted ? 'bg-red-500' : 'bg-emerald-400'}`} />
-                                <span className="text-xs text-slate-300">You</span>
+                                {/* Candidate Mic Audio Visualizer (Bottom-Center of PiP) */}
+                                {isListening && (
+                                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-slate-950/70 px-1.5 py-0.5 rounded-full">
+                                        {[...Array(4)].map((_, i) => (
+                                            <motion.div
+                                                key={i}
+                                                animate={{ height: [3, 9 + i * 2, 3] }}
+                                                transition={{ duration: 0.45, repeat: Infinity, delay: i * 0.1 }}
+                                                className="w-0.5 bg-emerald-400 rounded-full"
+                                                style={{ height: 3 }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -806,7 +844,13 @@ const VideoInterview: React.FC = () => {
                                         className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                                     >
                                         <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'ai' ? 'bg-brand-600' : 'bg-slate-700'}`}>
-                                            {msg.role === 'ai' ? <Bot size={14} className="text-white" /> : <User size={14} className="text-slate-300" />}
+                                            {msg.role === 'ai'
+                                                ? (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect width="18" height="10" x="3" y="11" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" x2="8" y1="16" y2="16" /><line x1="16" x2="16" y1="16" y2="16" />
+                                                    </svg>
+                                                )
+                                                : <User size={14} className="text-slate-300" />}
                                         </div>
                                         <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${msg.role === 'ai' ? 'bg-slate-800 text-slate-200 rounded-tl-sm' : 'bg-brand-600/20 text-slate-200 border border-brand-500/20 rounded-tr-sm'}`}>
                                             <Markdown className="prose prose-invert prose-sm max-w-none">{msg.content}</Markdown>
@@ -817,9 +861,11 @@ const VideoInterview: React.FC = () => {
 
                             {isAiThinking && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2">
-                                    <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center">
-                                        <Bot size={14} className="text-white" />
-                                    </div>
+                                        <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <rect width="18" height="10" x="3" y="11" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" x2="8" y1="16" y2="16" /><line x1="16" x2="16" y1="16" y2="16" />
+                                            </svg>
+                                        </div>
                                     <div className="bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
                                         {[0, 1, 2].map(i => (
                                             <motion.div key={i} animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} className="w-1.5 h-1.5 rounded-full bg-slate-500" />

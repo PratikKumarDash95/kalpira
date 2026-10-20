@@ -8,9 +8,10 @@ import Consent from '@/components/Consent';
 import VideoInterview from '@/components/VideoInterview';
 import Synthesis from '@/components/Synthesis';
 import Export from '@/components/Export';
+import RequireAuth from '@/components/RequireAuth';
 import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
 
-export default function CandidateInterviewPage() {
+function CandidateInterviewContent() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.id as string;
@@ -94,3 +95,12 @@ export default function CandidateInterviewPage() {
     default: return <Consent />;
   }
 }
+
+export default function CandidateInterviewPage() {
+  return (
+    <RequireAuth redirectTo="/login">
+      <CandidateInterviewContent />
+    </RequireAuth>
+  );
+}
+

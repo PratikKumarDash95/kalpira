@@ -1,4 +1,5 @@
 import { AlertTriangle, ArrowLeft, ShieldAlert } from 'lucide-react';
+import RequireAuth from '@/components/RequireAuth';
 
 interface TerminatedPageProps {
   searchParams?: {
@@ -6,7 +7,7 @@ interface TerminatedPageProps {
   };
 }
 
-export default function InterviewTerminatedPage({ searchParams }: TerminatedPageProps) {
+function TerminatedContent({ searchParams }: TerminatedPageProps) {
   const reason = searchParams?.reason?.trim() || 'Interview session has been terminated due to a proctoring policy violation.';
   const isInterviewerPortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer';
   const dashboardPath = isInterviewerPortal ? '/dashboard' : '/studies';
@@ -54,3 +55,12 @@ export default function InterviewTerminatedPage({ searchParams }: TerminatedPage
     </main>
   );
 }
+
+export default function InterviewTerminatedPage({ searchParams }: TerminatedPageProps) {
+  return (
+    <RequireAuth redirectTo="/login">
+      <TerminatedContent searchParams={searchParams} />
+    </RequireAuth>
+  );
+}
+

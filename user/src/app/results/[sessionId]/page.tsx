@@ -1,4 +1,5 @@
 import InterviewResults from '@/components/InterviewResults';
+import RequireAuth from '@/components/RequireAuth';
 
 interface Props {
     params: Promise<{ sessionId: string }>;
@@ -6,5 +7,10 @@ interface Props {
 
 export default async function ResultsPage({ params }: Props) {
     const { sessionId } = await params;
-    return <InterviewResults sessionId={sessionId} />;
+    return (
+        <RequireAuth redirectTo="/login">
+            <InterviewResults sessionId={sessionId} />
+        </RequireAuth>
+    );
 }
+

@@ -20,7 +20,9 @@ export const metadata: Metadata = {
  * page says where the console is instead of taking the browser there. An
  * administrator can also reach it from the header's Admin link.
  */
-export default function AdminPage() {
+import RequireAuth from '@/components/RequireAuth';
+
+function AdminContent() {
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
 
   return (
@@ -39,3 +41,12 @@ export default function AdminPage() {
     </PageShell>
   );
 }
+
+export default function AdminPage() {
+  return (
+    <RequireAuth redirectTo="/login">
+      <AdminContent />
+    </RequireAuth>
+  );
+}
+

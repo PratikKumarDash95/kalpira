@@ -18,9 +18,11 @@ interface Profile {
   onboardingComplete: boolean;
 }
 
+import RequireAuth from '@/components/RequireAuth';
+
 type MediaKind = 'avatar' | 'cover';
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter();
   const pathname = usePathname();
   const isStandaloneInterviewerPortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer';
@@ -399,3 +401,12 @@ export default function ProfilePage() {
     </PageShell>
   );
 }
+
+export default function ProfilePage() {
+  return (
+    <RequireAuth redirectTo="/login">
+      <ProfileContent />
+    </RequireAuth>
+  );
+}
+

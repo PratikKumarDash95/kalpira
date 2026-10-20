@@ -8,7 +8,6 @@ import {
   BrainCircuit,
   BriefcaseBusiness,
   Check,
-  CheckCircle2,
   Layers3,
   MessageSquare,
   Minus,
@@ -72,14 +71,6 @@ const FAQS = [
   { q: 'Can I use this for both practice and hiring?', a: 'Yes. The same workspace powers self-practice, research studies, and interviewer-led hiring rounds.' },
 ];
 
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-xl border border-[color:var(--line)] bg-[color:var(--surface-soft)] p-3 text-center transition-colors hover:border-brand-300">
-      <p className="text-2xl font-extrabold tracking-tight text-[color:var(--text)]">{value}</p>
-      <p className="mt-1 text-xs text-[color:var(--muted)]">{label}</p>
-    </div>
-  );
-}
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -118,14 +109,24 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
-  const primaryCta = () => router.push(profile ? '/studies' : '/login');
+  const primaryCta = () => {
+    if (!profile) {
+      router.push('/login');
+      return;
+    }
+    if (profile.role === 'interviewer' || profile.role === 'admin') {
+      router.push('/interviewer/dashboard');
+    } else {
+      router.push('/dashboard');
+    }
+  };
 
   return (
     <div className="app-shell min-h-screen">
-      <Navbar />
+      <Navbar landingNav />
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-14 pb-10 sm:pt-20 sm:pb-14">
+      <section className="relative overflow-hidden pt-14 pb-14 sm:pt-24 sm:pb-20">
         {/* Decorative lemon wash + drifting dot grid */}
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-page-wash" />
@@ -170,9 +171,9 @@ export default function Home() {
               <button onClick={primaryCta} className="btn-primary sheen px-6 py-3 text-sm">
                 Start free <ArrowRight size={17} />
               </button>
-              <button onClick={() => router.push('/studies')} className="btn-secondary px-6 py-3 text-sm">
-                View studies
-              </button>
+              <a href="#how-it-works" className="btn-secondary px-6 py-3 text-sm">
+                How it works
+              </a>
             </motion.div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[color:var(--muted)]">
               <span className="inline-flex items-center gap-1.5"><Check size={14} className="text-brand-700" /> No credit card to start</span>
@@ -181,50 +182,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* Product mock card */}
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.22, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-          className="app-container"
-        >
-          <div className="surface hover-lift mx-auto mt-14 max-w-4xl p-4 shadow-card-lg sm:p-6">
-            <div className="flex items-start justify-between gap-4 border-b border-[color:var(--line)] pb-4">
-              <div>
-                <p className="section-label">Live session</p>
-                <h2 className="mt-1 text-lg font-bold text-[color:var(--text)]">Product Designer Interview</h2>
-              </div>
-              <span className="badge badge-success inline-flex items-center gap-1.5">
-                <span className="animate-pop-in h-1.5 w-1.5 rounded-full bg-[color:var(--success)]" /> Active
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-3 py-5">
-              <Stat value="86%" label="Readiness" />
-              <Stat value="12" label="Signals" />
-              <Stat value="34m" label="Duration" />
-            </div>
-            <div className="stagger space-y-2">
-              {[
-                ['Adaptive flow', 'Follow-ups react to candidate depth'],
-                ['Team review', 'Structured studies and scorecards'],
-                ['Evidence first', 'Transcripts, summaries, and exports'],
-              ].map(([title, text]) => (
-                <div key={title} className="flex items-start gap-3 rounded-xl bg-[color:var(--surface-soft)] p-3 transition-colors hover:bg-[color:var(--brand-softer)]">
-                  <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0 text-brand-700" />
-                  <div>
-                    <p className="text-sm font-semibold text-[color:var(--text)]">{title}</p>
-                    <p className="text-xs text-[color:var(--muted)]">{text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
       </section>
 
       {/* How it works */}
-      <section className="app-container py-16">
+      <section id="how-it-works" className="app-container py-16">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-extrabold tracking-tight text-[color:var(--text)] sm:text-4xl">
             How it <span className="text-highlight">works</span>
@@ -261,7 +222,7 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="app-container py-16">
+      <section id="features" className="app-container py-16">
         <div className="mx-auto max-w-2xl text-center">
           <div className="badge badge-brand mx-auto"><Sparkles size={13} /> Built for every team</div>
           <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-[color:var(--text)] sm:text-4xl">
@@ -295,7 +256,7 @@ export default function Home() {
       </section>
 
       {/* Why teams */}
-      <section className="app-container py-16">
+      <section id="why" className="app-container py-16">
         <div className="surface relative overflow-hidden bg-[color:var(--brand-softer)] p-8 sm:p-12">
           <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
           <div className="relative mx-auto max-w-2xl text-center">

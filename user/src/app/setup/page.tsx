@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import PracticeSetup from '@/components/PracticeSetup';
 import PageShell from '@/components/layout/PageShell';
 import { SkeletonPageHeader, SkeletonCard, Skeleton } from '@/components/ui/Skeleton';
+import RequireAuth from '@/components/RequireAuth';
 
 // The shell, not a bare spinner: the fallback replaces the page wholesale while
 // useSearchParams suspends, so it has to carry the navbar or the chrome flashes away.
@@ -23,8 +24,11 @@ function SetupLoading() {
 
 export default function SetupPage() {
   return (
-    <Suspense fallback={<SetupLoading />}>
-      <PracticeSetup />
-    </Suspense>
+    <RequireAuth redirectTo="/login">
+      <Suspense fallback={<SetupLoading />}>
+        <PracticeSetup />
+      </Suspense>
+    </RequireAuth>
   );
 }
+

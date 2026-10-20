@@ -51,10 +51,12 @@ const ACCOUNT_PLACEHOLDER = 'h-9 w-24 rounded-xl';
 export default function Navbar({
   transparent = false,
   showProductNav = true,
+  landingNav = false,
   width = 'default',
 }: {
   transparent?: boolean;
   showProductNav?: boolean;
+  landingNav?: boolean;
   width?: PageWidth;
 }) {
   const pathname = usePathname();
@@ -77,7 +79,21 @@ export default function Navbar({
   }, [mobileOpen]);
 
   const links: NavLink[] = [];
-  if (showProductNav) {
+  if (landingNav) {
+    // Universal links for the public landing page — neutral and helpful for both interviewers and candidates
+    links.push({ label: 'How it works', href: '/#how-it-works' });
+    links.push({ label: 'Features', href: '/#features' });
+    links.push({ label: 'Why Kalpira', href: '/#why' });
+    links.push({ label: 'Pricing', href: '/#pricing' });
+    links.push({
+      label: 'For Interviewers',
+      href:
+        status === 'authed' && (profile?.role === 'interviewer' || profile?.role === 'admin')
+          ? '/interviewer/dashboard'
+          : '/login?role=interviewer',
+      activePrefix: '/interviewer',
+    });
+  } else if (showProductNav) {
     links.push({ label: 'Studies', href: '/studies' });
     // Personal to the signed-in user, so it is not role-gated: everyone who
     // practises has an ability map.
