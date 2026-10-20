@@ -30,6 +30,12 @@ import PageHeader from '@/components/layout/PageHeader';
 import PageSection from '@/components/layout/PageSection';
 import EmptyState from '@/components/layout/EmptyState';
 
+import {
+  CANDIDATE_DASHBOARD_QUERY_KEY,
+  fetchCandidateDashboard,
+  type CandidateDashboardData,
+} from '@/lib/candidateDashboardQuery';
+
 const StudyList: React.FC = () => {
   const router = useRouter();
   // Cached: a revisit paints the real list on the first frame and revalidates
@@ -38,37 +44,24 @@ const StudyList: React.FC = () => {
   const { status: sessionStatus, profile } = useProfile();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [assignedInterviewCount, setAssignedInterviewCount] = useState(0);
+
+  const isCandidate = sessionStatus === 'authed' && profile?.role !== 'interviewer' && profile?.role !== 'admin';
+  const { data: candidateData } = useQuery<CandidateDashboardData>(
+    isCandidate ? CANDIDATE_DASHBOARD_QUERY_KEY : '',
+    fetchCandidateDashboard,
+  );
+
+  const assignedInterviewCount = React.useMemo(() => {
+    if (!isCandidate || !candidateData) return 0;
+    return (candidateData.sessions || []).filter(
+      (session) => session.status === 'assigned' || session.status === 'in_progress',
+    ).length;
+  }, [isCandidate, candidateData]);
 
   const studies = data?.studies ?? [];
   const kvWarning = data?.warning ?? null;
   // Only a first-ever fetch has nothing to show; a revalidation keeps the list.
   const loading = data === undefined;
-
-  useEffect(() => {
-    // Only used to decide whether to surface the "assigned interviews" badge.
-    // Waits for the shared profile so this does not race the navbar's own read.
-    if (sessionStatus !== 'authed') return;
-    if (profile?.role === 'interviewer' || profile?.role === 'admin') return;
-
-    let cancelled = false;
-    apiFetch('/api/candidate/sessions')
-      .then(async (sessionsRes) => {
-        if (!sessionsRes.ok || cancelled) return;
-        const sessionsData = await sessionsRes.json();
-        if (cancelled) return;
-        const assignedCount = (sessionsData?.sessions || []).filter(
-          (session: { status?: string }) =>
-            session.status === 'assigned' || session.status === 'in_progress',
-        ).length;
-        setAssignedInterviewCount(assignedCount);
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionStatus, profile?.role]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this study? This cannot be undone.')) {

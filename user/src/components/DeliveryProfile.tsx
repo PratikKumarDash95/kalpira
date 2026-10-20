@@ -41,7 +41,6 @@ import PageSection from '@/components/layout/PageSection';
 import EmptyState from '@/components/layout/EmptyState';
 import { apiFetch } from '@/lib/apiClient';
 import { useQuery } from '@/lib/queryCache';
-import { deliveryProfileQueryKey } from '@/lib/queryKeys';
 import { useProfile } from '@/hooks/useProfile';
 import {
   aggregateVerdict,
@@ -52,52 +51,16 @@ import {
   type MetricAggregate,
   type RegistryEntry,
 } from '@/lib/deliveryFormat';
-
-// --------------------------------------------
-// Shapes returned by GET /api/delivery/profile
-// --------------------------------------------
-
-interface ProfileTrendPoint {
-  sessionId: string;
-  at: string;
-  metrics: MetricAggregate[];
-}
-
-interface DeliveryProfileResponse {
-  userId: string;
-  aggregate: MetricAggregate[];
-  trend: ProfileTrendPoint[];
-  /** Sessions that produced at least one measurement. */
-  analyzedCount: number;
-  registry: RegistryEntry[];
-}
+import {
+  fetchDeliveryProfile,
+  deliveryProfileQueryKey,
+  type DeliveryProfileResponse,
+  type DeliveryResult,
+} from '@/lib/deliveryQuery';
 
 // --------------------------------------------
 // Component
 // --------------------------------------------
-
-/**
- * A failed load is a *value*, not a thrown error: the cache has to be able to
- * hold the reason, and a fetch that rejects would leave the screen permanently
- * "loading" instead of saying what went wrong.
- */
-type DeliveryResult =
-  | { ok: true; data: DeliveryProfileResponse }
-  | { ok: false; error: string };
-
-async function fetchDeliveryProfile(sessionId?: string): Promise<DeliveryResult> {
-  try {
-    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
-    const res = await apiFetch(`/api/delivery/profile${query}`);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      return { ok: false, error: data.error || 'Failed to load your delivery profile.' };
-    }
-    return { ok: true, data: (await res.json()) as DeliveryProfileResponse };
-  } catch {
-    return { ok: false, error: 'Could not reach the delivery service.' };
-  }
-}
 
 export default function DeliveryProfile({ sessionId }: { sessionId?: string } = {}) {
   const router = useRouter();

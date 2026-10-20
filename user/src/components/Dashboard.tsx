@@ -23,48 +23,30 @@ import PageSection from '@/components/layout/PageSection';
 import EmptyState from '@/components/layout/EmptyState';
 import { SkeletonList } from '@/components/ui/Skeleton';
 
+import { useQuery, setQuery, revalidateQuery } from '@/lib/queryCache';
+import { STUDIES_QUERY_KEY, fetchStudies, type StudiesPayload } from '@/lib/studiesQuery';
+
 const Dashboard: React.FC = () => {
   const router = useRouter();
 
-  const [interviews, setInterviews] = useState<StoredInterview[]>([]);
-  const [studies, setStudies] = useState<StoredStudy[]>([]);
   const [selectedStudyId, setSelectedStudyId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
 
-  // Load studies on mount
-  useEffect(() => {
-    loadStudies();
-  }, []);
+  const { data: studiesPayload } = useQuery<StudiesPayload>(STUDIES_QUERY_KEY, fetchStudies);
+  const studies = studiesPayload?.studies ?? [];
 
-  // Load interviews when study filter changes
-  useEffect(() => {
-    loadInterviews(selectedStudyId);
-  }, [selectedStudyId]);
+  const interviewsKey = selectedStudyId
+    ? `/api/studies/${selectedStudyId}/interviews?summary=1`
+    : '/api/interviews?summary=1';
 
-  const loadStudies = async () => {
-    try {
-      const { studies: data } = await getAllStudies();
-      setStudies(data);
-    } catch (error) {
-      console.error('Error loading studies:', error);
-    }
-  };
+  const { data: interviewsData } = useQuery<StoredInterview[]>(
+    interviewsKey,
+    () => selectedStudyId ? getStudyInterviews(selectedStudyId, { summary: true }) : getAllInterviews({ summary: true }),
+  );
 
-  const loadInterviews = async (studyId: string | null) => {
-    setLoading(true);
-    try {
-      const data = studyId
-        ? await getStudyInterviews(studyId, { summary: true })
-        : await getAllInterviews({ summary: true });
-      setInterviews(data);
-    } catch (error) {
-      console.error('Error loading interviews:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const interviews = interviewsData ?? [];
+  const loading = interviewsData === undefined;
 
   const handleExportAll = async () => {
     setExporting(true);
@@ -98,7 +80,8 @@ const Dashboard: React.FC = () => {
     try {
       const result = await deleteInterview(id);
       if (result.success) {
-        setInterviews(prev => prev.filter(i => i.id !== id));
+        setQuery<StoredInterview[]>(interviewsKey, (prev: StoredInterview[] | undefined) => (prev ? prev.filter((i: StoredInterview) => i.id !== id) : []));
+        void revalidateQuery(interviewsKey, () => selectedStudyId ? getStudyInterviews(selectedStudyId, { summary: true }) : getAllInterviews({ summary: true }));
       } else {
         alert(result.error || 'Failed to delete interview');
       }

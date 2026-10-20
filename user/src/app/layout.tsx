@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import PreviewBanner from '@/components/PreviewBanner'
+import AppCacheWarmer from '@/components/AppCacheWarmer'
 
 // next/font downloads these at build time and serves them from our own origin,
 // so the browser never makes a render-blocking request to fonts.googleapis.com
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <body className="kalpira-light min-h-screen font-sans antialiased">
         <PreviewBanner />
+        <AppCacheWarmer />
         {children}
       </body>
     </html>

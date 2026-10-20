@@ -22,29 +22,14 @@ import PageSection from '@/components/layout/PageSection';
 import EmptyState from '@/components/layout/EmptyState';
 import { SkeletonList, SkeletonPageHeader } from '@/components/ui/Skeleton';
 
-interface CandidateInfo {
-  id: string;
-  name: string | null;
-  email: string;
-}
-
-interface CandidateSession {
-  id: string;
-  studyId: string;
-  title: string;
-  description: string;
-  topic: string;
-  companyName?: string;
-  interviewerName: string;
-  interviewerEmail: string;
-  candidateName: string;
-  candidateEmail: string;
-  assignedAt: string;
-  completedAt: string | null;
-  averageScore: number;
-  status: 'assigned' | 'in_progress' | 'completed' | 'rejected';
-  questionCount: number;
-}
+import { useQuery, setQuery } from '@/lib/queryCache';
+import {
+  fetchCandidateDashboard,
+  CANDIDATE_DASHBOARD_QUERY_KEY,
+  type CandidateDashboardData,
+  type CandidateInfo,
+  type CandidateSession,
+} from '@/lib/candidateDashboardQuery';
 
 const activeStatusRank: Record<CandidateSession['status'], number> = {
   in_progress: 0,
@@ -58,77 +43,38 @@ const sessionTime = (session: CandidateSession) =>
 
 const CandidateDashboard: React.FC = () => {
   const router = useRouter();
-  const [candidate, setCandidate] = useState<CandidateInfo | null>(null);
-  const [sessions, setSessions] = useState<CandidateSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: dashboardData } = useQuery<CandidateDashboardData>(
+    CANDIDATE_DASHBOARD_QUERY_KEY,
+    fetchCandidateDashboard,
+  );
+
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const candidate = dashboardData?.candidate ?? null;
+  const sessions = dashboardData?.sessions ?? [];
+  const loading = dashboardData === undefined;
+  const error = actionError || dashboardData?.error || null;
+
+  useEffect(() => {
+    if (dashboardData?.error === 'Not authorized as candidate') {
+      apiFetch('/api/auth/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const role = data?.profile?.role;
+          if (role === 'interviewer') router.push('/interviewer/dashboard');
+          else if (role === 'admin') router.push('/admin');
+          else router.push('/login?redirect=/candidate/dashboard');
+        })
+        .catch(() => router.push('/login?redirect=/candidate/dashboard'));
+    }
+  }, [dashboardData?.error, router]);
+
   const sortedSessions = [...sessions].sort((a, b) => {
     const rankDiff = activeStatusRank[a.status] - activeStatusRank[b.status];
     if (rankDiff !== 0) return rankDiff;
     return sessionTime(b) - sessionTime(a);
   });
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [meRes, sessionsRes] = await Promise.all([
-          apiFetch('/api/candidate/me'),
-          apiFetch('/api/candidate/sessions'),
-        ]);
-
-        if (!meRes.ok) {
-          // Not a candidate. Could be an interviewer/admin who landed here —
-          // route them to their real dashboard instead of bouncing to /login.
-          const profileRes = await apiFetch('/api/auth/me');
-          const role = profileRes.ok ? (await profileRes.json())?.profile?.role : null;
-          if (role === 'interviewer') router.push('/interviewer/dashboard');
-          else if (role === 'admin') router.push('/admin');
-          else router.push('/login?redirect=/candidate/dashboard');
-          return;
-        }
-
-        const meData = await meRes.json();
-        setCandidate(meData.user);
-
-        if (!sessionsRes.ok) {
-          const data = await sessionsRes.json().catch(() => ({}));
-          setError(data.error || 'Failed to load assigned interviews.');
-          return;
-        }
-
-        const sessionsData = await sessionsRes.json();
-        const rawSessions: CandidateSession[] = sessionsData.sessions || [];
-        const userEmail = (meData.user?.email || '').trim().toLowerCase();
-
-        // Practice interviews belong to the user's personal practice history and must never
-        // be displayed as interviewer-assigned interviews.
-        const assignedOnly = rawSessions.filter((s) => {
-          const title = (s.title || '').trim().toLowerCase();
-          const topic = (s.topic || '').trim().toLowerCase();
-          const desc = (s.description || '').trim().toLowerCase();
-          const candEmail = (s.candidateEmail || '').trim().toLowerCase();
-          const intEmail = (s.interviewerEmail || '').trim().toLowerCase();
-
-          if (candEmail === 'practice@self') return false;
-          if (title.startsWith('practice:')) return false;
-          if (topic.includes('practice interview')) return false;
-          if (desc.includes('self-guided practice')) return false;
-          // An assigned interview comes from an external interviewer, not the candidate themselves
-          if (userEmail && intEmail === userEmail) return false;
-          return true;
-        });
-
-        setSessions(assignedOnly);
-      } catch {
-        setError('Failed to load candidate dashboard.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [router]);
 
   const statusClass = (status: CandidateSession['status']) => {
     if (status === 'completed') return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20';
@@ -144,14 +90,15 @@ const CandidateDashboard: React.FC = () => {
       const res = await apiFetch(`/api/candidate/sessions/${sessionId}/reject`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || 'Failed to reject interview.');
+        setActionError(data.error || 'Failed to reject interview.');
         return;
       }
-      setSessions(prev =>
-        prev.map(s => (s.id === sessionId ? { ...s, status: 'rejected' as const } : s))
-      );
+      setQuery<CandidateDashboardData>(CANDIDATE_DASHBOARD_QUERY_KEY, {
+        candidate,
+        sessions: sessions.map(s => (s.id === sessionId ? { ...s, status: 'rejected' as const } : s)),
+      });
     } catch {
-      setError('Failed to reject interview.');
+      setActionError('Failed to reject interview.');
     } finally {
       setRejectingId(null);
     }

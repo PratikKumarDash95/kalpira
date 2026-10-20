@@ -67,8 +67,12 @@ export function isQueryFresh(key: string, ttl: number = DEFAULT_TTL_MS): boolean
   return queryAge(key) < ttl;
 }
 
-/** Write a value into the cache and wake every subscriber for `key`. */
-export function setQuery<T>(key: string, data: T): void {
+/** Write a value into the cache and wake every subscriber for `key`. Accepts a direct value or an updater function. */
+export function setQuery<T>(key: string, dataOrUpdater: T | ((prev: T | undefined) => T)): void {
+  const current = peekQuery<T>(key);
+  const data = typeof dataOrUpdater === 'function'
+    ? (dataOrUpdater as (prev: T | undefined) => T)(current)
+    : dataOrUpdater;
   entries.set(key, { data, at: Date.now() });
   notify(key);
 }

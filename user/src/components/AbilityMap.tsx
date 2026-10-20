@@ -26,56 +26,17 @@ import PageHeader from '@/components/layout/PageHeader';
 import PageSection from '@/components/layout/PageSection';
 import EmptyState from '@/components/layout/EmptyState';
 import { apiFetch } from '@/lib/apiClient';
-
-// --------------------------------------------
-// Shapes returned by GET /api/measurement/ability/:userId
-// --------------------------------------------
-
-interface CompetencyAbility {
-  competencyId: string;
-  name: string;
-  slug: string;
-  theta: number;
-  effectiveTheta: number;
-  discount: number;
-  standardError: number;
-  scaleScore: number;
-  confidenceInterval: { low: number; high: number };
-  reliability: number;
-  isPrecise: boolean;
-  responsesUsed: number;
-  limitingCompetencies: Array<{ competencyId: string; shortfall: number }>;
-  updatedAt: string | null;
-}
-
-interface AbilityProfile {
-  userId: string;
-  overall: {
-    theta: number;
-    standardError: number;
-    scaleScore: number;
-    confidenceInterval: { low: number; high: number };
-    competencyCount: number;
-    isPrecise: boolean;
-  };
-  competencies: CompetencyAbility[];
-  improvementTargets: Array<{
-    competencyId: string;
-    gap: number;
-    effectiveTheta: number;
-    trustworthy: boolean;
-  }>;
-  measuredCount: number;
-  targetStandardError: number;
-}
-
-interface AbilityHistoryPoint {
-  competencyId: string;
-  theta: number;
-  standardError: number;
-  responsesUsed: number;
-  recordedAt: string;
-}
+import { useProfile } from '@/hooks/useProfile';
+import { useQuery } from '@/lib/queryCache';
+import {
+  fetchAbility,
+  abilityQueryKey,
+  revalidateAbility,
+  type AbilityPayload,
+  type AbilityProfile,
+  type AbilityHistoryPoint,
+  type CompetencyAbility,
+} from '@/lib/abilityQuery';
 
 // --------------------------------------------
 // Presentation helpers
@@ -105,75 +66,34 @@ function formatPercent(value: number): string {
 
 export default function AbilityMap() {
   const router = useRouter();
+  const { profile: userProfile, status: profileStatus } = useProfile();
+  const userId = userProfile?.id ?? '';
 
-  const [userId, setUserId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<AbilityProfile | null>(null);
-  const [history, setHistory] = useState<AbilityHistoryPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: abilityData } = useQuery<AbilityPayload>(
+    abilityQueryKey(userId),
+    () => fetchAbility(userId),
+  );
+
+  const [localError, setLocalError] = useState<string | null>(null);
   const [selectedCompetency, setSelectedCompetency] = useState<string | null>(null);
   const [recomputing, setRecomputing] = useState(false);
 
-  // Resolve the signed-in candidate, then load their profile. The id comes from
-  // /api/auth/me because the measurement endpoints are keyed by user id.
-  //
-  // A signed-out visitor never reaches this component — RequireAuth replaces the
-  // route before it renders — so a missing id here is a real fault rather than
-  // something to redirect for.
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const meRes = await apiFetch('/api/auth/me');
-        if (!meRes.ok) throw new Error(`auth/me responded ${meRes.status}`);
-        const me = await meRes.json();
-        const id = me?.profile?.id;
-        if (!id) throw new Error('no profile id in the session');
-        if (!cancelled) setUserId(id);
-      } catch {
-        if (!cancelled) {
-          setError('Could not load your account. Try signing in again.');
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, []);
+  const profile = abilityData?.profile ?? null;
+  const history = abilityData?.history ?? [];
+  const error = localError || abilityData?.error || null;
+  const loading = (profileStatus === 'unknown' || !abilityData) && !error;
 
   useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const res = await apiFetch(`/api/measurement/ability/${userId}?history=true`);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          if (!cancelled) setError(data.error || 'Failed to load your ability profile.');
-          return;
-        }
-        const data = await res.json();
-        if (cancelled) return;
-        setProfile(data.profile);
-        setHistory(data.history ?? []);
-        setSelectedCompetency(data.profile?.competencies?.[0]?.competencyId ?? null);
-      } catch {
-        if (!cancelled) setError('Could not reach the measurement service.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [userId]);
+    if (profile?.competencies?.[0]?.competencyId && !selectedCompetency) {
+      setSelectedCompetency(profile.competencies[0].competencyId);
+    }
+  }, [profile, selectedCompetency]);
 
   /** Re-runs estimation over the full history, then reloads the profile. */
   const handleRecompute = async () => {
     if (!userId) return;
     setRecomputing(true);
-    setError(null);
+    setLocalError(null);
     try {
       const res = await apiFetch('/api/measurement/recompute', {
         method: 'POST',
@@ -181,18 +101,12 @@ export default function AbilityMap() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || 'Could not refresh your estimates.');
+        setLocalError(data.error || 'Could not refresh your estimates.');
         return;
       }
-
-      const reload = await apiFetch(`/api/measurement/ability/${userId}?history=true`);
-      if (reload.ok) {
-        const data = await reload.json();
-        setProfile(data.profile);
-        setHistory(data.history ?? []);
-      }
+      revalidateAbility(userId);
     } catch {
-      setError('Could not refresh your estimates.');
+      setLocalError('Could not refresh your estimates.');
     } finally {
       setRecomputing(false);
     }

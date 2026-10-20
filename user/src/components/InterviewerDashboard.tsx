@@ -22,29 +22,15 @@ import {
 } from 'lucide-react';
 import PageShell from '@/components/layout/PageShell';
 
-interface StudySummary {
-    id: string;
-    config: { name: string; researchQuestion: string; aiBehavior: string };
-    candidateCount: number;
-    completedCount: number;
-    /** How many of the completed interviews the average covers. Added with Feature 4. */
-    scoredCount?: number;
-    /**
-     * Null when no candidate in this study was scored. Never 0 as a stand-in: a study with
-     * nothing measured has no average score, and 0 would say every candidate scored zero.
-     */
-    averageScore: number | null;
-    createdAt: string;
-}
-
-interface InterviewerInfo {
-    id: string;
-    name: string;
-    email: string;
-    plan?: PlanKey;
-    planExpiresAt?: string | null;
-    planActive?: boolean;
-}
+import { useQuery, setQuery } from '@/lib/queryCache';
+import {
+  INTERVIEWER_DASHBOARD_QUERY_KEY,
+  fetchInterviewerDashboard,
+  revalidateInterviewerDashboard,
+  type InterviewerDashboardData,
+  type StudySummary,
+  type InterviewerInfo,
+} from '@/lib/interviewerDashboardQuery';
 
 const isPlanLimitError = (data: { code?: string } | null | undefined) => data?.code === 'PLAN_LIMIT';
 
@@ -53,10 +39,18 @@ const InterviewerDashboard: React.FC = () => {
     const pathname = usePathname();
     const isStandalonePortal = process.env.NEXT_PUBLIC_PORTAL === 'interviewer' || !pathname?.startsWith('/interviewer');
     const portalPath = (path: string) => isStandalonePortal ? path : `/interviewer${path}`;
-    const [interviewer, setInterviewer] = useState<InterviewerInfo | null>(null);
-    const [studies, setStudies] = useState<StudySummary[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+
+    const { data: dashboardData } = useQuery<InterviewerDashboardData>(
+        INTERVIEWER_DASHBOARD_QUERY_KEY,
+        fetchInterviewerDashboard,
+    );
+
+    const interviewer = dashboardData?.interviewer ?? null;
+    const studies = dashboardData?.studies ?? [];
+    const isLoading = dashboardData === undefined;
+    const [actionError, setActionError] = useState<string | null>(null);
+    const error = actionError || dashboardData?.error || null;
+
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [generatingLink, setGeneratingLink] = useState<string | null>(null);
     const [studyLinks, setStudyLinks] = useState<Record<string, { url: string; createdAt: number }>>({});
@@ -67,41 +61,20 @@ const InterviewerDashboard: React.FC = () => {
     const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
-        const load = async () => {
-            try {
-                const [meRes, studiesRes] = await Promise.all([
-                    apiFetch('/api/interviewer/me'),
-                    apiFetch('/api/interviewer/studies'),
-                ]);
-
-                if (!meRes.ok) { router.push(portalPath('/login')); return; }
-
-                const meData = await meRes.json();
-                setInterviewer(meData.user);
-
-                if (studiesRes.ok) {
-                    const studiesData = await studiesRes.json();
-                    setStudies(studiesData.studies || []);
-                }
-            } catch {
-                setError('Failed to load dashboard.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        load();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [router, isStandalonePortal]);
+        if (dashboardData?.error === 'Not authenticated as interviewer') {
+            router.push(portalPath('/login'));
+        }
+    }, [dashboardData?.error, router, isStandalonePortal]);
 
     const handleLogout = async () => {
         try {
             const res = await apiFetch('/api/auth', { method: 'DELETE' });
             if (!res.ok) {
-                setError('Logout failed. Please try again.');
+                setActionError('Logout failed. Please try again.');
                 return;
             }
         } catch {
-            setError('Logout failed. Please try again.');
+            setActionError('Logout failed. Please try again.');
             return;
         }
         clearSessionDrafts();
@@ -252,11 +225,18 @@ const InterviewerDashboard: React.FC = () => {
             const emailFailedCount = data.emailFailedCount ?? 0;
 
             if (createdCount > 0) {
-                setStudies(prev => prev.map(study =>
-                    study.id === assignmentStudy.id
-                        ? { ...study, candidateCount: study.candidateCount + createdCount }
-                        : study
-                ));
+                setQuery<InterviewerDashboardData>(INTERVIEWER_DASHBOARD_QUERY_KEY, (prev: InterviewerDashboardData | undefined) => {
+                    if (!prev) return prev as any;
+                    return {
+                        ...prev,
+                        studies: prev.studies.map((study: StudySummary) =>
+                            study.id === assignmentStudy.id
+                                ? { ...study, candidateCount: study.candidateCount + createdCount }
+                                : study
+                        ),
+                    };
+                });
+                revalidateInterviewerDashboard();
             }
 
             setAssignmentMessage({

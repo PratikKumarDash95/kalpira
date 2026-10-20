@@ -121,13 +121,13 @@ export default function Navbar({
           href: '/login?role=interviewer',
           activePrefix: '/interviewer',
         });
-      }
-
-      if (profile?.role === 'admin') {
-        // Local route, not the console's own origin. This used to be an <a> to
-        // NEXT_PUBLIC_ADMIN_URL, which crossed ports (and therefore origins) with
-        // a full page load. /admin says where the console is without going there.
-        links.push({ label: 'Admin', href: '/admin' });
+      } else if (status === 'authed') {
+        // Authenticated candidate: direct link to their assigned interviews
+        links.push({
+          label: 'My Interviews',
+          href: '/candidate/dashboard',
+          activePrefix: '/candidate',
+        });
       }
     }
   }
@@ -146,14 +146,14 @@ export default function Navbar({
 
     if (status === 'guest') {
       return (
-        <Link href="/login" className="btn-primary sheen px-4 py-2 text-sm">
+        <Link href="/login" prefetch={true} className="btn-primary sheen px-4 py-2 text-sm">
           Sign in <ArrowRight size={16} />
         </Link>
       );
     }
 
     return (
-      <Link href="/profile" className="btn-secondary px-3 py-2 text-sm">
+      <Link href="/profile" prefetch={true} className="btn-secondary px-3 py-2 text-sm">
         {profile?.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -178,7 +178,7 @@ export default function Navbar({
       } backdrop-blur-md`}
     >
       <div className={`${WIDTH_CLASS[width]} flex h-16 items-center justify-between gap-4`}>
-        <Link href="/" className="flex items-center text-left">
+        <Link href="/" prefetch={true} className="flex items-center text-left">
           <BrandLockup />
         </Link>
 
@@ -189,6 +189,7 @@ export default function Navbar({
               <Link
                 key={l.label}
                 href={l.href}
+                prefetch={true}
                 aria-current={isActive(l) ? 'page' : undefined}
                 className={`link-sweep rounded-lg px-3.5 py-2 transition-colors hover:text-[color:var(--brand-strong)] ${
                   isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
@@ -225,6 +226,7 @@ export default function Navbar({
               <Link
                 key={l.label}
                 href={l.href}
+                prefetch={true}
                 aria-current={isActive(l) ? 'page' : undefined}
                 className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
                   isActive(l) ? 'text-[color:var(--brand-strong)]' : 'text-[color:var(--muted)]'
