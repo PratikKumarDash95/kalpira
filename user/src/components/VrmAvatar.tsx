@@ -79,57 +79,83 @@ function VrmScene({
     // Update VRM spring bones, lookAt, and expressions
     activeVrm.update(delta);
 
-    // Idle neck sway and speaking bob
+    // Auto-blink, eye micro-gaze, & multi-syllable phonemic lip-sync
+    let targetWeights: VisemeWeights;
+    let jawOpen = 0;
+    let headNodOffset = 0;
+
+    if (aiSpeaking && lipSync) {
+      const frame = lipSync.getLipSyncFrame ? lipSync.getLipSyncFrame() : { weights: lipSync.getTargetWeights(), jawOpen: 0, headNodOffset: 0, eyeDartOffset: { x: 0, y: 0 } };
+      targetWeights = frame.weights;
+      jawOpen = frame.jawOpen;
+      headNodOffset = frame.headNodOffset;
+    } else if (aiSpeaking) {
+      // Documented approximate fallback when aiSpeaking is true but no controller is supplied
+      // (e.g. standalone test page). Cycles smoothly through vowel shapes.
+      const cycle = (elapsed * 2.8) % 5;
+      const vIndex = Math.floor(cycle);
+      const subT = cycle - vIndex;
+      const open = Math.sin(subT * Math.PI) * 0.55;
+      targetWeights = {
+        aa: vIndex === 0 ? open : 0,
+        ih: vIndex === 1 ? open : 0,
+        ou: vIndex === 2 ? open : 0,
+        ee: vIndex === 3 ? open : 0,
+        oh: vIndex === 4 ? open : 0,
+      };
+      jawOpen = open * 0.5;
+    } else {
+      // Reset targets to zero when not speaking
+      targetWeights = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 };
+    }
+
+    // Idle neck sway, speaking bob, physical jaw articulation, and spine breathing
     if (activeVrm.humanoid) {
       const neck = activeVrm.humanoid.getNormalizedBoneNode('neck');
       if (neck) {
-        neck.rotation.y = Math.sin(elapsed * 0.5) * 0.04;
-        neck.rotation.x = aiSpeaking ? Math.sin(elapsed * 8) * 0.025 : Math.sin(elapsed * 0.3) * 0.01;
+        const idleY = Math.sin(elapsed * 0.45) * 0.035;
+        const idleX = Math.sin(elapsed * 0.3) * 0.01;
+        const speakingX = Math.sin(elapsed * 4.2) * 0.016 + headNodOffset;
+        neck.rotation.y = idleY;
+        neck.rotation.x = aiSpeaking ? (idleX + speakingX) : idleX;
+      }
+
+      // Physical 3D jaw bone rotation in perfect sync with open vowels
+      const jaw = activeVrm.humanoid.getNormalizedBoneNode('jaw');
+      if (jaw) {
+        const targetJawAngle = aiSpeaking ? jawOpen * 0.045 : 0;
+        jaw.rotation.x = THREE.MathUtils.damp(jaw.rotation.x, targetJawAngle, 22, delta);
       }
 
       // Very subtle shoulder breathing
       const spine = activeVrm.humanoid.getNormalizedBoneNode('spine');
       if (spine) {
-        spine.rotation.z = Math.sin(elapsed * 0.6) * 0.012;
+        spine.rotation.z = Math.sin(elapsed * 0.6) * 0.010;
       }
     }
 
-    // Auto-blink & multi-vowel mouth lip-sync
+    // Expression blendshape update with asymmetric attack/decay & bilabial snap
     if (activeVrm.expressionManager) {
       const blinkValue = elapsed % 4.5 < 0.15 ? 1 : 0;
       activeVrm.expressionManager.setValue('blink', blinkValue);
 
       const currentWeights = currentWeightsRef.current;
-      let targetWeights: VisemeWeights;
 
-      if (aiSpeaking && lipSync) {
-        targetWeights = lipSync.getTargetWeights();
-      } else if (aiSpeaking) {
-        // Documented approximate fallback when aiSpeaking is true but no controller is supplied
-        // (e.g. standalone test page). Cycles smoothly through vowel shapes.
-        const cycle = (elapsed * 2.5) % 5;
-        const vIndex = Math.floor(cycle);
-        const subT = cycle - vIndex;
-        const open = Math.sin(subT * Math.PI) * 0.55;
-        targetWeights = {
-          aa: vIndex === 0 ? open : 0,
-          ih: vIndex === 1 ? open : 0,
-          ou: vIndex === 2 ? open : 0,
-          ee: vIndex === 3 ? open : 0,
-          oh: vIndex === 4 ? open : 0,
-        };
-      } else {
-        // Reset targets to zero when not speaking
-        targetWeights = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 };
-      }
-
-      // Smoothly interpolate each vowel weight towards its target using frame-rate independent damp
-      // Smoothing lambda of 18 gives responsive transitions (~60ms) without stepping
       for (const v of VRM_VOWELS) {
+        const target = targetWeights[v];
+        const current = currentWeights[v];
+
+        // Dynamic asymmetric response:
+        // - Bilabial snap shut (target near 0 while open): lambda 34 (instant closure)
+        // - Opening vowel attack: lambda 26 (snappy responsive opening)
+        // - Vowel decay / release: lambda 20 (smooth natural trailing)
+        const isSnappingShut = target <= 0.03 && current > 0.05;
+        const lambda = isSnappingShut ? 34 : (target > current ? 26 : 20);
+
         currentWeights[v] = THREE.MathUtils.damp(
-          currentWeights[v],
-          targetWeights[v],
-          aiSpeaking ? 18 : 24,
+          current,
+          target,
+          aiSpeaking ? lambda : 24,
           delta
         );
         if (!aiSpeaking && currentWeights[v] < 0.001) {
