@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import supabaseDb from './supabaseDb';
 import { SESSION_COOKIE_NAME, verifySessionToken } from './auth';
 
@@ -18,7 +18,20 @@ export interface AuthUser {
 
 export async function getAuthUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  let token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (!token) {
+    try {
+      const headerStore = await headers();
+      const authHeader = headerStore.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.slice(7).trim();
+      }
+    } catch {
+      // headers() might not be available in all contexts
+    }
+  }
+
   if (!token) return null;
 
   const session = await verifySessionToken(token);

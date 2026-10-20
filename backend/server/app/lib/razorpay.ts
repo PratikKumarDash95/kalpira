@@ -17,7 +17,12 @@ export class PaymentError extends Error {
 }
 
 export function isRazorpayConfigured(): boolean {
-    return Boolean(razorpayKeyId && razorpayKeySecret);
+    return Boolean(
+        razorpayKeyId &&
+        razorpayKeySecret &&
+        !razorpayKeyId.includes('YOUR_KEY') &&
+        !razorpayKeySecret.includes('YOUR_KEY')
+    );
 }
 
 export function getRazorpayKeyId(): string | undefined {
@@ -25,9 +30,9 @@ export function getRazorpayKeyId(): string | undefined {
 }
 
 function requireRazorpayConfig() {
-    if (!razorpayKeyId || !razorpayKeySecret) {
+    if (!isRazorpayConfigured()) {
         throw new PaymentError(
-            'Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.',
+            'Razorpay is not configured. Set your RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env.',
             503,
         );
     }

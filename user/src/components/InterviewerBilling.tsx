@@ -90,6 +90,12 @@ const InterviewerBilling: React.FC = () => {
                 method: 'POST',
                 body: JSON.stringify({ plan }),
             });
+            if (orderRes.status === 401) {
+                setMessage({ type: 'error', text: 'Please sign in to choose a plan.' });
+                router.push(portalPath('/login'));
+                return;
+            }
+
             const orderData = await orderRes.json().catch(() => ({})) as CreateOrderResponse;
 
             if (!orderRes.ok) {

@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
     try {
         const authUser = await getAuthUser();
-        if (!authUser?.id || authUser.role !== 'candidate') {
-            return NextResponse.json({ error: 'Candidate login required' }, { status: 401 });
+        if (!authUser?.id) {
+            return NextResponse.json({ error: 'Please sign in to view billing' }, { status: 401 });
         }
 
         const user = await supabaseDb.user.findUnique({ where: { id: authUser.id } });

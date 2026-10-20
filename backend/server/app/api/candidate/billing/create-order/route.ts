@@ -15,8 +15,8 @@ const db = supabaseDb as any;
 export async function POST(request: Request) {
     try {
         const authUser = await getAuthUser();
-        if (!authUser?.id || authUser.role !== 'candidate') {
-            return NextResponse.json({ error: 'Candidate login required' }, { status: 401 });
+        if (!authUser?.id) {
+            return NextResponse.json({ error: 'Please sign in to choose a plan' }, { status: 401 });
         }
 
         if (!isRazorpayConfigured()) {
