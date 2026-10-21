@@ -148,6 +148,18 @@ export class ClaudeProvider implements AIProvider {
           shouldConclude: {
             type: 'boolean',
             description: 'True if interview should end (after wrap-up message)'
+          },
+          scores: {
+            type: ['object', 'null'],
+            description: 'Evaluate the last user message (0-100 each). Omit (null) for the opening greeting or turns where the user said nothing scoreable. Always include all five when scoring.',
+            properties: {
+              technical: { type: 'number' },
+              communication: { type: 'number' },
+              confidence: { type: 'number' },
+              logic: { type: 'number' },
+              depth: { type: 'number' },
+            },
+            required: ['technical', 'communication', 'confidence', 'logic', 'depth']
           }
         },
         required: ['message', 'profileUpdates', 'shouldConclude']
@@ -186,7 +198,10 @@ export class ClaudeProvider implements AIProvider {
           questionAddressed: (input.questionAddressed as number | null) ?? null,
           phaseTransition: (input.phaseTransition as AIInterviewResponse['phaseTransition']) ?? null,
           profileUpdates: (input.profileUpdates as AIInterviewResponse['profileUpdates']) || [],
-          shouldConclude: (input.shouldConclude as boolean) || false
+          shouldConclude: (input.shouldConclude as boolean) || false,
+          // `?? undefined` treats explicit null as "not scored" (correct for greeting
+          // turns) while passing through a real scores object intact.
+          scores: (input.scores as AIInterviewResponse['scores']) ?? undefined,
         };
       }
 

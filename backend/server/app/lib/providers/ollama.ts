@@ -122,7 +122,7 @@ export class OllamaProvider implements AIProvider {
                 questionAddressed: parsed.questionAddressed ?? null,
                 phaseTransition: parsed.phaseTransition ?? null,
                 profileUpdates: parsed.profileUpdates || [],
-                scores: parsed.scores || null,
+                scores: parsed.scores ?? undefined,
                 shouldConclude: parsed.shouldConclude || false
             };
         } catch (error) {

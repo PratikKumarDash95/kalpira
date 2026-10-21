@@ -31,7 +31,7 @@ import { StudyConfig, ParticipantProfile, QuestionProgress } from '@/types';
  * Bump this when the scoring instructions change. Do not bump it for a typo in prose that
  * cannot reach a score — a version that changes constantly tells a reader nothing.
  */
-export const INTERVIEW_PROMPT_VERSION = 'interview-v1';
+export const INTERVIEW_PROMPT_VERSION = 'interview-v2';
 
 /**
  * AI Behavior Modes
@@ -149,14 +149,12 @@ RULES:
 - Extract profile data from user responses when mentioned.
 - Signal shouldConclude=true only after feedback phase is complete.
 - EVALUATE the user's last response (if any):
-  - assign 'scores' (0-100) for technical accuracy, communication clarity, confidence, logic, and depth.
-  - If the user says "I don't know" or similar, score technical, depth, and logic very low (e.g., <30).
-  - If the user is brief or vague, score depth low.
-  - If the response is off-topic or nonsense, score all low.
-  - If there is NO user answer to evaluate (the opening turn, or a turn where the user
-    said nothing), OMIT 'scores' entirely or set it to null. Never report 0 for an answer
-    that was not given: a zero is a score, and scoring an absent answer invents a
-    measurement. Omitting is correct and expected here.
+  - YOU MUST assign 'scores' (0-100) for technical accuracy, communication clarity, confidence, logic, and depth whenever the user has given ANY reply — even a short or weak one.
+  - If the user says "I don't know" or gives a minimal answer, still assign scores (technical, depth, logic very low, e.g. <30; communication/confidence based on phrasing).
+  - If the user is brief or vague, score depth low — but DO NOT omit scores.
+  - If the response is off-topic or nonsense, score all dimensions low (5-15) — but DO NOT omit.
+  - ONLY set 'scores' to null on the very first exchange before the user has said anything at all (i.e. the opening greeting turn). Every turn with a real user message must include all five scores.
+
 
 ANTI-CHEAT & DEPTH RULES:
 - DYNAMIC PROBABILISTIC DRILL-DOWN: If the candidate provides a generic, textbook, or scripted answer (e.g., looks like a standard LLM output), DO NOT accept it. Immediately challenge them with a constraint or specific scenario. Example: "That is a standard answer. Now explain how you would handle this if we had zero budget for X."

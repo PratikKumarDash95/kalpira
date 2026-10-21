@@ -141,8 +141,13 @@ export class GeminiProvider implements AIProvider {
                   logic: { type: Type.NUMBER },
                   depth: { type: Type.NUMBER },
                 },
+                // All five are required when the object is non-null: a partial set
+                // cannot be a measurement, and omitting required here lets Gemini
+                // return an object with some dimensions missing, which readScoreSet
+                // will correctly reject as not_measured.
+                required: ['technical', 'communication', 'confidence', 'logic', 'depth'],
                 nullable: true,
-                description: 'Evaluate the last user message (0-100). If unsure or greeting phase, use null.'
+                description: 'Evaluate the last user message (0-100 each). Omit (null) only for the opening greeting or turns where the user said nothing scoreable. Always provide all five dimensions when scoring.'
               },
               shouldConclude: {
                 type: Type.BOOLEAN,
@@ -169,7 +174,12 @@ export class GeminiProvider implements AIProvider {
         questionAddressed: parsed.questionAddressed ?? null,
         phaseTransition: parsed.phaseTransition ?? null,
         profileUpdates: parsed.profileUpdates || [],
-        scores: parsed.scores || undefined,
+        // `?? undefined` keeps null as undefined (= not measured) while still
+        // letting a scores object with a 0-value dimension pass through correctly.
+        // The old `|| undefined` would drop a valid scores object if any property
+        // happened to be falsy — which cannot happen with 0-100 numbers, but is
+        // still the wrong idiom for "null means absent".
+        scores: parsed.scores ?? undefined,
         shouldConclude: parsed.shouldConclude || false
       };
     } catch (error) {
