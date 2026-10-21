@@ -24,8 +24,12 @@ const mono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'AI Interview Practice System',
+  title: 'Kalpira – AI Interview Practice',
   description: 'AI-powered adaptive interview practice and coaching platform',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

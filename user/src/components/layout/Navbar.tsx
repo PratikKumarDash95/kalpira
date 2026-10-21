@@ -94,6 +94,7 @@ export default function Navbar({
       activePrefix: '/interviewer',
     });
   } else if (showProductNav) {
+    links.push({ label: 'Dashboard', href: '/dashboard' });
     links.push({ label: 'Studies', href: '/studies' });
     // Personal to the signed-in user, so it is not role-gated: everyone who
     // practises has an ability map.

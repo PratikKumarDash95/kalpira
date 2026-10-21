@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="16" fill="#1A1A2E"/>
+  <!-- K letterform -->
+  <path d="M9 8 L9 24 M9 16 L19 8 M9 16 L21 24" stroke="#F5C842" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -31,6 +31,7 @@ export default function AppCacheWarmer() {
 
     // Prefetch common Next.js route chunks in parallel
     try {
+      router.prefetch('/dashboard');
       router.prefetch('/studies');
       router.prefetch('/ability');
       router.prefetch('/delivery');

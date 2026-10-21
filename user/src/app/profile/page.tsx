@@ -29,7 +29,7 @@ function ProfileContent() {
   const isInterviewerProfile = isStandaloneInterviewerPortal || (pathname?.startsWith('/interviewer') ?? false);
   const profileApi = isInterviewerProfile ? '/api/interviewer/me' : '/api/auth/me';
   const loginPath = isInterviewerProfile ? '/login?role=interviewer' : '/login';
-  const dashboardPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/dashboard' : '/interviewer/dashboard') : '/studies';
+  const dashboardPath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/dashboard' : '/interviewer/dashboard') : '/dashboard';
   const profilePath = isInterviewerProfile ? (isStandaloneInterviewerPortal ? '/profile' : '/interviewer/profile') : '/profile';
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
