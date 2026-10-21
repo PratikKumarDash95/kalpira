@@ -13,7 +13,7 @@ import { createLipSyncController, type LipSyncController } from '@/lib/lipSync';
 import {
     Mic, MicOff, Video, VideoOff, Phone, Send, User,
     Loader2, CheckCircle, MessageSquare, Volume2, VolumeX,
-    Activity, Clock, ChevronRight
+    Activity, Clock, ChevronRight, ArrowLeft
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -76,7 +76,6 @@ const VideoInterview: React.FC = () => {
     const [lastAiQuestion, setLastAiQuestion] = useState('');
     const [showChat, setShowChat] = useState(true);
     const [interviewError, setInterviewError] = useState<string | null>(null);
-    const [hasValidAiExchange, setHasValidAiExchange] = useState(false);
     const speechToTextEnabled = studyConfig?.speechToTextEnabled !== false;
     // Feature 2: absent means enabled, so existing studies are unaffected.
     const deliveryAnalysisEnabled = studyConfig?.deliveryAnalysisEnabled !== false;
@@ -379,25 +378,64 @@ const VideoInterview: React.FC = () => {
     };
 
     // ── Start Session in DB ───────────────────────────────────────────────────────
+    //
+    // The session ID must survive page refreshes. If it only lived in React state,
+    // a reload would orphan the DB row — all responses already saved to it would be
+    // unreachable, and a new row would be created that starts empty. The fix:
+    //   1. On mount, try to recover an in-progress session from sessionStorage.
+    //   2. On creation, persist the new ID to sessionStorage immediately.
+    //   3. On finish, clear it so the next interview starts fresh.
+    //
+    // The key is scoped to the study config ID so two different practice sessions
+    // in the same browser tab don't collide.
+    const SESSION_STORAGE_KEY = studyConfig ? `kalpira:session:${studyConfig.id}` : null;
+
     useEffect(() => {
         const startSession = async () => {
             try {
-                // Read candidate info stored by /p/[token] form (for interviewer-created studies)
+                // ── 1. Check for an already-running session from a previous mount ──
+                // This covers: page refresh mid-interview, component unmount/remount.
+                if (SESSION_STORAGE_KEY) {
+                    try {
+                        const persisted = sessionStorage.getItem(SESSION_STORAGE_KEY);
+                        if (persisted) {
+                            const { sessionId: existingId, guest } = JSON.parse(persisted);
+                            if (existingId) {
+                                setSessionId(existingId);
+                                setSessionGuest(Boolean(guest));
+                                return; // Reuse the existing DB row — don't create a duplicate.
+                            }
+                        }
+                    } catch { /* corrupt storage — fall through to create new */ }
+                }
+
+                // ── 2. Read candidate info for interviewer-assigned sessions ──────
                 let candidateInfo: { name?: string; email?: string; studyId?: string; difficulty?: string; sessionId?: string } = {};
                 try {
                     const stored = sessionStorage.getItem('candidateInfo');
                     if (stored) {
                         candidateInfo = JSON.parse(stored);
-                        // don't remove if we want to persist it for other components, but usually we consume it.
-                        // sessionStorage.removeItem('candidateInfo'); 
                     }
                 } catch { /* ignore */ }
 
+                // candidateInfo.sessionId is set by /p/[token] when the interviewer
+                // pre-creates the session row and embeds the ID in the participant link.
                 if (candidateInfo.sessionId) {
                     setSessionId(candidateInfo.sessionId);
                     setSessionGuest(false);
+                    // Persist so a refresh reuses this too.
+                    if (SESSION_STORAGE_KEY) {
+                        try { sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ sessionId: candidateInfo.sessionId, guest: false })); } catch { /* ignore */ }
+                    }
                     return;
                 }
+
+                // ── 3. Create a new session row ───────────────────────────────────
+                // Practice sessions (studyConfig.kind === 'practice') must be stored
+                // with mode='practice' so they are excluded from the interviewer's
+                // dashboard and shown only on the candidate's own Practice page.
+                // Assigned sessions use mode='video'.
+                const sessionMode = studyConfig?.kind === 'practice' ? 'practice' : 'video';
 
                 const res = await apiFetch('/api/sessions/start', {
                     method: 'POST',
@@ -408,7 +446,7 @@ const VideoInterview: React.FC = () => {
                     body: JSON.stringify({
                         role: studyConfig?.name || 'General Interview',
                         difficulty: candidateInfo.difficulty || 'medium',
-                        mode: 'video',
+                        mode: sessionMode,
                         ...((candidateInfo.studyId || studyConfig?.id) && { studyId: candidateInfo.studyId || studyConfig?.id }),
                         ...(candidateInfo.name && { candidateName: candidateInfo.name }),
                         ...(candidateInfo.email && { candidateEmail: candidateInfo.email }),
@@ -424,13 +462,24 @@ const VideoInterview: React.FC = () => {
 
                 setSessionId(data.sessionId);
                 setSessionGuest(data.guest || false);
+
+                // ── 4. Persist immediately so a refresh reuses this row ───────────
+                if (SESSION_STORAGE_KEY && data.sessionId && !data.guest) {
+                    try {
+                        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+                            sessionId: data.sessionId,
+                            guest: false,
+                        }));
+                    } catch { /* Storage full — ignore, interview still works */ }
+                }
             } catch {
                 setSessionId(`fallback-${Date.now()}`);
                 setSessionGuest(true);
             }
         };
         if (studyConfig) startSession();
-    }, [studyConfig, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [studyConfig?.id, router]);
 
     // ── Initialize Greeting ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -515,7 +564,6 @@ const VideoInterview: React.FC = () => {
             const aiMsg: InterviewMessage = { id: `msg-${Date.now()}`, role: 'ai', content: response.message, timestamp: Date.now() };
             addMessage(aiMsg);
             setLastAiQuestion(response.message);
-            setHasValidAiExchange(true);
             // The next answer's window opens here, before the question is spoken.
             deliveryCaptureRef.current?.beginAnswer({ latencyMeasurable: isTTSEnabled });
             speak(response.message);
@@ -595,12 +643,6 @@ const VideoInterview: React.FC = () => {
 
     const handleFinish = useCallback(async () => {
         if (isFinishing) return;
-
-        if (!hasValidAiExchange) {
-            setInterviewError('The interview cannot be completed because the AI interviewer did not run. Configure the provider and try again.');
-            return;
-        }
-
         setIsFinishing(true);
 
         // Stop timer immediately
@@ -619,6 +661,11 @@ const VideoInterview: React.FC = () => {
         } catch (e) {
             console.warn('Error completing interview:', e);
         } finally {
+            // Clear the persisted session key — the interview is done.
+            if (studyConfig?.id) {
+                try { sessionStorage.removeItem(`kalpira:session:${studyConfig.id}`); } catch { /* ignore */ }
+            }
+
             // ALWAYS cleanup
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(t => t.stop());
@@ -626,7 +673,9 @@ const VideoInterview: React.FC = () => {
             }
             setActiveStream(null);
 
-            const targetUrl = '/dashboard';
+            const targetUrl = sessionId && !sessionId.startsWith('fallback-')
+                ? `/results/${sessionId}`
+                : '/dashboard';
 
             // Attempt Next.js router first
             router.push(targetUrl);
@@ -636,7 +685,7 @@ const VideoInterview: React.FC = () => {
                 window.location.href = targetUrl;
             }, 3000);
         }
-    }, [isFinishing, sessionId, participantToken, router, completeInterview, hasValidAiExchange]);
+    }, [isFinishing, sessionId, studyConfig?.id, participantToken, router, completeInterview]);
 
     const isComplete = questionProgress.isComplete;
     const totalQuestions = studyConfig?.coreQuestions?.length || 0;
@@ -655,6 +704,21 @@ const VideoInterview: React.FC = () => {
                 {/* ── Top Bar ── */}
                 <div className="h-14 flex items-center justify-between px-3 sm:px-6 bg-slate-900/80 border-b border-slate-800 backdrop-blur-md flex-shrink-0 gap-2">
                     <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                        <button
+                            onClick={() => {
+                                if (window.confirm('Leave interview and return to Dashboard? Your progress will be saved.')) {
+                                    if (streamRef.current) {
+                                        streamRef.current.getTracks().forEach(t => t.stop());
+                                    }
+                                    router.push('/dashboard');
+                                }
+                            }}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700"
+                            title="Return to Dashboard"
+                        >
+                            <ArrowLeft size={13} />
+                            <span className="hidden sm:inline">Dashboard</span>
+                        </button>
                         <div className="flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                             <span className="text-xs text-red-400 font-medium">LIVE</span>

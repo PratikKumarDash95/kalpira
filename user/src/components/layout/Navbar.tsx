@@ -102,6 +102,7 @@ export default function Navbar({
     // Same reasoning as Ability: the delivery profile is about the signed-in
     // person's own answers, whoever they are in the product.
     links.push({ label: 'Delivery', href: '/delivery' });
+    links.push({ label: 'Plans', href: '/subscription' });
 
     // Role-gated, so only offered once we actually know the role. Rendering
     // these while the profile is unknown is what made them flash in and out.

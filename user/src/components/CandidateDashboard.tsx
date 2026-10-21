@@ -14,6 +14,8 @@ import {
   User,
   Users,
   XCircle,
+  CreditCard,
+  LayoutDashboard,
 } from 'lucide-react';
 import InterviewFeedbackWidget from '@/components/InterviewFeedbackWidget';
 import PageShell from '@/components/layout/PageShell';
@@ -130,6 +132,22 @@ const CandidateDashboard: React.FC = () => {
               <Mail size={14} /> {candidate?.email}
             </span>
           </span>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="btn-secondary px-3 py-1.5 text-xs"
+            >
+              <LayoutDashboard size={14} /> Practice Dashboard
+            </button>
+            <button
+              onClick={() => router.push('/subscription')}
+              className="btn-secondary px-3 py-1.5 text-xs"
+            >
+              <CreditCard size={14} /> Plans & Billing
+            </button>
+          </div>
         }
       />
 

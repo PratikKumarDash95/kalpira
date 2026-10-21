@@ -15,7 +15,8 @@ import {
   Lightbulb,
   FolderOpen,
   Filter,
-  Trash2
+  Trash2,
+  CreditCard
 } from 'lucide-react';
 import PageShell from '@/components/layout/PageShell';
 import PageHeader from '@/components/layout/PageHeader';
@@ -114,6 +115,13 @@ const Dashboard: React.FC = () => {
         subtitle={`${interviews.length} interview${interviews.length !== 1 ? 's' : ''} collected`}
         actions={
           <>
+            <button
+              onClick={() => router.push('/subscription')}
+              className="btn-secondary px-3 py-2 text-sm"
+            >
+              <CreditCard size={16} />
+              Plans & Billing
+            </button>
             <button
               onClick={() => router.push('/allinterviews')}
               className="btn-secondary px-3 py-2 text-sm"

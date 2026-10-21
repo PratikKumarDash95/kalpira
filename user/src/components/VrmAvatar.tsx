@@ -239,7 +239,13 @@ export default function VrmAvatar({ aiSpeaking = false, lipSync }: VrmAvatarProp
 
         <Canvas
           shadows={false}
-          gl={{ antialias: true, alpha: true }}
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+          onCreated={({ gl }) => {
+            gl.domElement.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+              console.warn('[VrmAvatar] WebGL context lost, preventDefault called for graceful restoration.');
+            }, false);
+          }}
           style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', background: 'transparent' }}
           camera={{ fov: 28, near: 0.1, far: 20, position: [0, -0.03, 0.90] }}
         >
