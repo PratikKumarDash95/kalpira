@@ -7,20 +7,42 @@
 
 const OAUTH_ORIGIN_COOKIE = 'oauth_return_origin';
 
-// Known production frontends. These are ALWAYS allowed regardless of the
-// CORS_ORIGIN env var, so a stale/misconfigured deploy env can't lock out the
-// live apps or break the post-login redirect back to the custom domain.
-const BASELINE_ORIGINS = [
+// Origins this backend trusts unconditionally in a real deployment. Kept to the
+// `*.kalpira.in` hostnames only, because those are DNS-controlled by the
+// operator: they cannot be claimed by a third party, so trusting them cannot
+// silently turn into a session-cookie-carrying cross-site origin (which is what
+// `credentials: true` + a reclaimed host would give an attacker). The reclaimable
+// `*.vercel.app` aliases are deliberately NOT here — see TRANSITIONAL_ORIGINS.
+const PRODUCTION_BASELINE_ORIGINS = [
   'https://kalpira.in',
   'https://www.kalpira.in',
   // First-party subdomains (recommended production setup — share one cookie).
   'https://admin.kalpira.in',
   'https://interviewer.kalpira.in',
   'https://api.kalpira.in',
-  // Legacy Vercel aliases (kept so nothing breaks during the migration).
+];
+
+// Transitional Vercel aliases, used during the move to the `*.kalpira.in`
+// subdomains. A deleted/renamed Vercel project frees its `<slug>.vercel.app`
+// hostname for anyone to claim, so these are NOT hardcoded-trusted forever: in
+// production they are honored only when (a) the operator listed them in
+// CORS_ORIGIN, or (b) CORS_ORIGIN is unset entirely — the (b) case is the
+// "misconfigured/empty env must not lock out the live app" scenario the
+// baseline existed to protect against, so we keep the safety net exactly as long
+// as it is not overriding a deliberate configuration. Drop them by setting
+// CORS_ORIGIN to the `*.kalpira.in` origins once the custom domains are live.
+const TRANSITIONAL_ORIGINS = [
   'https://kalpira.vercel.app',
   'https://kalpira-admin.vercel.app',
   'https://kalpira-interviewer.vercel.app',
+];
+
+// Dev-only origins. Never merged into the list once this is a real deployment
+// — a production server has no reason to accept a browser calling it from
+// `localhost:*`, and leaving the door open means any local app that happens to
+// run on a developer's own machine (or on a shared/jump host) is treated as
+// first-party here.
+const DEV_ONLY_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:3002',
@@ -33,7 +55,26 @@ export function getAllowedOrigins(): string[] {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
-  return Array.from(new Set([...BASELINE_ORIGINS, ...fromEnv]));
+
+  if (process.env.NODE_ENV === 'production') {
+    // In production, fall back to the transitional aliases ONLY when CORS_ORIGIN
+    // is empty — an unset env must not lock out whoever is still on the Vercel
+    // URLs, but a *configured* env is the operator's explicit decision and we
+    // honor exactly what it says (no silent, permanent Vercel trust).
+    const baseline = fromEnv.length
+      ? PRODUCTION_BASELINE_ORIGINS
+      : [...PRODUCTION_BASELINE_ORIGINS, ...TRANSITIONAL_ORIGINS];
+    return Array.from(new Set([...baseline, ...fromEnv]));
+  }
+
+  // Non-production (local dev / staging): trust the full set so every frontend
+  // variant works out of the box.
+  return Array.from(new Set([
+    ...PRODUCTION_BASELINE_ORIGINS,
+    ...TRANSITIONAL_ORIGINS,
+    ...DEV_ONLY_ORIGINS,
+    ...fromEnv,
+  ]));
 }
 
 /** Fallback origin when no valid Referer is available (e.g. direct API hit). */

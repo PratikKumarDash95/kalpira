@@ -27,11 +27,34 @@ import {
   verifySessionToken,
   refreshSessionToken,
   getSessionCookieOptions,
+  isCrossSiteDeployment,
   IDLE_SESSION_SECONDS,
 } from './app/lib/auth';
+import { assertDeployedSecretsAreStrong } from './app/lib/deployGuard';
+
+// Fail fast, before anything else touches the network or the database: a real
+// (cross-site/hosted) deployment must never boot while still running on the
+// repo's dev-default signing secrets — see ./app/lib/deployGuard.ts for why
+// that would be a full auth bypass, not just a weak-password problem.
+assertDeployedSecretsAreStrong(isCrossSiteDeployment());
 
 const allowedOrigins = getAllowedOrigins();
 console.log('[Server] CORS allow-list:', allowedOrigins.join(', '));
+
+// ---- Client-IP trust ----
+// Render terminates TLS and reverse-proxies to this process, so an unproxied
+// socket address is Render's own egress IP, not the visitor's — leaving
+// `trust proxy` off there would collapse the per-IP limits below into one
+// shared bucket for every real user at once (see ./app/lib/throttle.ts's
+// notes on why the *account* budget alone isn't a substitute either). This is
+// safe to enable ONLY when the process actually runs on Render: that single
+// hop is the one trusted to set/overwrite `X-Forwarded-For`, so a client can't
+// append its own fake entry ahead of it. Direct/local connections (no proxy
+// in front) must keep this OFF, or `X-Forwarded-For` becomes fully spoofable.
+if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
+  app.set('trust proxy', 1);
+  console.log('[Server] trust proxy enabled (Render detected) — per-IP limits key off X-Forwarded-For');
+}
 
 app.use(cors({
   origin(origin, cb) {
@@ -59,9 +82,11 @@ app.use('/api/ai', aiLimiter);
 // stays under this one, and a guesser focused on one mailbox is what the other
 // one bounds. 30/min is far above any human sign-in and far below a script.
 //
-// `app.set('trust proxy', …)` is deliberately NOT enabled: req.ip is then the
-// socket address, which a client cannot choose, and X-Forwarded-For is ignored.
-// Enabling it would make every per-IP limit in this file forgeable by header.
+// See the "Client-IP trust" block above for when/why `trust proxy` is enabled
+// — it stays off for direct (local) connections, so `req.ip` is unforgeable
+// there, and is only turned on when the process is actually running behind
+// Render's own reverse proxy, where the socket address is Render's, not the
+// visitor's.
 const authLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
 app.use('/api/auth', authLimiter);
 
