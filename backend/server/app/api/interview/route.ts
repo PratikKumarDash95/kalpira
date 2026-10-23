@@ -14,6 +14,7 @@ import {
 } from '@/types';
 import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 import { withPlatformAiConfig } from '@/lib/platformAiConfig';
+import { withAiTimeout, DEFAULT_AI_TIMEOUT_MS } from '@/lib/aiTimeout';
 import {
   appendScoredDecision,
   hashInput,
@@ -129,12 +130,25 @@ export async function POST(request: Request) {
     }
 
     // Generate response using the provider
-    const result = await provider.generateInterviewResponse(
-      history,
-      studyConfig,
-      participantProfile,
-      questionProgress,
-      currentContext
+    //
+    // Wrapped in a wall-clock budget so a stalled provider call cannot pin this
+    // request (and the socket behind it) open forever — the failure mode that
+    // takes down a single-process Node backend under concurrent load. On timeout
+    // the candidate gets a graceful continuation instead of a hang, and the
+    // decision is not logged (errorCode is set), so an unproduced turn can never
+    // masquerade as a scored one. Ollama local inference is exempt: it can
+    // legitimately run for minutes and a cap would break offline mode.
+    const aiTimeoutMs = studyConfig.aiProvider === 'ollama' ? 0 : DEFAULT_AI_TIMEOUT_MS;
+    const result = await withAiTimeout<AIInterviewResponse>(
+      provider.generateInterviewResponse(
+        history,
+        studyConfig,
+        participantProfile,
+        questionProgress,
+        currentContext
+      ),
+      unavailableResponse('The interviewer is taking longer than usual. Please repeat or rephrase your answer.'),
+      aiTimeoutMs
     );
 
     // ── Feature 4: record the decision, before anyone can profit from claiming it ──

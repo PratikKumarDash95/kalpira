@@ -271,6 +271,18 @@ type SupabaseDb = {
    * named arguments, no SQL from the caller.
    */
   $rpc(name: string, params?: Row): Promise<any>;
+  /**
+   * Atomic compare-and-swap claim of an `assigned` InterviewSession row.
+   *
+   * The generic `update` delegate is a read-then-write and cannot express
+   * `UPDATE … WHERE mode = 'assigned'`, so two candidates racing to claim the
+   * same assignment could both pass the check and both write. This issues a
+   * single filtered UPDATE and reports whether it matched anything: exactly one
+   * racer flips the row out of `assigned`, and the loser gets `claimed: false`.
+   * Requires the PostgREST table to allow column filtering on update, which the
+   * service-role key does.
+   */
+  $claimInterviewSession(id: string, data: Row): Promise<{ claimed: boolean; row: Row | null }>;
   $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T>;
   $queryRaw(...args: any[]): Promise<any>;
 };
@@ -683,6 +695,21 @@ const db: SupabaseDb = {
     const { data, error } = await supabase.rpc(name, params);
     if (error) throw formatSupabaseError(error, name as ModelName, 'query');
     return data;
+  },
+  async $claimInterviewSession(id: string, data: Row) {
+    const patch = toDbData(data);
+    if (!('updatedAt' in patch)) patch.updatedAt = new Date().toISOString();
+    // The filter on `mode = 'assigned'` is the compare; the UPDATE is the swap.
+    // `.select('id')` returns the row only if it matched the filter at write time.
+    const { data: rows, error } = await supabase
+      .from(tables.interviewSession)
+      .update(patch)
+      .eq('id', id)
+      .eq('mode', 'assigned')
+      .select('id');
+    if (error) throw formatSupabaseError(error, 'interviewSession', 'update');
+    const row = (rows || [])[0] || null;
+    return { claimed: Boolean(row), row };
   },
   async $transaction<T>(callback: (tx: SupabaseDb) => Promise<T>): Promise<T> {
     return callback(db);

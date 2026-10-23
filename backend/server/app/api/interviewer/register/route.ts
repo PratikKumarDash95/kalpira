@@ -51,14 +51,14 @@ export async function POST(request: Request) {
         // per-address limiter mounted on this path in server.ts bounds a caller
         // rotating through arbitrary strings.
         const budgetKey = accountKey('register', 'interviewer', trimmedEmail);
-        const budget = checkBudget(budgetKey, BUDGETS.register);
+        const budget = await checkBudget(budgetKey, BUDGETS.register);
         if (!budget.allowed) {
             return NextResponse.json(
                 tooManyRequests(budget, 'Too many sign-up attempts for this email. Please try again later.'),
                 { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
             );
         }
-        penalize(budgetKey, BUDGETS.register);
+        await penalize(budgetKey, BUDGETS.register);
 
         // Check for an existing INTERVIEWER account for this email (a candidate
         // account with the same email may legitimately coexist).

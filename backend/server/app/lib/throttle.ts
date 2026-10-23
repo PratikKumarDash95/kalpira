@@ -13,59 +13,34 @@
 // So: this module is the account dimension, and the Express limiter is the
 // address dimension. Both are needed; neither is sufficient.
 //
-// WHAT THIS IS NOT
+// DISTRIBUTED NOW
+// These budgets used to live in a process-local Map, which the header comment
+// openly admitted "does not coordinate across instances". That was a real
+// ceiling: the moment the backend scaled past one box, every instance held its
+// own copy of the counter and a guesser simply round-robined across them. All
+// counters now go through `../utils/rateStore` — Upstash Redis when configured,
+// a bounded in-memory map otherwise — so the same account budget is enforced
+// platform-wide and survives scale-out. Because the store is async (a network
+// round trip), the three budget functions are now `async`; every call site
+// already lives in an async handler, so they simply `await`.
 //
-// It is a fixed-window counter held in process memory. It does not survive a
-// restart, and it does not coordinate across instances. That is a real limit and
-// it is why the password-reset path does NOT rely on this alone: the guess count
-// for a reset OTP is also written to the user row (see
-// `passwordResetOtpAttempts`), because a restart must not hand an attacker a
-// fresh million guesses. For the other routes here — login, mail-sending — a
-// process-local budget is proportionate: it raises the cost of the cheap attacks
-// (password guessing, inbox flooding) by orders of magnitude without pretending
-// to be a distributed rate limiter.
+// THE check/penalise SPLIT STILL HOLDS
+// `checkBudget` reads without spending; `penalize` spends. That split is
+// deliberate and unchanged: a login that succeeds, or a reset request that
+// fails password-policy validation before any secret is checked, should not eat
+// into a legitimate user's budget.
 //
-// MEMORY SAFETY
-//
-// Keys contain caller-supplied text (an email address), so an attacker can mint
-// keys at will and grow the map without bound. Every insert therefore goes
-// through a cap: expired entries are swept, and if the map is still full the
-// oldest key is evicted. The map has a hard ceiling either way.
+// FAIL-OPEN ON STORE LOSS
+// If the shared store is unreachable the limiter degrades to per-instance
+// counts (rateStore's own fallback) rather than locking every account out. A
+// rate limiter that cannot be reached must not become an availability outage.
 
-interface Bucket {
-  count: number;
-  windowStart: number;
-}
+// The store is CommonJS; require it directly (runs under tsx / CJS output).
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const store = require('../../utils/rateStore');
 
-/** Hard ceiling on tracked keys. Past this, the oldest key is evicted. */
-const MAX_KEYS = 20_000;
-
-const buckets = new Map<string, Bucket>();
-
-/** Run a full sweep at most once per this many calls, to keep the hot path cheap. */
-const SWEEP_INTERVAL_CALLS = 500;
-let callsSinceSweep = 0;
-
-function sweep(now: number, windowMs: number): void {
-  for (const [key, bucket] of buckets) {
-    if (now - bucket.windowStart > windowMs) buckets.delete(key);
-  }
-}
-
-function evictIfFull(now: number, windowMs: number): void {
-  callsSinceSweep += 1;
-  if (callsSinceSweep >= SWEEP_INTERVAL_CALLS) {
-    callsSinceSweep = 0;
-    sweep(now, windowMs);
-  }
-
-  while (buckets.size >= MAX_KEYS) {
-    // Map iterates in insertion order, so this is the oldest key.
-    const oldest = buckets.keys().next();
-    if (oldest.done) return;
-    buckets.delete(oldest.value);
-  }
-}
+/** Namespace so account budgets never collide with the IP limiter's keys. */
+const PREFIX = 'auth';
 
 export interface Budget {
   /** Attempts permitted inside one window. */
@@ -80,10 +55,10 @@ export interface BudgetStatus {
   retryAfterSeconds: number;
 }
 
-function bucketFor(key: string, budget: Budget, now: number): Bucket {
-  const existing = buckets.get(key);
-  if (existing && now - existing.windowStart <= budget.windowMs) return existing;
-  return { count: 0, windowStart: now };
+/** Remaining whole seconds in the current fixed window, mirroring the store. */
+function retryAfterInWindow(windowMs: number, now: number): number {
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  return Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000));
 }
 
 /**
@@ -91,44 +66,36 @@ function bucketFor(key: string, budget: Budget, now: number): Bucket {
  *
  * Call this before doing the expensive or consequential part of a request. It
  * does not increment — pair it with `penalize()`, which is what actually spends.
- * That split is deliberate: a login that succeeds, or a reset request that fails
- * password-policy validation before any secret is checked, should not eat into a
- * legitimate user's budget.
  */
-export function checkBudget(key: string, budget: Budget): BudgetStatus {
+export async function checkBudget(key: string, budget: Budget): Promise<BudgetStatus> {
   const now = Date.now();
-  const bucket = bucketFor(key, budget, now);
+  const count = await store.peek(PREFIX, key, budget.windowMs);
 
-  if (bucket.count >= budget.limit) {
+  if (count >= budget.limit) {
     return {
       allowed: false,
       remaining: 0,
-      retryAfterSeconds: Math.max(1, Math.ceil((bucket.windowStart + budget.windowMs - now) / 1000)),
+      retryAfterSeconds: retryAfterInWindow(budget.windowMs, now),
     };
   }
 
-  return { allowed: true, remaining: budget.limit - bucket.count, retryAfterSeconds: 0 };
+  return { allowed: true, remaining: budget.limit - count, retryAfterSeconds: 0 };
 }
 
 /**
  * Spends one attempt. Call on a failed attempt, or on every request for routes
  * whose cost is the work itself (sending mail).
  */
-export function penalize(key: string, budget: Budget): void {
-  const now = Date.now();
-  evictIfFull(now, budget.windowMs);
-
-  const bucket = bucketFor(key, budget, now);
-  bucket.count += 1;
-  buckets.set(key, bucket);
+export async function penalize(key: string, budget: Budget): Promise<void> {
+  await store.incr(PREFIX, key, budget.windowMs);
 }
 
 /**
  * Forgets an account's history — on a successful sign-in, so ordinary activity
  * never accumulates toward a lockout.
  */
-export function clearBudget(key: string): void {
-  buckets.delete(key);
+export async function clearBudget(key: string, budget: Budget): Promise<void> {
+  await store.del(PREFIX, key, budget.windowMs);
 }
 
 /**

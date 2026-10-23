@@ -74,14 +74,14 @@ export async function POST(request: Request) {
         // request past validation, since the work — one row, one mail — is what
         // is being priced.
         const budgetKey = accountKey('register', 'candidate', trimmedEmail);
-        const budget = checkBudget(budgetKey, BUDGETS.register);
+        const budget = await checkBudget(budgetKey, BUDGETS.register);
         if (!budget.allowed) {
             return NextResponse.json(
                 tooManyRequests(budget, 'Too many sign-up attempts for this email. Please try again later.'),
                 { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
             );
         }
-        penalize(budgetKey, BUDGETS.register);
+        await penalize(budgetKey, BUDGETS.register);
 
         // Check if a CANDIDATE account already exists for this email. The same
         // email may separately own an interviewer account, so scope by role.

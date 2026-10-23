@@ -4,6 +4,7 @@
 // to know which database implementation backs persistent storage.
 
 import supabaseDb from './supabaseDb';
+import { invalidateCache } from './readCache';
 import { StoredInterview, StoredStudy } from '@/types';
 
 // ============================================
@@ -200,6 +201,10 @@ export async function saveStudy(study: StoredStudy, userId?: string | null): Pro
         updatedAt: new Date(study.updatedAt),
       },
     });
+    // A config edit must not be served stale to a candidate opening the
+    // interview: drop the cached config read so the next sessions/start reads
+    // the fresh row. Best-effort — the short TTL bounds staleness regardless.
+    await invalidateCache('study-config', study.id);
     return true;
   } catch (error) {
     console.error('Error saving study:', error);

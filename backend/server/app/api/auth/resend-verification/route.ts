@@ -29,14 +29,14 @@ export async function POST(request: Request) {
     // work. An attacker can mint keys for addresses they do not own, but those
     // keys cost them nothing to burn and buy them no mail either.
     const budgetKey = accountKey('resend-verification', role, email);
-    const budget = checkBudget(budgetKey, BUDGETS.resendVerification);
+    const budget = await checkBudget(budgetKey, BUDGETS.resendVerification);
     if (!budget.allowed) {
       return NextResponse.json(
         tooManyRequests(budget, 'A verification email was sent recently. Please check your inbox, then try again shortly.'),
         { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
       );
     }
-    penalize(budgetKey, BUDGETS.resendVerification);
+    await penalize(budgetKey, BUDGETS.resendVerification);
 
     const user = await supabaseDb.user.findFirst({ where: { email, role } });
 

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import supabaseDb from '@/lib/supabaseDb';
+import { cachedRead } from '@/lib/readCache';
 import { getParticipantRequestContext } from '@/lib/researcherContext';
 import { getAuthUser } from '@/lib/accessControl';
 import { isInterviewClosed } from '@/lib/interviewDeadline';
@@ -84,10 +85,22 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'Valid participant link required for this study' }, { status: 401 });
             }
 
-            const study = await supabaseDb.study.findFirst({
-                where: { id: studyId },
-                select: { configJSON: true },
-            });
+            // Study config is shared, immutable-ish, and read on every candidate
+            // session start — exactly what the read cache is for. Authorization
+            // below is still decided fresh; only the config row is cached. A
+            // researcher edit is bounded by the short TTL and explicitly
+            // invalidated by the study-update route.
+            const study = await cachedRead<{ configJSON: string | null }>(
+                'study-config',
+                studyId,
+                async () => {
+                    const row = await supabaseDb.study.findFirst({
+                        where: { id: studyId },
+                        select: { configJSON: true },
+                    });
+                    return row ? { configJSON: row.configJSON ?? null } : null;
+                }
+            );
 
             if (study?.configJSON) {
                 studyConfig = JSON.parse(study.configJSON);
@@ -192,32 +205,25 @@ export async function POST(request: Request) {
 
             if (existingSession) {
                 if (existingSession.mode === 'assigned') {
-                    // Best-effort atomic claim: re-read row inside a tight window to
-                    // detect a concurrent claim. Not a true SERIALIZABLE transaction
-                    // (would need a DB-side constraint), but it closes most of the race.
-                    const recheck = await supabaseDb.interviewSession.findUnique({
-                        where: { id: existingSession.id },
+                    // Atomic claim: one `UPDATE … WHERE mode = 'assigned'`. Exactly
+                    // one racing caller flips the row out of 'assigned'; the other
+                    // sees claimed:false. Either way the row belongs to THIS
+                    // candidate (identity was proven above before we got here), so a
+                    // lost claim is a second tab of the same person having already
+                    // started — we hand back the same session id rather than
+                    // double-writing it. The previous read-then-write let both racers
+                    // pass the check and both write the row.
+                    await supabaseDb.$claimInterviewSession(existingSession.id, {
+                        userId,
+                        role,
+                        difficulty,
+                        mode,
+                        startedAt: new Date(),
+                        ...(candidateName && { candidateName }),
+                        candidateEmail: normalizedCandidateEmail,
                     });
 
-                    // If another tab has already flipped it out of 'assigned', reuse the row.
-                    if (!recheck || recheck.mode !== 'assigned') {
-                        return NextResponse.json({ sessionId: existingSession.id, guest: false, reused: true });
-                    }
-
-                    const session = await supabaseDb.interviewSession.update({
-                        where: { id: existingSession.id },
-                        data: {
-                            userId,
-                            role,
-                            difficulty,
-                            mode,
-                            startedAt: new Date(),
-                            ...(candidateName && { candidateName }),
-                            candidateEmail: normalizedCandidateEmail,
-                        },
-                    });
-
-                    return NextResponse.json({ sessionId: session.id, guest: false, reused: true });
+                    return NextResponse.json({ sessionId: existingSession.id, guest: false, reused: true });
                 }
 
                 return NextResponse.json({ sessionId: existingSession.id, guest: false, reused: true });

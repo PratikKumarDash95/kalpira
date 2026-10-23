@@ -12,6 +12,7 @@ import cors from 'cors';
 // Existing hand-written AI routes (kept as-is).
 const { interviewRoutes, healthRoutes } = require('./routes');
 const { createRateLimiter } = require('./utils/rateLimiter');
+const rateStore = require('./utils/rateStore');
 import { mountApiRoutes } from './next-compat/route-loader';
 
 const app = express();
@@ -183,6 +184,9 @@ app.listen(PORT, () => {
   console.log(`  Kalpira Backend (consolidated)`);
   console.log(`  Port: ${PORT}`);
   console.log(`  Mode: ${process.env.NODE_ENV || 'development'}`);
+  // Whether rate limits + auth budgets are enforced platform-wide (safe to run
+  // multiple replicas behind a load balancer) or per-process (single box only).
+  console.log(`  Rate store: ${rateStore.isDistributed() ? 'UPSTASH REDIS (multi-instance safe)' : 'IN-MEMORY (single instance only — set UPSTASH_REDIS_REST_URL/TOKEN to scale out)'}`);
   console.log(`  CORS: ${allowedOrigins.join(', ')}`);
   console.log(`========================================\n`);
 });

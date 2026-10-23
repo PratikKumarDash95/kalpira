@@ -92,7 +92,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   // Accounted per RECIPIENT, not per request: one request can carry thousands
   // of addresses, so a per-request budget would not bound the volume at all.
   const mailBudgetKey = accountKey('assignmentEmail', 'interviewer', interviewer.email || interviewerId);
-  const mailBudget = checkBudget(mailBudgetKey, BUDGETS.assignmentEmail);
+  const mailBudget = await checkBudget(mailBudgetKey, BUDGETS.assignmentEmail);
   if (mailBudget.remaining < uniqueCandidates.length) {
     return NextResponse.json(
       tooManyRequests(
@@ -149,7 +149,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // Spent per recipient whether or not the send succeeds: the cost is the
     // attempt, and a failed send is not a reason to hand the budget back to a
     // caller working through a bad address list.
-    penalize(mailBudgetKey, BUDGETS.assignmentEmail);
+    await penalize(mailBudgetKey, BUDGETS.assignmentEmail);
     try {
       await sendInterviewAssignmentEmail({
         candidateEmail: candidate.candidateEmail,

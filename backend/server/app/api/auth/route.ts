@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       // refuse. Spent only on a wrong password — a person signing in normally,
       // or mistyping once, never accumulates toward it.
       const budgetKey = accountKey('login', role, email);
-      const budget = checkBudget(budgetKey, BUDGETS.login);
+      const budget = await checkBudget(budgetKey, BUDGETS.login);
       if (!budget.allowed) {
         return NextResponse.json(
           tooManyRequests(budget, 'Too many sign-in attempts. Please wait a few minutes and try again.'),
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       const isValid = await verifyPassword(password, user.password);
 
       if (!isValid) {
-        penalize(budgetKey, BUDGETS.login);
+        await penalize(budgetKey, BUDGETS.login);
         return NextResponse.json(
           { error: 'Invalid email or password' },
           { status: 401 }
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
       // The credential was right, so this was not a guessing script. Forget the
       // misses: ordinary activity must never accrue toward a lockout.
-      clearBudget(budgetKey);
+      await clearBudget(budgetKey, BUDGETS.login);
 
       if (!user.emailVerifiedAt) {
         return NextResponse.json(

@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     // mistyped new password costs the account holder nothing. Everything above
     // this line is shape and policy validation — it can neither guess nor mail.
     const budgetKey = accountKey('reset-otp', role, email);
-    const budget = checkBudget(budgetKey, BUDGETS.resetOtp);
+    const budget = await checkBudget(budgetKey, BUDGETS.resetOtp);
     if (!budget.allowed) {
       return NextResponse.json(
         tooManyRequests(budget, 'Too many attempts for this account. Please request a new code.'),
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     const codeMatches = hasLiveOtp && verifyPasswordResetOtp(otp, user!.passwordResetOtp);
 
     if (!hasLiveOtp || !codeMatches) {
-      penalize(budgetKey, BUDGETS.resetOtp);
+      await penalize(budgetKey, BUDGETS.resetOtp);
 
       // Count the miss against the *account*, not the connection — but only
       // while there is a live code to guess at. Misses against an expired or
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       },
     });
 
-    clearBudget(budgetKey);
+    await clearBudget(budgetKey, BUDGETS.resetOtp);
 
     return NextResponse.json({
       success: true,

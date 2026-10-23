@@ -30,14 +30,14 @@ export async function POST(request: Request) {
     // to complete. The per-IP limiter on /api/auth bounds one address; this
     // bounds one mailbox, which is the side being harmed.
     const budgetKey = accountKey('forgot-password', role, email);
-    const budget = checkBudget(budgetKey, BUDGETS.forgotPassword);
+    const budget = await checkBudget(budgetKey, BUDGETS.forgotPassword);
     if (!budget.allowed) {
       return NextResponse.json(
         tooManyRequests(budget, 'A reset code was requested recently. Please check your inbox, then try again shortly.'),
         { status: 429, headers: { 'Retry-After': String(budget.retryAfterSeconds) } }
       );
     }
-    penalize(budgetKey, BUDGETS.forgotPassword);
+    await penalize(budgetKey, BUDGETS.forgotPassword);
 
     const user = await supabaseDb.user.findFirst({ where: { email, role } });
 
