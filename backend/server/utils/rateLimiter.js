@@ -5,64 +5,40 @@
 // Redis when configured, bounded in-memory otherwise) so it is correct across
 // multiple instances behind a load balancer. See ./rateStore.js for why.
 //
-// KEY SELECTION
-// The old limiter keyed purely on IP. That breaks under real concurrency:
-// mobile carriers and corporate NATs put thousands of candidates behind a
-// handful of addresses, so a pure per-IP budget turns launch day into a mass
-// 429. We now prefer a caller identity when the request carries one — an
-// authenticated session id or an `x-user-id` header — and only fall back to IP
-// for genuinely anonymous traffic. Both dimensions are counted, since a
-// distributed guesser spreads across addresses while a focused one piles onto
-// a single account.
+// KEY SELECTION — IP ONLY, and deliberately so
+// This middleware runs BEFORE the session/JWT is verified, so it cannot trust
+// any caller-supplied identity. Reading `x-user-id` or a raw cookie here would
+// be a bypass: a guesser simply rotates that value per request and mints a fresh
+// bucket every time, defeating the limiter outright. The unauthenticated,
+// unforgeable dimension available at this point is the source address (resolved
+// behind Render's proxy via `trust proxy`), so that is what we key on.
+//
+// The per-ACCOUNT budget — the one that survives a distributed guesser spread
+// across many addresses — lives in app/lib/throttle.ts, where the key is the
+// *validated* target email, not a header a caller chooses. The two dimensions
+// are complementary; neither belongs here pre-auth.
+//
+// A NAT/carrier collapse (thousands of users behind one address) is a real
+// concern for the pure per-IP model, but fixing it correctly means throttling on
+// verified identity AFTER auth, at the route — not loosening trust here. A
+// server-supplied `keyFn` is accepted for that future use; it must never read
+// attacker-controlled input.
 
 const { incr } = require('./rateStore');
 
 const DEFAULT_WINDOW_MS = 60_000;
 const DEFAULT_MAX_REQUESTS = 30;
 
-// Best-effort identity extraction without a DB hit. The session cookie is a
-// signed JWT; we only need a stable subject to key on, and `verifySessionToken`
-// runs (and authorises) downstream — this is purely a throttle dimension, so a
-// cheap, non-verified stable handle is acceptable and never widens access.
-function identityOf(req) {
-  const headerId = req.headers['x-user-id'];
-  if (typeof headerId === 'string' && headerId) return `u:${headerId}`;
-
-  const cookieHeader = req.headers.cookie;
-  if (typeof cookieHeader === 'string') {
-    const match = cookieHeader
-      .split(';')
-      .map((c) => c.trim())
-      .find((c) => c.startsWith('kalpira_session='));
-    if (match) {
-      // Hash-ish handle from the token so we do not store the raw secret; we
-      // only need it to be stable per caller for a window.
-      const token = decodeURIComponent(match.slice('kalpira_session='.length + 1));
-      return `s:${shortHash(token)}`;
-    }
-  }
-
-  return null;
-}
-
-function shortHash(value) {
-  let h = 5381;
-  for (let i = 0; i < value.length; i++) {
-    h = ((h << 5) + h + value.charCodeAt(i)) | 0;
-  }
-  return (h >>> 0).toString(36);
-}
-
 function createRateLimiter({ windowMs = DEFAULT_WINDOW_MS, max = DEFAULT_MAX_REQUESTS, keyFn, prefix = 'ip' } = {}) {
   return async function rateLimit(req, res, next) {
     try {
-      const identity = keyFn ? keyFn(req) : identityOf(req);
+      // IP is the only key this pre-auth layer may trust. `keyFn`, when passed,
+      // must itself derive from server-verified state (never a raw header).
       const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-      // Count the chosen dimension; fall back to IP when there is no identity.
-      const bucketKey = identity || `ip:${ip}`;
+      const bucketKey = keyFn ? keyFn(req) : `ip:${ip}`;
 
       const count = await incr(prefix, bucketKey, windowMs);
-      const limit = identity ? max * 4 : max; // an identity may act more than one shared IP
+      const limit = max;
       const remaining = Math.max(0, limit - count);
 
       res.setHeader('X-RateLimit-Limit', String(limit));

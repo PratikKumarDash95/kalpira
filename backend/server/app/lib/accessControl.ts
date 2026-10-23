@@ -80,16 +80,31 @@ export async function assertSessionOwner(sessionId: string, user: AuthUser): Pro
   if (user.role === 'admin') return true;
   if (!user.id) return false;
 
-  const session = await supabaseDb.interviewSession.findFirst({
-    where: {
-      id: sessionId,
-      OR: [
-        { userId: user.id },
-        { study: { userId: user.id } },
-      ],
-    },
-    select: { id: true },
+  // Scalar lookups only. The previous `where: { id, OR: [{ userId }, { study:
+  // { userId } }] }` could not be pushed down by the DB shim (canQueryWhere
+  // rejects OR and nested relations), so it fell back to loading the ENTIRE
+  // InterviewSession table into memory on every authorization check — a latency
+  // and memory cliff at scale — AND the `{ study: { userId } }` branch never
+  // matched (relations are resolved after filtering), silently refusing the
+  // study's own owner. Two indexed point-reads by id are both cheaper and
+  // correct: a session counts as owned when it belongs to the user directly or
+  // sits in a study the user owns.
+  const session = await supabaseDb.interviewSession.findUnique({
+    where: { id: sessionId },
+    select: { userId: true, studyId: true },
   });
+  if (!session) return false;
 
-  return Boolean(session);
+  if (session.userId && String(session.userId) === user.id) return true;
+
+  const studyId = session.studyId ? String(session.studyId) : null;
+  if (studyId) {
+    const study = await supabaseDb.study.findUnique({
+      where: { id: studyId },
+      select: { userId: true },
+    });
+    if (study && String(study.userId) === user.id) return true;
+  }
+
+  return false;
 }

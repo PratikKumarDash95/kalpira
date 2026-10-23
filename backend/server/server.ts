@@ -72,9 +72,15 @@ app.use(cors({
 app.use(express.json({ limit: '5mb' }));
 
 // Rate-limit the AI endpoints (30 req/min per IP).
+// Mounted on the WHOLE /api/interview subtree so the hot Next.js route (mounted
+// later by mountApiRoutes) and the hand-written /ask + /evaluate endpoints all
+// pass through ONE limiter. Mounting each subpath separately both left the bare
+// /api/interview turn endpoint unthrottled AND double-counted any request that
+// matched two prefixes. The per-identity brake that survives a distributed
+// guesser lives in the /api/interview handler (see app/lib/aiBudget.ts), where
+// the participant token has already been verified.
 const aiLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
-app.use('/api/interview/ask', aiLimiter);
-app.use('/api/interview/evaluate', aiLimiter);
+app.use('/api/interview', aiLimiter);
 app.use('/api/ai', aiLimiter);
 
 // The auth surface gets its own ceiling. This is the *address* dimension; the

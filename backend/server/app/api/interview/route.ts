@@ -15,6 +15,7 @@ import {
 import { withInterviewerAiConfig } from '@/lib/interviewerAiConfig';
 import { withPlatformAiConfig } from '@/lib/platformAiConfig';
 import { withAiTimeout, DEFAULT_AI_TIMEOUT_MS } from '@/lib/aiTimeout';
+import { enforceInterviewTurnBudget } from '@/lib/aiBudget';
 import {
   appendScoredDecision,
   hashInput,
@@ -52,11 +53,41 @@ const providerSetupMessage = (studyConfig: StudyConfig): string => {
 export async function POST(request: Request) {
   try {
     // Verify participant token and resolve researcher context
-    const { valid, context, studyId, isAdmin, error } = await getParticipantRequestContext(request);
+    const {
+      valid,
+      context,
+      studyId,
+      isAdmin,
+      assignment,
+      error,
+    } = await getParticipantRequestContext(request);
     if (!valid || !context) {
       return NextResponse.json(
         { error: error || 'Valid participant token required' },
         { status: 401 }
+      );
+    }
+
+    // Post-auth, per-identity turn brake — the complement to the coarse per-IP
+    // middleware limiter (which runs before this token is verified and so cannot
+    // see identity). Keyed on the VERIFIED assignment email when the link names
+    // one candidate; a shared study-wide link falls back to a deliberately high
+    // ceiling so a whole concurrent cohort is never falsely throttled. Fail-open.
+    const turnBudget = await enforceInterviewTurnBudget({
+      isAdmin,
+      studyId,
+      candidateEmail: assignment?.candidateEmail,
+      bearerToken: request.headers.get('Authorization') || '',
+    });
+    if (!turnBudget.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You are sending answers too quickly. Please wait a moment.',
+          code: 'AI_TURN_RATE_LIMITED',
+          retryAfter: turnBudget.retryAfter,
+        },
+        { status: 429, headers: { 'Retry-After': String(turnBudget.retryAfter) } }
       );
     }
 
