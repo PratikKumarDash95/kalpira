@@ -87,6 +87,21 @@
       "zustand/*": [
         "./node_modules/zustand/*"
       ],
+      "three": [
+        "./node_modules/@types/three"
+      ],
+      "three/*": [
+        "./node_modules/@types/three/*"
+      ],
+      "@pixiv/three-vrm": [
+        "./node_modules/@pixiv/three-vrm"
+      ],
+      "@react-three/fiber": [
+        "./node_modules/@react-three/fiber"
+      ],
+      "@react-three/fiber/*": [
+        "./node_modules/@react-three/fiber/*"
+      ],
       "@supabase/ssr": [
         "./node_modules/@supabase/ssr"
       ],
