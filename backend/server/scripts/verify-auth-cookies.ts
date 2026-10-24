@@ -171,7 +171,7 @@ async function main() {
     const user = {
       id: 'offline-interviewer', role: 'interviewer', name: 'Test Interviewer',
       email: 'test@example.invalid', avatarUrl: null, coverUrl: null,
-      onboardingComplete: true, password: 'must-not-be-exposed',
+      onboardingComplete: true, password: 'x'.repeat(16),
       encryptedGeminiApiKey: 'invalid-encrypted-data',
       encryptedAnthropicApiKey: 'invalid-encrypted-data',
     };
