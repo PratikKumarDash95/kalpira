@@ -73,6 +73,10 @@ export function setQuery<T>(key: string, dataOrUpdater: T | ((prev: T | undefine
   const data = typeof dataOrUpdater === 'function'
     ? (dataOrUpdater as (prev: T | undefined) => T)(current)
     : dataOrUpdater;
+  // A mutation/verified login can publish newer data while an older GET is
+  // still pending. That GET must not overwrite this authoritative value.
+  generations.set(key, generation(key) + 1);
+  inFlight.delete(key);
   entries.set(key, { data, at: Date.now() });
   notify(key);
 }
@@ -133,9 +137,8 @@ export function revalidateQuery<T>(
 /**
  * Fetch `key` unless an identical request is already on the wire, and cache the
  * result. Always hits the network — freshness is the caller's decision
- * (`useQuery` skips the call when the entry is still fresh). Never rejects;
- * a failed request simply leaves the cache untouched so the caller keeps
- * whatever it already had.
+ * (`useQuery` skips the call when the entry is still fresh). A failed request
+ * rejects and leaves the cache untouched so the caller keeps what it had.
  */
 export function fetchQuery<T>(
   key: string,
@@ -145,6 +148,9 @@ export function fetchQuery<T>(
   if (pending) return pending as Promise<T>;
 
   const startedAt = generation(key);
+  // Track the very first request too, so invalidation during it can retire
+  // its result instead of restoring a pre-login/pre-logout answer.
+  generations.set(key, startedAt);
 
   const request = fetcher()
     .then((data) => {
@@ -214,9 +220,13 @@ export function useQuery<T>(
   // getServerSnapshot must be stable and must match the first client render,
   // or hydration complains — so both say "nothing cached".
   const data = useSyncExternalStore(subscribe, getSnapshot, () => undefined);
+  const hasData = data !== undefined;
 
   useEffect(() => {
-    if (isQueryFresh(key, ttl)) return;
+    if (isQueryFresh(key, ttl)) {
+      setFetching(false);
+      return;
+    }
 
     let cancelled = false;
     setFetching(true);
@@ -231,7 +241,7 @@ export function useQuery<T>(
     return () => {
       cancelled = true;
     };
-  }, [key, ttl]);
+  }, [key, ttl, hasData]);
 
   const refresh = useCallback(() => {
     setFetching(true);

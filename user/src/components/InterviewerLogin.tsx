@@ -1,5 +1,8 @@
 'use client';
 import { apiFetch, apiUrl } from '@/lib/apiClient';
+import { invalidateAuthStatus } from '@/lib/authStatus';
+import { setQuery } from '@/lib/queryCache';
+import { PROFILE_QUERY_KEY } from '@/lib/profileQuery';
 
 import React, { useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -78,16 +81,20 @@ const InterviewerLogin: React.FC = () => {
             const data = await res.json();
             if (!res.ok) { setError(data.error || 'Login failed.'); return; }
 
+            invalidateAuthStatus();
             // Verify the logged-in user is actually an interviewer via dedicated endpoint
-            const meRes = await apiFetch('/api/interviewer/me');
+            const meRes = await apiFetch('/api/interviewer/me', { cache: 'no-store' });
             if (!meRes.ok) {
                 // 403 = wrong role, 401 = session issue
                 const meData = await meRes.json();
                 setError(meData.error || 'This account is not an interviewer account.');
-                await apiFetch('/api/auth', { method: 'DELETE' }); // logout
+                const logout = await apiFetch('/api/auth', { method: 'DELETE' });
+                if (logout.ok) invalidateAuthStatus();
                 return;
             }
 
+            const meData = await meRes.json();
+            if (meData.user) setQuery(PROFILE_QUERY_KEY, { authenticated: true, profile: meData.user });
             const defaultRedirect = portalPath('/dashboard');
             const rawRedirect = searchParams.get('redirect') || defaultRedirect;
             const redirect = rawRedirect.startsWith(isStandalonePortal ? '/' : '/interviewer/') && !rawRedirect.startsWith('//')

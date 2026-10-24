@@ -155,7 +155,7 @@ export default function Navbar({
     }
 
     return (
-      <Link href="/profile" prefetch={true} className="btn-secondary px-3 py-2 text-sm">
+      <Link href={profile?.role === 'interviewer' && process.env.NEXT_PUBLIC_PORTAL !== 'interviewer' ? '/interviewer/profile' : '/profile'} prefetch={true} className="btn-secondary px-3 py-2 text-sm">
         {profile?.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

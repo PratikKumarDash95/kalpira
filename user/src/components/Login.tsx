@@ -1,6 +1,8 @@
 'use client';
 import { apiFetch, apiUrl } from '@/lib/apiClient';
 import { invalidateAuthStatus } from '@/lib/authStatus';
+import { setQuery } from '@/lib/queryCache';
+import { PROFILE_QUERY_KEY, type ProfileResponse } from '@/lib/profileQuery';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -79,7 +81,9 @@ const Login: React.FC = () => {
         if (meRes.ok) {
           const data = await meRes.json().catch(() => null);
           if (data?.authenticated && data.profile) {
-            if (!cancelled) router.replace(dashboardFor(data.profile.role));
+            if (cancelled) return;
+            setQuery(PROFILE_QUERY_KEY, data);
+            router.replace(dashboardFor(data.profile.role));
             return; // leave authChecking true → spinner stays until navigation
           }
         } else {
@@ -196,18 +200,26 @@ const Login: React.FC = () => {
         return;
       }
 
+      invalidateAuthStatus();
+      let sessionProfile: ProfileResponse | null = null;
       if (selectedRole === 'interviewer') {
-        const meRes = await apiFetch('/api/interviewer/me');
+        const meRes = await apiFetch('/api/interviewer/me', { cache: 'no-store' });
         if (!meRes.ok) {
           const meData = await meRes.json().catch(() => ({}));
           setError(meData.error || 'This account is not an interviewer account.');
-          await apiFetch('/api/auth', { method: 'DELETE' });
+          const logout = await apiFetch('/api/auth', { method: 'DELETE' });
+          if (logout.ok) invalidateAuthStatus();
           return;
         }
+        const meData = await meRes.json();
+        if (meData.user) sessionProfile = { authenticated: true, profile: meData.user };
+      } else {
+        // Publish the newly signed-in identity before navigating so existing
+        // navbar subscribers cannot retain the pre-login guest answer.
+        const meRes = await apiFetch(PROFILE_QUERY_KEY, { cache: 'no-store' }).catch(() => null);
+        if (meRes?.ok) sessionProfile = await meRes.json().catch(() => null);
       }
-
-      // A session now exists, so the cached auth answer must not outlive it.
-      invalidateAuthStatus();
+      if (sessionProfile?.profile) setQuery(PROFILE_QUERY_KEY, sessionProfile);
       const defaultRedirect = selectedRole === 'interviewer' ? '/interviewer/dashboard' : '/studies';
       const rawRedirect = searchParams.get('redirect') || defaultRedirect;
       const redirect = isSafeRoleRedirect(rawRedirect, selectedRole) ? rawRedirect : defaultRedirect;

@@ -1,5 +1,6 @@
 'use client';
 import { apiFetch, apiUrl, clearSessionDrafts } from '@/lib/apiClient';
+import { invalidateAuthStatus } from '@/lib/authStatus';
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -77,6 +78,7 @@ const InterviewerDashboard: React.FC = () => {
             setActionError('Logout failed. Please try again.');
             return;
         }
+        invalidateAuthStatus();
         clearSessionDrafts();
         router.push(portalPath('/login'));
     };

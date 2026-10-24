@@ -19,6 +19,7 @@ export interface SessionProfile {
 }
 
 export interface ProfileResponse {
+  authenticated?: boolean;
   /** The current shape of /api/auth/me. */
   profile?: SessionProfile;
   /** Older callers still read `user`; both are accepted. */
@@ -26,20 +27,18 @@ export interface ProfileResponse {
 }
 
 /**
- * Resolve the profile, or `null` when there is no session.
- *
- * A missing session is a *known* answer, not an error: callers distinguish it
- * from "not fetched yet" by whether the cache holds `null` or holds nothing at
- * all. Never rejects, so a network blip cannot be mistaken for a logout.
+ * Only an explicit 401 means there is no session. A server/network/profile
+ * error rejects, leaving any known profile in the cache instead of signing
+ * the UI out while authenticated dashboard requests still succeed.
  */
 export async function fetchProfile(): Promise<ProfileResponse | null> {
-  try {
-    const res = await apiFetch(PROFILE_QUERY_KEY);
-    if (!res.ok) return null;
-    return (await res.json()) as ProfileResponse;
-  } catch {
-    return null;
-  }
+  const res = await apiFetch(PROFILE_QUERY_KEY, { cache: 'no-store' });
+  if (res.status === 401) return null;
+  if (!res.ok) throw new Error(`Failed to load profile (${res.status})`);
+  const data = await res.json() as ProfileResponse;
+  if (data.authenticated === false) return null;
+  if (!profileOf(data)) throw new Error('Profile response missing identity');
+  return data;
 }
 
 export function profileOf(res: ProfileResponse | null | undefined): SessionProfile | null {

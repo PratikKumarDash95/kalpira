@@ -1,5 +1,8 @@
 "use client";
 import { apiFetch, apiUrl, clearSessionDrafts } from '@/lib/apiClient';
+import { invalidateAuthStatus } from '@/lib/authStatus';
+import { setQuery } from '@/lib/queryCache';
+import { PROFILE_QUERY_KEY } from '@/lib/profileQuery';
 
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -45,19 +48,21 @@ function ProfileContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(profileApi)
+    apiFetch(profileApi, { cache: 'no-store' })
       .then((res) => {
         if (res.status === 401) {
           const separator = loginPath.includes('?') ? '&' : '?';
           router.push(`${loginPath}${separator}redirect=${encodeURIComponent(profilePath)}`);
           return null;
         }
+        if (!res.ok) throw new Error('Failed to load profile. Please try again.');
         return res.json();
       })
       .then((data) => {
         const loadedProfile = data?.profile || data?.user;
         if (loadedProfile) {
           setProfile(loadedProfile);
+          setQuery(PROFILE_QUERY_KEY, { authenticated: true, profile: loadedProfile });
           setName(loadedProfile.name || '');
           setAvatarUrl(loadedProfile.avatarUrl || '');
           setCoverUrl(loadedProfile.coverUrl || '');
@@ -94,7 +99,7 @@ function ProfileContent() {
       if (kind === 'avatar') setAvatarUrl(data.publicUrl);
       else setCoverUrl(data.publicUrl);
 
-      const saveRes = await fetch(profileApi, {
+      const saveRes = await apiFetch(profileApi, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,6 +122,7 @@ function ProfileContent() {
       clearCoverUrlDraft();
       setProfile(savedProfile);
       if (savedProfile) {
+        setQuery(PROFILE_QUERY_KEY, { authenticated: true, profile: savedProfile });
         setName(savedProfile.name || '');
         setAvatarUrl(savedProfile.avatarUrl || '');
         setCoverUrl(savedProfile.coverUrl || '');
@@ -142,7 +148,7 @@ function ProfileContent() {
     setError(null);
 
     try {
-      const res = await fetch(profileApi, {
+      const res = await apiFetch(profileApi, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, avatarUrl, coverUrl }),
@@ -160,6 +166,7 @@ function ProfileContent() {
       clearCoverUrlDraft();
       setProfile(saved);
       if (saved) {
+        setQuery(PROFILE_QUERY_KEY, { authenticated: true, profile: saved });
         setName(saved.name || '');
         setAvatarUrl(saved.avatarUrl || '');
         setCoverUrl(saved.coverUrl || '');
@@ -360,6 +367,7 @@ function ProfileContent() {
                         setError('Logout failed. Please try again.');
                         return;
                       }
+                      invalidateAuthStatus();
                       clearSessionDrafts();
                       router.push(loginPath);
                     }}

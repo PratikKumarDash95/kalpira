@@ -5,6 +5,8 @@
 // origin, validates it against the same allow-list used for CORS, and stashes
 // it in a short-lived cookie that the callback route reads back.
 
+import { getAuthCookieDomain } from './cookieDomain';
+
 const OAUTH_ORIGIN_COOKIE = 'oauth_return_origin';
 
 // Origins this backend trusts unconditionally in a real deployment. Kept to the
@@ -110,7 +112,7 @@ export function resolveReturnOrigin(request: Request): string | null {
 // callback if it lands on a sibling host (e.g. www.kalpira.in), causing a
 // false "state mismatch" -> /login?error=invalid_state ("Session expired").
 export function getOauthStateCookieOptions() {
-  const domain = process.env.COOKIE_DOMAIN?.trim() || undefined;
+  const domain = getAuthCookieDomain();
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -131,7 +133,7 @@ export function getOauthOriginCookieOptions() {
 // clearSessionCookie pattern: call cookieStore.set(name, '', { ...this, maxAge: 0 })
 // wherever a callback route clears one of the short-lived OAuth cookies above.
 export function getOauthCookieClearOptions() {
-  const domain = process.env.COOKIE_DOMAIN?.trim() || undefined;
+  const domain = getAuthCookieDomain();
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

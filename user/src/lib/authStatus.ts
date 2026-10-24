@@ -8,7 +8,6 @@
 // on login/logout, so the answer is safe to reuse for a short window.
 
 import { apiFetch } from './apiClient';
-import { PROFILE_QUERY_KEY } from './profileQuery';
 import { invalidateQuery } from './queryCache';
 
 export interface AuthStatus {
@@ -24,6 +23,7 @@ const TTL_MS = 30_000;
 
 let cached: { at: number; value: AuthStatus } | null = null;
 let inFlight: Promise<AuthStatus> | null = null;
+let generation = 0;
 
 /**
  * Resolve the current session, reusing a recent answer and sharing an in-flight
@@ -36,9 +36,11 @@ export function getAuthStatus(): Promise<AuthStatus> {
   }
   if (inFlight) return inFlight;
 
-  inFlight = apiFetch('/api/auth')
+  const startedAt = generation;
+  const request = apiFetch('/api/auth', { cache: 'no-store' })
     .then((res) => res.json() as Promise<AuthStatus>)
     .then((value) => {
+      if (generation !== startedAt) return getAuthStatus();
       // Only a signed-in answer is cached. A "guest" result must not be reused:
       // it would keep a user who just signed in in another tab stuck on /login.
       if (value?.authenticated) {
@@ -46,12 +48,15 @@ export function getAuthStatus(): Promise<AuthStatus> {
       }
       return value;
     })
-    .catch(() => ({ authenticated: false }) as AuthStatus)
+    .catch(() => generation !== startedAt
+      ? getAuthStatus()
+      : ({ authenticated: false }) as AuthStatus)
     .finally(() => {
-      inFlight = null;
+      if (inFlight === request) inFlight = null;
     });
 
-  return inFlight;
+  inFlight = request;
+  return request;
 }
 
 /**
@@ -76,7 +81,10 @@ export function peekAuthStatus(): AuthStatus | null {
  * profile, which is the same session described differently.
  */
 export function invalidateAuthStatus(): void {
+  generation++;
   cached = null;
   inFlight = null;
-  invalidateQuery(PROFILE_QUERY_KEY);
+  // Dashboard/study caches also belong to the previous identity, not just the
+  // profile. Never show another account's data after switching sessions.
+  invalidateQuery('/api/');
 }

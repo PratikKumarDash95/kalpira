@@ -4,63 +4,49 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getRequestContext } from '@/lib/researcherContext';
-import { getResearcherById, toResearcherProfile, updateResearcher } from '@/lib/platformDb';
+import { cookies } from 'next/headers';
+import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { isHostedMode } from '@/lib/mode';
 import supabaseDb from '@/lib/supabaseDb';
 
+async function getProfileIdentity() {
+  const token = cookies().get(SESSION_COOKIE_NAME)?.value;
+  const session = token ? await verifySessionToken(token) : null;
+  if (!session?.valid || !session.researcherId) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+  return { userId: session.researcherId };
+}
+
+function toProfile(user: NonNullable<Awaited<ReturnType<typeof supabaseDb.user.findUnique>>>) {
+  return {
+    id: user.id,
+    email: user.email || '',
+    name: user.name || user.email || 'Kalpira User',
+    role: user.role || 'candidate',
+    avatarUrl: user.avatarUrl,
+    coverUrl: user.coverUrl,
+    onboardingComplete: user.onboardingComplete,
+    hasRedisConfigured: true,
+    hasGeminiKey: !!user.encryptedGeminiApiKey,
+    hasAnthropicKey: !!user.encryptedAnthropicApiKey,
+  };
+}
+
 export async function GET() {
   try {
-    const { authorized, context, researcherId, error } = await getRequestContext();
-    if (!authorized || !context) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    // A profile needs only a verified identity, not decrypted AI credentials.
+    // Credential-loading failures must not turn a valid session into a 401.
+    const identity = await getProfileIdentity();
+    if (identity.error) return identity.error;
+    const user = await supabaseDb.user.findUnique({ where: { id: identity.userId } });
+    if (!user) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
-
-    // In standalone mode, password users still carry a researcherId in the
-    // session. A session WITHOUT a researcherId is not a real user identity
-    // (e.g. the legacy global-admin login) — do NOT fall back to findFirst(),
-    // which returned an arbitrary/seeded row and made a logged-out or admin
-    // browser display someone else's profile.
-    if (!isHostedMode()) {
-      if (!researcherId) {
-        return NextResponse.json({ mode: 'standalone', authenticated: false, profile: null }, { status: 401 });
-      }
-
-      const user = await supabaseDb.user.findUnique({ where: { id: researcherId } });
-
-      return NextResponse.json({
-        mode: 'standalone',
-        authenticated: true,
-        profile: user ? {
-          id: user.id,
-          email: user.email || '',
-          name: user.name || user.email || 'Kalpira User',
-          // role drives client-side dashboard routing (candidate vs interviewer
-          // vs admin). Omitting it made the frontend treat every account as a
-          // candidate and hit candidate-only endpoints, which 401 for others.
-          role: user.role || 'candidate',
-          avatarUrl: user.avatarUrl,
-          coverUrl: user.coverUrl,
-          onboardingComplete: user.onboardingComplete,
-          hasRedisConfigured: true,
-        } : null,
-      });
-    }
-
-    // In hosted mode, return researcher profile
-    if (!researcherId) {
-      return NextResponse.json({ error: 'No researcher identity' }, { status: 401 });
-    }
-
-    const researcher = await getResearcherById(researcherId);
-    if (!researcher) {
-      return NextResponse.json({ error: 'Researcher not found' }, { status: 404 });
-    }
-
     return NextResponse.json({
-      mode: 'hosted',
+      mode: isHostedMode() ? 'hosted' : 'standalone',
       authenticated: true,
-      profile: toResearcherProfile(researcher),
+      profile: toProfile(user),
     });
   } catch (error) {
     console.error('Auth me error:', error);
@@ -73,10 +59,8 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const { authorized, context, researcherId, error } = await getRequestContext();
-    if (!authorized || !context) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
-    }
+    const identity = await getProfileIdentity();
+    if (identity.error) return identity.error;
 
     const body = await request.json();
     const name = typeof body.name === 'string' ? body.name.trim() : undefined;
@@ -109,10 +93,7 @@ export async function PATCH(request: Request) {
       }
     }
 
-    const userId = researcherId || context.userId;
-    if (!userId) {
-      return NextResponse.json({ error: 'No profile identity' }, { status: 401 });
-    }
+    const userId = identity.userId;
 
     const updates: { name?: string; avatarUrl?: string | null; coverUrl?: string | null } = {};
     if (name !== undefined) updates.name = name;
@@ -123,27 +104,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'No profile changes provided' }, { status: 400 });
     }
 
-    if (isHostedMode()) {
-      const updated = await updateResearcher(userId, updates);
-      if (!updated) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    } else {
-      await supabaseDb.user.update({ where: { id: userId }, data: updates });
-    }
-
-    const user = await supabaseDb.user.findUnique({ where: { id: userId } });
-    return NextResponse.json({
-      success: true,
-      profile: user ? {
-        id: user.id,
-        email: user.email || '',
-        name: user.name || user.email || 'Kalpira User',
-        role: user.role || 'candidate',
-        avatarUrl: user.avatarUrl,
-        coverUrl: user.coverUrl,
-        onboardingComplete: user.onboardingComplete,
-        hasRedisConfigured: true,
-      } : null,
-    });
+    const existing = await supabaseDb.user.findUnique({ where: { id: userId } });
+    if (!existing) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    const user = await supabaseDb.user.update({ where: { id: userId }, data: updates });
+    return NextResponse.json({ success: true, profile: toProfile(user) });
   } catch (error) {
     console.error('Profile update error:', error);
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });

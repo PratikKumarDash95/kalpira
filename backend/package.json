@@ -9,6 +9,8 @@
     "start": "tsx server/server.ts",
     "dev": "tsx watch server/server.ts",
     "type-check": "tsc --noEmit",
+    "verify:auth-cookies": "tsx server/scripts/verify-auth-cookies.ts",
+    "verify:session-cache": "tsx server/scripts/verify-session-cache.ts",
     "verify:measurement": "tsx server/scripts/verify-measurement.ts",
     "verify:delivery": "tsx server/scripts/verify-delivery.ts",
     "verify:integrity": "tsx server/scripts/verify-integrity.ts",

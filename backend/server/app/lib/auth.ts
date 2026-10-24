@@ -4,6 +4,7 @@
 
 import * as jose from 'jose';
 import { isHostedMode } from './mode';
+import { getAuthCookieDomain } from './cookieDomain';
 
 const SESSION_COOKIE_NAME = 'research-auth';
 
@@ -206,10 +207,9 @@ export function isCrossSiteDeployment(): boolean {
 // Lax (without Secure, since local dev is plain http) is kept as the default.
 export function getSessionCookieOptions(maxAgeSeconds: number = TOKEN_DURATION_SECONDS) {
   const crossSite = isCrossSiteDeployment();
-  // Scope the cookie to a shared parent domain in production (e.g. ".kalpira.in").
-  // In development, domain MUST remain unset/undefined so browsers accept cookies on localhost.
-  const isDev = process.env.NODE_ENV === 'development';
-  const domain = isDev ? undefined : (process.env.COOKIE_DOMAIN?.trim() || undefined);
+  // Use the same domain as OAuth state and logout, including the first-party
+  // fallback when the deployment forgot COOKIE_DOMAIN.
+  const domain = getAuthCookieDomain();
   return {
     httpOnly: true,
     secure: crossSite,
@@ -228,8 +228,7 @@ export function clearSessionCookie(cookieStore: {
   set: (name: string, value: string, options: Record<string, unknown>) => void;
 }): void {
   const crossSite = isCrossSiteDeployment();
-  const isDev = process.env.NODE_ENV === 'development';
-  const domain = isDev ? undefined : (process.env.COOKIE_DOMAIN?.trim() || undefined);
+  const domain = getAuthCookieDomain();
   cookieStore.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
     secure: crossSite,
